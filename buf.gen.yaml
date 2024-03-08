@@ -1,8 +1,8 @@
 version: v1
 plugins:
   - plugin: go
-    out: pkg/pb
+    out: pkg
     opt: paths=source_relative
   - plugin: connect-go
-    out: pkg/pb
+    out: pkg
     opt: paths=source_relative

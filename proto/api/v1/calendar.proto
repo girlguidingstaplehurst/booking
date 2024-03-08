@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/girlguidingstaplehurst/booking/pkg/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum EventPrivacy {
+  EVENT_PRIVACY_UNSPECIFIED = 0;
+  EVENT_PRIVACY_PRIVATE = 1;
+  EVENT_PRIVACY_PUBLIC = 2;
+}
+
+message Booking {
+  string id = 1;
+  string title = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  EventPrivacy event_privacy = 5;
+  string customer_id = 6;
+}
+
+message ListBookingsRequest {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+}
+
+message ListBookingsResponse {
+  repeated Booking bookings = 1;
+}
+
+service BookingsService {
+  rpc ListBookings(ListBookingsRequest) returns (ListBookingsResponse) {}
+}

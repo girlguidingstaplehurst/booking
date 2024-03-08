@@ -5,3 +5,5 @@ breaking:
 lint:
   use:
     - DEFAULT
+deps:
+  - buf.build/protocolbuffers/wellknowntypes:v21.12
