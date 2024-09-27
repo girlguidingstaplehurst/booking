@@ -45,13 +45,26 @@ function AddEvent() {
       email: "",
     },
     // validationSchema: EventSchema,
-    onSubmit: async (values ) => {
+    onSubmit: async (values) => {
       setSubmitting(true);
 
       //TODO make backend API request
-      console.log(values);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("resolved, cleaning up");
+      await fetch("/api/v1/add-event", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          event: {
+            name: values.eventName,
+            from: `${values.eventDate}T${values.eventTimeFrom}`,
+            to: `${values.eventDate}T${values.eventTimeTo}`,
+            publicly_visible: values.visibility === "show",
+          },
+          contact: {
+            name: values.name,
+            email_address : values.email,
+          }
+        }),
+      });
 
       setSubmitting(false);
       return navigate("/");
