@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: Booking System API
+  description: |-
+    TODO
+  license:
+    name: GNU Affero GPL 3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+  version: 1.0.0
+paths:
+  /api/v1/add-event:
+    post:
+      summary: Add an event
+      description: Add a new event to the calendar
+      operationId: addEvent
+      requestBody:
+        description: Event to be added
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewEvent'
+        required: true
+      responses:
+        '200':
+          description: Successfully added
+        '422':
+          description: Validation exception
+        '500':
+          description: Something went wrong
+components:
+  schemas:
+    NewEvent:
+      type: object
+      required:
+        - event
+        - contact
+      properties:
+        event:
+          type: object
+          required:
+            - name
+            - from
+            - to
+            - publicly_visible
+          properties:
+            name:
+              type: string
+            from:
+              type: string
+              format: datetime
+            to:
+              type: string
+              format: datetime
+            publicly_visible:
+              type: boolean
+              default: true
+        contact:
+          type: object
+          required:
+            - name
+            - email_address
+          properties:
+            name:
+              type: string
+            email_address:
+              type: string
+              format: email
+# TODO reenable this and ensure it reflects us using Google SSO
+#  securitySchemes:
+#    admin_auth:
+#      type: oauth2
+#      flows:
+#        implicit:
+#          authorizationUrl: https://petstore3.swagger.io/oauth/authorize
+#          scopes:
+#            write:pets: modify pets in your account
+#            read:pets: read your pets

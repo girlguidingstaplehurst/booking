@@ -1,6 +1,8 @@
-package tools
+//go:build tools
+
+package booking
 
 import (
-	_ "connectrpc.com/connect/cmd/protoc-gen-connect-go"
-	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
+	_ "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"
+	_ "go.uber.org/mock/mockgen"
 )
