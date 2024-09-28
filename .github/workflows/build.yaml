@@ -37,6 +37,7 @@ jobs:
           makeLatest: true
           name: ${{ steps.semver.outputs.next }}
           token: ${{ github.token }}
+          commit: ${{ github.sha }} 
 
       - name: Build container
         run:
