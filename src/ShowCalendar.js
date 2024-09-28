@@ -7,7 +7,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 const localizer = dayjsLocalizer(dayjs);
 
 function ShowCalendar() {
-  const eventsList = useLoaderData();
+  const eventsList = useLoa derData();
   const events = eventsList.events.map((event) => ({
     title: event.name,
     start: dayjs(event.from).toDate(),
