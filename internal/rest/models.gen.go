@@ -7,10 +7,33 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ListEventStatus.
+const (
+	Approved    ListEventStatus = "approved"
+	Provisional ListEventStatus = "provisional"
+)
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 }
+
+// EventList defines model for EventList.
+type EventList struct {
+	Events []ListEvent `json:"events"`
+}
+
+// ListEvent defines model for ListEvent.
+type ListEvent struct {
+	From   string          `json:"from"`
+	Id     string          `json:"id"`
+	Name   string          `json:"name"`
+	Status ListEventStatus `json:"status"`
+	To     string          `json:"to"`
+}
+
+// ListEventStatus defines model for ListEvent.Status.
+type ListEventStatus string
 
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
@@ -24,6 +47,15 @@ type NewEvent struct {
 		PubliclyVisible bool   `json:"publicly_visible"`
 		To              string `json:"to"`
 	} `json:"event"`
+}
+
+// GetApiV1EventsParams defines parameters for GetApiV1Events.
+type GetApiV1EventsParams struct {
+	// From The date to obtain events from
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To The date to obtain events to
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
 }
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.

@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/girlguidingstaplehurst/booking/internal/consts"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,10 +17,6 @@ var _ rest.Database = (*Database)(nil)
 const (
 	EventStatusProvisional = "provisional"
 	EventStatusApproved    = "approved"
-)
-
-var (
-	ErrBookingExists = errors.New("a booking already exists between those dates")
 )
 
 type Database struct {
@@ -54,7 +52,7 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 		}
 
 		if count > 0 {
-			return ErrBookingExists
+			return consts.ErrBookingExists
 		}
 
 		_, err = tx.Exec(ctx,
@@ -74,5 +72,35 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 		}
 
 		return nil
+	})
+}
+
+func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
+	rows, err := db.pool.Query(ctx,
+		`select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status 
+		from booking_events
+		where (event_start >= $1 and event_start <= $2)
+		or event_end >= $1 and event_end <= $2
+		order by event_start, event_end, event_name`,
+		from, to, `YYYY-MM-DD"T"HH:mm:ss"Z"`)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.ListEvent, error) {
+		var (
+			event   rest.ListEvent
+			visible bool
+		)
+
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &visible, &event.Status); err != nil {
+			return event, err
+		}
+
+		if !visible {
+			event.Name = "Private Event"
+		}
+
+		return event, nil
 	})
 }

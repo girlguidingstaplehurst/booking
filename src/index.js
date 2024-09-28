@@ -17,7 +17,11 @@ import NoMatch from "./NoMatch";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />}>
-      <Route index element={<ShowCalendar />} />
+      <Route
+        index
+        element={<ShowCalendar />}
+        loader={async () => await fetch("/api/v1/events")}
+      />
       <Route path="add-event" element={<AddEvent />} />
       <Route path="*" element={<NoMatch />} />
     </Route>,

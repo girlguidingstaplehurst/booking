@@ -1,14 +1,19 @@
 import { Heading, Link, Stack } from "@chakra-ui/react";
 import { Calendar, dayjsLocalizer } from "react-big-calendar";
 import dayjs from "dayjs";
-import { useState } from "react";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const localizer = dayjsLocalizer(dayjs);
 
 function ShowCalendar() {
-  const [events] = useState([]);
+  const eventsList = useLoaderData();
+  const events = eventsList.events.map((event) => ({
+    title: event.name,
+    start: dayjs(event.from).toDate(),
+    end: dayjs(event.to).toDate() ,
+    allDay: false,
+  }));
 
   return (
     <Stack spacing={4}>
@@ -19,7 +24,7 @@ function ShowCalendar() {
       <Calendar
         localizer={localizer}
         defaultDate={new Date()}
-        defaultView="week"
+        defaultView="month"
         events={events}
         style={{ height: "100vh" }}
       />

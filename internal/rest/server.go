@@ -3,8 +3,10 @@ package rest
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/girlguidingstaplehurst/booking/internal/postgres"
+	"github.com/girlguidingstaplehurst/booking/internal/consts"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 //go:generate go run go.uber.org/mock/mockgen -source server.go -destination mock/server.go
@@ -13,6 +15,7 @@ var _ StrictServerInterface = (*Server)(nil)
 
 type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
+	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 }
 
 type Server struct {
@@ -30,7 +33,7 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 
 	err := s.db.AddEvent(ctx, req.Body)
 	if err != nil {
-		if errors.Is(err, postgres.ErrBookingExists) {
+		if errors.Is(err, consts.ErrBookingExists) {
 			return AddEvent409JSONResponse{
 				ErrorMessage: err.Error(),
 			}, nil
@@ -41,4 +44,34 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 	}
 
 	return AddEvent200Response{}, nil
+}
+
+func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
+
+	if request.Params.From == nil && request.Params.To == nil {
+		// Get start and end date of this month
+		now := time.Now()
+		y, m, _ := now.Date()
+		loc := now.Location()
+
+		request.Params.From = &openapi_types.Date{
+			Time: time.Date(y, m, 1, 0, 0, 0, 0, loc),
+		}
+		request.Params.To = &openapi_types.Date{
+			Time: request.Params.From.Time.AddDate(0, 1, -1),
+		}
+	}
+
+	//TODO validate
+
+	events, err := s.db.ListEvents(ctx, request.Params.From.Time, request.Params.To.Time)
+	if err != nil {
+		return GetApiV1Events500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return GetApiV1Events200JSONResponse{
+		Events: events,
+	}, nil
 }

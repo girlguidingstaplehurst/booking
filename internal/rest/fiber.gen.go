@@ -15,6 +15,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gofiber/fiber/v2"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
@@ -22,6 +23,9 @@ type ServerInterface interface {
 	// Add an event
 	// (POST /api/v1/add-event)
 	AddEvent(c *fiber.Ctx) error
+
+	// (GET /api/v1/events)
+	GetApiV1Events(c *fiber.Ctx, params GetApiV1EventsParams) error
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -35,6 +39,37 @@ type MiddlewareFunc fiber.Handler
 func (siw *ServerInterfaceWrapper) AddEvent(c *fiber.Ctx) error {
 
 	return siw.Handler.AddEvent(c)
+}
+
+// GetApiV1Events operation middleware
+func (siw *ServerInterfaceWrapper) GetApiV1Events(c *fiber.Ctx) error {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetApiV1EventsParams
+
+	var query url.Values
+	query, err = url.ParseQuery(string(c.Request().URI().QueryString()))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for query string: %w", err).Error())
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "from", query, &params.From)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter from: %w", err).Error())
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "to", query, &params.To)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter to: %w", err).Error())
+	}
+
+	return siw.Handler.GetApiV1Events(c, params)
 }
 
 // FiberServerOptions provides options for the Fiber server.
@@ -59,6 +94,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	}
 
 	router.Post(options.BaseURL+"/api/v1/add-event", wrapper.AddEvent)
+
+	router.Get(options.BaseURL+"/api/v1/events", wrapper.GetApiV1Events)
 
 }
 
@@ -105,11 +142,49 @@ func (response AddEvent500JSONResponse) VisitAddEventResponse(ctx *fiber.Ctx) er
 	return ctx.JSON(&response)
 }
 
+type GetApiV1EventsRequestObject struct {
+	Params GetApiV1EventsParams
+}
+
+type GetApiV1EventsResponseObject interface {
+	VisitGetApiV1EventsResponse(ctx *fiber.Ctx) error
+}
+
+type GetApiV1Events200JSONResponse EventList
+
+func (response GetApiV1Events200JSONResponse) VisitGetApiV1EventsResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type GetApiV1Events400JSONResponse ErrorResponse
+
+func (response GetApiV1Events400JSONResponse) VisitGetApiV1EventsResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(400)
+
+	return ctx.JSON(&response)
+}
+
+type GetApiV1Events500JSONResponse ErrorResponse
+
+func (response GetApiV1Events500JSONResponse) VisitGetApiV1EventsResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Add an event
 	// (POST /api/v1/add-event)
 	AddEvent(ctx context.Context, request AddEventRequestObject) (AddEventResponseObject, error)
+
+	// (GET /api/v1/events)
+	GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *fiber.Ctx, args interface{}) (interface{}, error)
@@ -156,19 +231,50 @@ func (sh *strictHandler) AddEvent(ctx *fiber.Ctx) error {
 	return nil
 }
 
+// GetApiV1Events operation middleware
+func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsParams) error {
+	var request GetApiV1EventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiV1Events(ctx.UserContext(), request.(GetApiV1EventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiV1Events")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(GetApiV1EventsResponseObject); ok {
+		if err := validResponse.VisitGetApiV1EventsResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xUwU7cMBD9FWvao0kCtIfmtqgrhFQBKm0vVYW88WRj6tiuPdmwQvn3yk4Wym4Oe6i4",
-	"WZ7nN2/ezPgJKts6a9BQgPIJQtVgK9Jx6b31XzE4awLGC+etQ08KUxhj+L7FEMQ6hWnrEEoI5JVZwzBw",
-	"8PinUx4llD/34L/4Dm5XD1gRDByusV9u0NBhqsoaEtVMAFuh9L2Q0mNIF7X1rSAoxwjwfVEcjGiPUJtQ",
-	"fI9/TjTOK669bV/pkYKQVCI9VhIH1620qvT2fqOCWukEkliLThOU5Dt8JltZq1GY+IjskYnnS07KE8tM",
-	"/kMH9ruc7ODPHZt5MHBQprZjLaHyypGyBkr4dvP5BjhoVeE0cKMxcHn9nS3qGr1ll7df2HlWAIfOayih",
-	"IXKhzPO+77O16TLr1/lEEHKxdvrkPCsyNFlDrU7uKIo+woW1v5VZs7ttIGzZ4vYKOGzQh1HLaVZkRcRb",
-	"h0Y4BSVEovNoiqAm9TgXTuWb01xIefIyBjbQYWkLKZlgBnuWgIwsowZZJTQaKTykPF5E9JUc8cvJyegu",
-	"BrqwcrtbhSmVcE6rKj3KH0LMs1vfeHrvsYYS3uUv+51Py50/b1rqxmupy53AFTIhJUr4t8Nx6FLLx18h",
-	"+XBWFIcV33VVhSHUndbbiWfg8KH49N+KeP09zVSyMJYa9JPl+KgCBWYNo0YFFtciKTo7eztFP4RWMjEz",
-	"fKxwvB44fBwdfBsRd7ZFauLs99GX3tvpMwhd2wq/3Y2rGY2LFMPfAAAA//+N/A2LJgYAAA==",
+	"H4sIAAAAAAAC/8xWTW/bRhD9K4tpj4wo2+2hvCmoYAQIkiBuc2gQGCvuSNyU+5HZoRQi0H8vdklKlrRG",
+	"DdQw6otp7nDmzXszb/0Dame8s2g5QPUDQt2gkelxSeToIwbvbMD4wpPzSKwxHWM8vjcYgtykY+49QgWB",
+	"SdsN7PcFEH7rNKGC6vNZ+JdiCnerr1gz7AtYbtHyWx04U2s74dOMJj38TLiGCn4qj/jLEXwZk6RsMe1Y",
+	"RxLJ/hLVkDgH55jkAs6anEm/HRnJUIGSjKwNQnHOQgFaZcgpwEqD2YPAkruha9uZCNKT2+qgnZUtFCB9",
+	"/BvVA9DHj9k9EdcZD1rBCKkYukupDmBy/LzD3SP01M6yrHMyGqnbe6kUYQgnQNNJjr1HaDqDPyI/zZ8D",
+	"jc8g6KPK+W7V6rrt76NaqzYFKVzLrmWomDo8JFs516K0/0WxjFgX9S8ZyI0/FAfFMh/ECbZrN/QSatKe",
+	"tbNQwR/vf38PBbS6xtEfBmLg9t2fYrFeIzlx++GtuJnNoYCOWqigYfahKsvdbjfb2G7maFOOCUIpN759",
+	"dTObz9DOGjZtYkdz5BFeO/e3thtx1wdGIxYf3kABW6QwYLmazWfzGO88Wuk1VBAT3URSJDdJ41J6XW6v",
+	"SqnUq+MYuMFuTltbKCWksLgTKVCwE9ygqGWLVkmCVIdkjH6jhvjlyGRkFwO/dqqfVmEsJb1vdZ0+Kr+G",
+	"WGdy23+zs8OmJTVOoS4ngCsUUilU8FDhOHRJ8sHEEw/X8/llx3ddXWMI665t+zHPvoBf5r89WxOnt0mm",
+	"k4V13CCNlON3HTgIZwU3Ooi4FgnR9fXLIfokW61SZoHfaxxe7wv4dWDwZUDcOYPcxNnfRV525EYzCJ0x",
+	"kvppXO1AXDqaRv14bW4w4Twd21vkhdefrpZDWNwVkgYZKUD1+WLfG0wyxGFzK5Z6rBjE6EE6Rn3rkPrp",
+	"LqkmezpycWJ0OZN7etnkebmiw8315JJf8gvyPPIe/qfJSPtXtEhHwjjCqak098PuveCQfRxcSxwHQEhC",
+	"oe02rsD/Zebjzz8BAAD//zIdexuwCgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

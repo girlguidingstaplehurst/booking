@@ -12,6 +12,7 @@ package mock_rest
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	rest "github.com/girlguidingstaplehurst/booking/internal/rest"
 	gomock "go.uber.org/mock/gomock"
@@ -52,4 +53,19 @@ func (m *MockDatabase) AddEvent(ctx context.Context, event *rest.AddEventJSONReq
 func (mr *MockDatabaseMockRecorder) AddEvent(ctx, event any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvent", reflect.TypeOf((*MockDatabase)(nil).AddEvent), ctx, event)
+}
+
+// ListEvents mocks base method.
+func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListEvents", ctx, from, to)
+	ret0, _ := ret[0].([]rest.ListEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListEvents indicates an expected call of ListEvents.
+func (mr *MockDatabaseMockRecorder) ListEvents(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockDatabase)(nil).ListEvents), ctx, from, to)
 }
