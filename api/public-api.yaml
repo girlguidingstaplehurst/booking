@@ -23,12 +23,33 @@ paths:
       responses:
         '200':
           description: Successfully added
+        '409':
+          description: Another event exists on this date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error_message
+      properties:
+        error_message:
+          type: string
     NewEvent:
       type: object
       required:

@@ -7,6 +7,11 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	ErrorMessage string `json:"error_message"`
+}
+
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
 	Contact struct {

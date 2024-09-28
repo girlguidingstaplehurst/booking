@@ -2,7 +2,9 @@ package rest
 
 import (
 	"context"
-	"log/slog"
+	"errors"
+
+	"github.com/girlguidingstaplehurst/booking/internal/postgres"
 )
 
 //go:generate go run go.uber.org/mock/mockgen -source server.go -destination mock/server.go
@@ -28,8 +30,14 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 
 	err := s.db.AddEvent(ctx, req.Body)
 	if err != nil {
-		slog.Error("failed to add event to db", "error", err)
-		return AddEvent500Response{}, nil //TODO make the error handler report error messages etc
+		if errors.Is(err, postgres.ErrBookingExists) {
+			return AddEvent409JSONResponse{
+				ErrorMessage: err.Error(),
+			}, nil
+		}
+		return AddEvent500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
 	}
 
 	return AddEvent200Response{}, nil
