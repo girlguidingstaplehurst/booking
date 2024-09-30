@@ -63,3 +63,4 @@ jobs:
           containerAppName: booking
           containerAppEnvironment: managedEnvironment-KLC-965e
           resourceGroup: KLC
+            
