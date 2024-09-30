@@ -47,4 +47,4 @@ jobs:
 
       - name: Build container
         run:
-          ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest --base-import-paths    
+          ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest --bare 
