@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Go
+      - name: Setup Go  
         uses: actions/setup-go@v5
         with:
           go-version: "1.21.x"
@@ -47,4 +47,4 @@ jobs:
 
       - name: Build container
         run:
-          ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest
+          ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest --base-import-paths    
