@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/girlguidingstaplehurst/booking/build"
+	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
@@ -30,8 +30,8 @@ func (s *Service) Run(ctx context.Context) error {
 
 	app := fiber.New()
 
-	app.Use("/", filesystem.New(filesystem.Config{Root: http.FS(build.Files)}))
-	app.Use("/add-event", filesystem.New(filesystem.Config{Root: http.FS(build.IndexHTML)}))
+	app.Use("/", filesystem.New(filesystem.Config{Root: http.FS(booking.Files)}))
+	app.Use("/add-event", filesystem.New(filesystem.Config{Root: http.FS(booking.IndexHTML)}))
 
 	swagger, err := rest.GetSwagger()
 	if err != nil {
