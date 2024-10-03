@@ -4,7 +4,7 @@ import "./App.css";
 
 function Layout() {
   return (
-    <Container maxW="2xl">
+    <Container maxW="4xl">
       <Outlet />
     </Container>
   );

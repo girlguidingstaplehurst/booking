@@ -49,7 +49,7 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
 
 	if request.Params.From == nil && request.Params.To == nil {
-		// Get start and end date of this month
+		// Get start date of this month
 		now := time.Now()
 		y, m, _ := now.Date()
 		loc := now.Location()
@@ -57,8 +57,9 @@ func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsReque
 		request.Params.From = &openapi_types.Date{
 			Time: time.Date(y, m, 1, 0, 0, 0, 0, loc),
 		}
+		// Default range is the full 18-month period
 		request.Params.To = &openapi_types.Date{
-			Time: request.Params.From.Time.AddDate(0, 1, -1),
+			Time: request.Params.From.Time.AddDate(0, 18, -1),
 		}
 	}
 

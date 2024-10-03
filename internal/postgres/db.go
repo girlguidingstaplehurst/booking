@@ -82,7 +82,7 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
 		order by event_start, event_end, event_name`,
-		from, to, `YYYY-MM-DD"T"HH:mm:ss"Z"`)
+		from, to, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
 	if err != nil {
 		return nil, err
 	}

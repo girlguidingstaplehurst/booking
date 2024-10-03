@@ -3,17 +3,20 @@ import ContactInfo from "./ContactInfo";
 import EventInfo from "./EventInfo";
 import Summary from "./Summary";
 import { useFormik } from "formik";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import * as Yup from "yup";
 import dayjs from "dayjs";
 
 function transformDate(dateStr) {
-  return dayjs(dateStr).date()
+  return dayjs(dateStr).date();
 }
 
 function AddEvent() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const start = searchParams.get("start");
+  const end = searchParams.get("end");
 
   // const EventSchema = Yup.object().shape({
   //   eventName: Yup.string()
@@ -36,33 +39,35 @@ function AddEvent() {
   const formik = useFormik({
     initialValues: {
       eventName: "",
-      eventDate: "", //TODO pull this from prop?
-      eventTimeFrom: "",
-      eventTimeTo: "",
+      eventDate: dayjs(start).format("YYYY-MM-DD"),
+      eventTimeFrom: dayjs(start).format("HH:mm"),
+      eventTimeTo: dayjs(end).format("HH:mm"),
       visibility: "show",
       name: "",
       telephone: "",
       email: "",
-    },
-    // validationSchema: EventSchema,
+    }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
       setSubmitting(true);
 
-      //TODO make backend API request
+      const date = dayjs(values.eventDate);
+      const from = dayjs(values.eventTimeFrom, "HH:mm").set("year", date.year()).set("month", date.month()).set("day", date.date());
+      const to = dayjs(values.eventTimeTo, "HH:mm").set("year", date.year()).set("month", date.month()).set("day", date.date());
+
       await fetch("/api/v1/add-event", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           event: {
             name: values.eventName,
-            from: `${values.eventDate}T${values.eventTimeFrom}`,
-            to: `${values.eventDate}T${values.eventTimeTo}`,
+            from: from.toISOString(),
+            to: to.toISOString(),
             publicly_visible: values.visibility === "show",
           },
           contact: {
             name: values.name,
-            email_address : values.email,
-          }
+            email_address: values.email,
+          },
         }),
       });
 
