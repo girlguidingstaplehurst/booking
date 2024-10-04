@@ -51,24 +51,11 @@ jobs:
         run:
           ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest --bare --platform=linux/amd64,linux/arm64
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Log in to Azure
-        uses: azure/login@v1
+      - name: Update values.yaml
+        uses: fjogeleit/yaml-update-action@main
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Build and deploy Container App
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          imageToDeploy: ghcr.io/girlguidingstaplehurst/booking:${{needs.build.outputs.version}}
-          containerAppName: booking
-          containerAppEnvironment: managedEnvironment-KLC-965e
-          resourceGroup: KLC
+          valueFile: 'deploy/k8s/prod/kustomization.yaml'
+          propertyPath: 'images[0].newTag'
+          value: "${{steps.semver.outputs.next}}"
+          commitChange: true
+          message: "deploy: Booking ${{steps.semver.outputs.next}} [no ci]"   
