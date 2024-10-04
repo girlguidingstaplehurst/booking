@@ -59,3 +59,4 @@ jobs:
           value: "${{steps.semver.outputs.next}}"
           commitChange: true
           message: "deploy: Booking ${{steps.semver.outputs.next}} [no ci]"
+          branch: main
