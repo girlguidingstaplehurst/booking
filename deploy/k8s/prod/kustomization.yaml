@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: booking
+
+resources:
+  - ../base
+  - resources/ingress.yaml
+  - resources/db-url-externalsecret.yaml
+
+patches:
+  - path: patches/deployment.yaml
+
+images:
+  - name: ghcr.io/girlguidingstaplehurst/booking
+    newTag: v0.3.1

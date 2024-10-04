@@ -30,8 +30,14 @@ func (s *Service) Run(ctx context.Context) error {
 
 	app := fiber.New()
 
-	app.Use("/", filesystem.New(filesystem.Config{Root: http.FS(booking.Files)}))
-	app.Use("/add-event", filesystem.New(filesystem.Config{Root: http.FS(booking.IndexHTML)}))
+	app.Use("/", filesystem.New(filesystem.Config{
+		Root:       http.FS(booking.Files),
+		PathPrefix: "/build",
+	}))
+	app.Use("/add-event", filesystem.New(filesystem.Config{
+		Root:       http.FS(booking.IndexHTML),
+		PathPrefix: "/build",
+	}))
 
 	swagger, err := rest.GetSwagger()
 	if err != nil {
