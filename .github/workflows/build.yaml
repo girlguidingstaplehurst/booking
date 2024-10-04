@@ -58,4 +58,4 @@ jobs:
           propertyPath: 'images[0].newTag'
           value: "${{steps.semver.outputs.next}}"
           commitChange: true
-          message: "deploy: Booking ${{steps.semver.outputs.next}} [no ci]"   
+          message: "deploy: Booking ${{steps.semver.outputs.next}} [no ci]"
