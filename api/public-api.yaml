@@ -7,9 +7,16 @@ info:
     name: GNU Affero GPL 3.0
     url: https://www.gnu.org/licenses/agpl-3.0.en.html
   version: 1.0.0
+tags:
+  - name: public
+    description: Public REST APIs
+  - name: admin
+    description: Private Administration REST APIs
 paths:
   /api/v1/add-event:
     post:
+      tags:
+        - public
       summary: Add an event
       description: Add a new event to the calendar
       operationId: addEvent
@@ -43,6 +50,45 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /api/v1/events:
     get:
+      tags:
+        - public
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          description: The date to obtain events from
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          description: The date to obtain events to
+      responses:
+        '200':
+          description: "Zero or more events exist"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventList'
+        '400':
+          description: Request parameters are invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/events:
+    get:
+      tags:
+        - admin
       parameters:
         - in: query
           name: from

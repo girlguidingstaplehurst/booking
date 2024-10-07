@@ -11,13 +11,14 @@ function useAuth() {
     token,
     login(token) {
       return new Promise((res) => {
-        setToken(token);
+        const cred = token.credential.replace(/["']/g, "")  ;
+        setToken(cred);
         res();
       });
     },
     logout() {
       return new Promise((res) => {
-        setToken(null)
+        setToken(null);
         res();
       });
     },

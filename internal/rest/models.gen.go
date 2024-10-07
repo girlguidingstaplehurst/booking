@@ -49,6 +49,15 @@ type NewEvent struct {
 	} `json:"event"`
 }
 
+// GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
+type GetApiV1AdminEventsParams struct {
+	// From The date to obtain events from
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To The date to obtain events to
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+}
+
 // GetApiV1EventsParams defines parameters for GetApiV1Events.
 type GetApiV1EventsParams struct {
 	// From The date to obtain events from

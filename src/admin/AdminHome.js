@@ -1,19 +1,14 @@
-import {
-  Heading,
-  Link,
-  Stack,
-  Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react";
+import { Link, Stack, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 
 export async function populateAdminHome() {
-  return await fetch("/api/v1/events");
+  const token = JSON.parse(sessionStorage.getItem("token")) ;
+  return await fetch("/api/v1/admin/events", {
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  });
 }
 
 export function AdminHome() {
@@ -34,7 +29,7 @@ export function AdminHome() {
 
   return (
     <Stack spacing={4}>
-        <Table variant="striped">
+      <Table variant="striped">
         <Thead>
           <Tr>
             <Th>Name</Th>
@@ -56,7 +51,7 @@ export function AdminHome() {
                   Review
                 </Link>
               </Td>
-          </Tr>
+            </Tr>
           ))}
         </Tbody>
       </Table>

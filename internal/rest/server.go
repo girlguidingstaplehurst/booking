@@ -47,7 +47,6 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 }
 
 func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
-
 	if request.Params.From == nil && request.Params.To == nil {
 		// Get start date of this month
 		now := time.Now()
@@ -74,5 +73,17 @@ func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsReque
 
 	return GetApiV1Events200JSONResponse{
 		Events: events,
+	}, nil
+}
+
+func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminEventsRequestObject) (GetApiV1AdminEventsResponseObject, error) {
+	return GetApiV1AdminEvents200JSONResponse{
+		Events: []ListEvent{{
+			Id:     "aaabbbccc111222333",
+			Name:   "Test event",
+			Status: "proposed",
+			From:   "2024-10-10T09:00:00Z",
+			To:     "2024-10-10T10:00:00Z",
+		}},
 	}, nil
 }
