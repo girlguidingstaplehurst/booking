@@ -1,8 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
-import ShowCalendar from "./ShowCalendar";
-import reportWebVitals from "./reportWebVitals";
 import { ChakraProvider } from "@chakra-ui/react";
 import {
   createBrowserRouter,
@@ -10,9 +7,19 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
+import reportWebVitals from "./reportWebVitals";
 import Layout from "./Layout";
+import ShowCalendar from "./ShowCalendar";
 import AddEvent from "./AddEvent";
 import NoMatch from "./NoMatch";
+import Login from "./admin/Login";
+
+import "./index.css";
+import AdminLayout from "./admin/AdminLayout";
+import { AuthProvider } from "./admin/useAuth";
+import { AdminHome, populateAdminHome } from "./admin/AdminHome";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -23,6 +30,12 @@ const router = createBrowserRouter(
         loader={async () => await fetch("/api/v1/events")}
       />
       <Route path="add-event" element={<AddEvent />} />
+
+      <Route path="admin" element={<AdminLayout />} >
+        <Route path="" element={<AdminHome />} loader={populateAdminHome} />
+      </Route>
+      <Route path="admin/login" element={<Login />} />
+
       <Route path="*" element={<NoMatch />} />
     </Route>,
   ),
@@ -31,9 +44,13 @@ const router = createBrowserRouter(
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <ChakraProvider>
-      <RouterProvider router={router} />
-    </ChakraProvider>
+    <GoogleOAuthProvider clientId="362406102359-frmsjn6et0551pciju1li4mep62thmse.apps.googleusercontent.com">
+      <ChakraProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </ChakraProvider>
+    </GoogleOAuthProvider>
   </React.StrictMode>,
 );
 

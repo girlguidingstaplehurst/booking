@@ -14,8 +14,7 @@ import {
 function EventInfo({ formik }) {
   return (
     <>
-      <Heading>Event</Heading>
-
+      <Heading>Add Event</Heading>
       <Flex>
         <FormLabel htmlFor="eventName">Event Name</FormLabel>
         <Spacer />
