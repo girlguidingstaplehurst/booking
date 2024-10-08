@@ -7,16 +7,41 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+const (
+	Admin_authScopes = "admin_auth.Scopes"
+)
+
+// Defines values for EventStatus.
+const (
+	EventStatusApproved    EventStatus = "approved"
+	EventStatusProvisional EventStatus = "provisional"
+)
+
 // Defines values for ListEventStatus.
 const (
-	Approved    ListEventStatus = "approved"
-	Provisional ListEventStatus = "provisional"
+	ListEventStatusApproved    ListEventStatus = "approved"
+	ListEventStatusProvisional ListEventStatus = "provisional"
 )
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 }
+
+// Event defines model for Event.
+type Event struct {
+	Contact string              `json:"contact"`
+	Email   openapi_types.Email `json:"email"`
+	From    string              `json:"from"`
+	Id      string              `json:"id"`
+	Name    string              `json:"name"`
+	Status  EventStatus         `json:"status"`
+	To      string              `json:"to"`
+	Visible bool                `json:"visible"`
+}
+
+// EventStatus defines model for Event.Status.
+type EventStatus string
 
 // EventList defines model for EventList.
 type EventList struct {

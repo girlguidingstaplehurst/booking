@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/girlguidingstaplehurst/booking/internal/consts"
+	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -85,5 +86,18 @@ func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminE
 			From:   "2024-10-10T09:00:00Z",
 			To:     "2024-10-10T10:00:00Z",
 		}},
+	}, nil
+}
+
+func (s *Server) GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error) {
+	return GetApiV1AdminEventsEventID200JSONResponse{
+		Id:      uuid.New().String(),
+		Name:    "Test event",
+		Contact: "Evan T Booking",
+		Email:   "evan.t.booking@example.org",
+		From:    "2024-10-10T09:00:00Z",
+		To:      "2024-10-10T10:00:00Z",
+		Status:  "proposed",
+		Visible: false,
 	}, nil
 }

@@ -27,6 +27,9 @@ type ServerInterface interface {
 	// (GET /api/v1/admin/events)
 	GetApiV1AdminEvents(c *fiber.Ctx, params GetApiV1AdminEventsParams) error
 
+	// (GET /api/v1/admin/events/{eventID})
+	GetApiV1AdminEventsEventID(c *fiber.Ctx, eventID string) error
+
 	// (GET /api/v1/events)
 	GetApiV1Events(c *fiber.Ctx, params GetApiV1EventsParams) error
 }
@@ -48,6 +51,8 @@ func (siw *ServerInterfaceWrapper) AddEvent(c *fiber.Ctx) error {
 func (siw *ServerInterfaceWrapper) GetApiV1AdminEvents(c *fiber.Ctx) error {
 
 	var err error
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetApiV1AdminEventsParams
@@ -73,6 +78,24 @@ func (siw *ServerInterfaceWrapper) GetApiV1AdminEvents(c *fiber.Ctx) error {
 	}
 
 	return siw.Handler.GetApiV1AdminEvents(c, params)
+}
+
+// GetApiV1AdminEventsEventID operation middleware
+func (siw *ServerInterfaceWrapper) GetApiV1AdminEventsEventID(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "eventID" -------------
+	var eventID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventID", c.Params("eventID"), &eventID, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventID: %w", err).Error())
+	}
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
+
+	return siw.Handler.GetApiV1AdminEventsEventID(c, eventID)
 }
 
 // GetApiV1Events operation middleware
@@ -130,6 +153,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	router.Post(options.BaseURL+"/api/v1/add-event", wrapper.AddEvent)
 
 	router.Get(options.BaseURL+"/api/v1/admin/events", wrapper.GetApiV1AdminEvents)
+
+	router.Get(options.BaseURL+"/api/v1/admin/events/:eventID", wrapper.GetApiV1AdminEventsEventID)
 
 	router.Get(options.BaseURL+"/api/v1/events", wrapper.GetApiV1Events)
 
@@ -213,6 +238,41 @@ func (response GetApiV1AdminEvents500JSONResponse) VisitGetApiV1AdminEventsRespo
 	return ctx.JSON(&response)
 }
 
+type GetApiV1AdminEventsEventIDRequestObject struct {
+	EventID string `json:"eventID,omitempty"`
+}
+
+type GetApiV1AdminEventsEventIDResponseObject interface {
+	VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error
+}
+
+type GetApiV1AdminEventsEventID200JSONResponse Event
+
+func (response GetApiV1AdminEventsEventID200JSONResponse) VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type GetApiV1AdminEventsEventID404JSONResponse ErrorResponse
+
+func (response GetApiV1AdminEventsEventID404JSONResponse) VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type GetApiV1AdminEventsEventID500JSONResponse ErrorResponse
+
+func (response GetApiV1AdminEventsEventID500JSONResponse) VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 type GetApiV1EventsRequestObject struct {
 	Params GetApiV1EventsParams
 }
@@ -256,6 +316,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/admin/events)
 	GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminEventsRequestObject) (GetApiV1AdminEventsResponseObject, error)
+
+	// (GET /api/v1/admin/events/{eventID})
+	GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error)
 
 	// (GET /api/v1/events)
 	GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error)
@@ -332,6 +395,33 @@ func (sh *strictHandler) GetApiV1AdminEvents(ctx *fiber.Ctx, params GetApiV1Admi
 	return nil
 }
 
+// GetApiV1AdminEventsEventID operation middleware
+func (sh *strictHandler) GetApiV1AdminEventsEventID(ctx *fiber.Ctx, eventID string) error {
+	var request GetApiV1AdminEventsEventIDRequestObject
+
+	request.EventID = eventID
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiV1AdminEventsEventID(ctx.UserContext(), request.(GetApiV1AdminEventsEventIDRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiV1AdminEventsEventID")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(GetApiV1AdminEventsEventIDResponseObject); ok {
+		if err := validResponse.VisitGetApiV1AdminEventsEventIDResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // GetApiV1Events operation middleware
 func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsParams) error {
 	var request GetApiV1EventsRequestObject
@@ -362,21 +452,24 @@ func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsPar
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/+xW32/bNhD+Vwhuj6rlJt3D9OYiXpChSIM464AVRkCLZ4udRKrkya4R6H8fjpQsO5JR",
+	"dwiMreiTLfF4P7/vOz3x1BSl0aDR8eSJuzSDQvi/U2uNvQdXGu2AXpTWlGBRgT8GOn4swDmx8se4LYEn",
+	"3KFVesXrOuIWPlfKguTJx2fm86g1N4tPkCKvIz5dg8Z+nNRoFCkORIg4FELldLI0thDIk+ZN1DddWlMc",
+	"WEqBgKqAIWMlB8NpUcDggUOBVeiKrgoqt7RmrZwyWlA2oqRnkHt1d5fRnJwXuVzk+zksjMlB6F67leRN",
+	"vk3pPs4u085VtGtw286js3mn3MB8YN1iRyEU/s/PFpY84T/FHbbiBlgxOQmTrndxhLVi20dMcDyUTuek",
+	"l853MOdvG+VQf25h83U2PRsjzf5RSGnBudModaRNz9JvMj/0P5Q0vMBAj06urBa5SvPt4x6FJCxFlSNP",
+	"0FYQ9Rj17yc2MKxe/H4HhuC/R8/BCw7SyirczohdoV9CFko/igozelqAsGB/a0v4/c8HQo63plr9aVdP",
+	"hljymhwrvTShRy61qkRlNE/4w/ur9zziuUqh2Qmh4fz69g82WS7BGnZ9945djsY84pXNG58uiePNZjNa",
+	"6Wpk7CpuHLhYrMr81eVoPAI9yrDIfdcV0nz4W2P+VnrFZluHULDJ3Q3JFlgXcnk9Go/GZG9K0KJUPOHk",
+	"6JKaLTDzvYhFqeL161hI+aqDlwkydljaREommIYN84YMDcMMWCpy0FJQjwiUgqxvZLCfNhOiqYHDt0Zu",
+	"W4o1oURZ5ir1l+JPjuK0G/ZrMrljsJ/GYarTNsEFMCElSL6PHAKzh1JY3L4PF+Nxv+JZlabg3LLK823j",
+	"p474m/GvL1bE4RfEQCUTbTAD27QcviiHjhnNMFOOEd18RhcX58vog8iV9J4ZfEkhvK4j/kvo4HmSmJkC",
+	"MCPsb6gvG2sakXFVUQi7beGqWSsSKFbOryMvM3xOxh34C6Xjbk2vwOd/COdrwEmpPryekPE02BKRrCgA",
+	"wZLznhhk4GdESDQLFKpJx7FG+BRZfa7AbtsFlrSa2DXqQF2HlPX0sF5oh4KGdXlyyPkwe15m9rsPqYG5",
+	"/0X6aSwrjIW2KE+KQMwzIvA+SBrrAMCEBab0mvjxHyJEs/88PPc338c5jbGlhT85zor4yf/eXNXfwo9p",
+	"uHMKTW6umFn6fbJbLhbQKlhDC1naWR1iYee76+DZYXp89wSlDqh8cz4Y3JrDTbFRmDHMBLKbq+8Bkydq",
+	"9A95/iHP/w957n+WdC+fA+fO27D76eyBvvVdh4/mdh9rd1atCWpelJXDwJUhF4Fs9bz+JwAA//9hTF3i",
+	"8BIAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

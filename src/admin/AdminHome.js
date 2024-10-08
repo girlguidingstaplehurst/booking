@@ -1,9 +1,19 @@
-import { Link, Stack, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import {
+  Badge,
+  Link,
+  Stack,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 
 export async function populateAdminHome() {
-  const token = JSON.parse(sessionStorage.getItem("token")) ;
+  const token = JSON.parse(sessionStorage.getItem("token"));
   return await fetch("/api/v1/admin/events", {
     headers: {
       Authorization: "Bearer " + token,
@@ -45,7 +55,9 @@ export function AdminHome() {
               <Td>{event.name}</Td>
               <Td>{dayjs(event.from).format("YYYY-MM-DD HH:mm:ss")}</Td>
               <Td>{dayjs(event.to).format("YYYY-MM-DD HH:mm:ss")}</Td>
-              <Td>{event.status}</Td>
+              <Td>
+                <Badge>{event.status}</Badge>
+              </Td>
               <Td>
                 <Link as={ReactRouterLink} to={"/admin/review/" + event.id}>
                   Review

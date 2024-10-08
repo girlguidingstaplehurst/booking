@@ -20,6 +20,7 @@ import "./index.css";
 import AdminLayout from "./admin/AdminLayout";
 import { AuthProvider } from "./admin/useAuth";
 import { AdminHome, populateAdminHome } from "./admin/AdminHome";
+import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
 
       <Route path="admin" element={<AdminLayout />} >
         <Route path="" element={<AdminHome />} loader={populateAdminHome} />
+        <Route path="review/:eventID" element={<ReviewEvent />} loader={({params}) => reviewEvent(<p>         </p>arams.eventID)} />
       </Route>
       <Route path="admin/login" element={<Login />} />
 

@@ -87,6 +87,8 @@ paths:
 
   /api/v1/admin/events:
     get:
+      security:
+        - admin_auth: []
       tags:
         - admin
       parameters:
@@ -111,6 +113,38 @@ paths:
                 $ref: '#/components/schemas/EventList'
         '400':
           description: Request parameters are invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/events/{eventID}:
+    get:
+      security:
+        - admin_auth: []
+      tags:
+        - admin
+      parameters:
+        - in: path
+          name: eventID
+          schema:
+            type: string
+          description: The ID of the event to retrieve
+      responses:
+        '200':
+          description: "Event exists"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          description: "No event exists with that ID"
           content:
             application/json:
               schema:
@@ -199,13 +233,40 @@ components:
         status:
           type: string
           enum: [provisional, approved]
-# TODO reenable this and ensure it reflects us using Google SSO
-#  securitySchemes:
-#    admin_auth:
-#      type: oauth2
-#      flows:
-#        implicit:
-#          authorizationUrl: https://petstore3.swagger.io/oauth/authorize
-#          scopes:
-#            write:pets: modify pets in your account
-#            read:pets: read your pets
+    Event:
+      type: object
+      required:
+        - id
+        - name
+        - from
+        - to
+        - status
+        - visible
+        - contact
+        - email
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
+        status:
+          type: string
+          enum: [ provisional, approved ]
+        visible:
+          type: boolean
+        contact:
+          type: string
+        email:
+          type: string
+          format: email
+  securitySchemes:
+    admin_auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
