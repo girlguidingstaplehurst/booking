@@ -1,6 +1,11 @@
 export async function Fetcher(url, dummyData, headers = {}) {
   try {
     const response = await fetch(url, {headers: headers});
+    if (response.status === 401) {
+      sessionStorage.removeItem("token");
+      window.location.reload();
+      return;
+    }
     if (!response.ok || response.status !== 200 || response.headers.get('content-type') !== 'application/json') {
       return dummyData;
     }

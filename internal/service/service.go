@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
@@ -44,7 +45,10 @@ func (s *Service) Run(ctx context.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	app.Use(fibermiddleware.OapiRequestValidator(swagger))
+
+	app.Use(fibermiddleware.OapiRequestValidatorWithOptions(swagger, &fibermiddleware.Options{
+		Options: openapi3filter.Options{AuthenticationFunc: openapi3filter.NoopAuthenticationFunc},
+	}))
 
 	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org") //TODO externalize
 	app.Use("/api/v1/admin", jwtAuth.Validate)

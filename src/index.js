@@ -34,7 +34,7 @@ const router = createBrowserRouter(
 
       <Route path="admin" element={<AdminLayout />} >
         <Route path="" element={<AdminHome />} loader={populateAdminHome} />
-        <Route path="review/:eventID" element={<ReviewEvent />} loader={({params}) => reviewEvent(<p>         </p>arams.eventID)} />
+        <Route path="review/:eventID" element={<ReviewEvent />} loader={({params}) => reviewEvent(params.eventID)} />
       </Route>
       <Route path="admin/login" element={<Login />} />
 
