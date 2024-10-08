@@ -14,3 +14,5 @@ spec:
                 secretKeyRef:
                   key: url
                   name: db-url
+            - name: GOOGLE_CLIENT_ID
+              value: 362406102359-frmsjn6et0551pciju1li4mep62thmse.apps.googleusercontent.com 
