@@ -21,6 +21,7 @@ import AdminLayout from "./admin/AdminLayout";
 import { AuthProvider } from "./admin/useAuth";
 import { Dashboard, populateDashboard } from "./admin/Dashboard";
 import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
+import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -35,12 +36,24 @@ const router = createBrowserRouter(
         <Route path="*" element={<NoMatch />} />
       </Route>
 
-      <Route path="admin" element={<AdminLayout />} >
+      <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
-        <Route path="review/:eventID" element={<ReviewEvent />} loader={({params}) => reviewEvent(params.eventID)} />
+        <Route
+          path="review/:eventID"
+          element={<ReviewEvent />}
+          loader={({ params }) => reviewEvent(params.eventID)}
+        />
+        <Route
+          path="create-invoice"
+          element={<CreateInvoice />}
+          loader={({ request }) => {
+            const url = new URL(request.url);
+            const events = url.searchParams.get("events");
+            return createInvoice(events);
+          }}
+        />
       </Route>
       <Route path="admin/login" element={<Login />} />
-
     </Route>,
   ),
 );

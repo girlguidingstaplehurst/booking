@@ -1,5 +1,5 @@
 import {
-  Badge,
+  Badge, Box,
   Button,
   ButtonGroup,
   Checkbox,
@@ -14,11 +14,12 @@ import {
   Text,
   Th,
   Thead,
-  Tr,
+  Tr
 } from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
+import { useState } from "react";
 
 export async function populateDashboard() {
   return await AdminFetcher("/api/v1/admin/events", {
@@ -48,6 +49,16 @@ export async function populateDashboard() {
 export function Dashboard() {
   const eventsList = useLoaderData();
 
+  const [selectedRows, setSelectedRows] = useState([]);
+  const handleRowSelection = (event) => {
+    const selectedRow = event.target.value;
+    if (event.target.checked) {
+      setSelectedRows([...selectedRows, selectedRow]);
+    } else {
+      setSelectedRows(selectedRows.filter((row) => row !== selectedRow));
+    }
+  };
+
   const statusColor = (status) => {
     switch (status) {
       case "provisional":
@@ -62,9 +73,12 @@ export function Dashboard() {
       <Flex>
         <Text>Filters will (eventually) go here</Text>
         <Spacer />
-        <ButtonGroup>
-          <Button colorScheme="blue">Invoice Selected</Button>
-        </ButtonGroup>
+        <Box>
+          <ReactRouterLink to={`/admin/create-invoice?events=${selectedRows}`}
+                           className="chakra-button">
+            Invoice Selected
+          </ReactRouterLink>
+        </Box>
       </Flex>
       <TableContainer>
         <Table variant="striped">
@@ -82,7 +96,11 @@ export function Dashboard() {
             {eventsList.events.map((event) => (
               <Tr>
                 <Td>
-                  <Checkbox />
+                  <Checkbox
+                    value={event.id}
+                    checked={selectedRows.includes(event.id)}
+                    onChange={handleRowSelection}
+                  />
                 </Td>
                 <Td>
                   {event.name}{" "}
