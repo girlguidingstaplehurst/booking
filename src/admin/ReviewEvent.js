@@ -1,11 +1,14 @@
 import {
-  Badge,
   Box,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
   Button,
   ButtonGroup,
   Card,
   CardBody,
   CardHeader,
+  Container,
   Flex,
   Heading,
   Select,
@@ -14,7 +17,7 @@ import {
   StackDivider,
   Text,
 } from "@chakra-ui/react";
-import { useLoaderData } from "react-router-dom";
+import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 
@@ -50,53 +53,71 @@ export function ReviewEvent() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <Heading size="m">{event.name}</Heading>
-      </CardHeader>
-      <CardBody>
-        <Stack divider={<StackDivider />} spacing="4">
-          <Box>{eventDates}</Box>
-          <Box>
-            {event.contact} [{event.email}]
-          </Box>
-          {visibility}
-          <Flex gap={2}>
-            <Select>
-              <option value="external" selected>
-                External Hirer
-              </option>
-              <option value="regular-external">Regular External Hirer</option>
-              <option value="girlguiding">Girlguiding Hirer</option>
-              <option value="girlguiding-residential">Girlguiding Residential</option>
-              <option value="district-event">
-                Girlguiding Staplehurst District Event
-              </option>
-              <option value="unit-meeting">Unit Meeting</option>
-              <option value="unit-meeting-rainbows">
-                Unit Meeting (Rainbows)
-              </option>
-              <option value="unit-meeting-trefoil">
-                Unit Meeting (Trefoil)
-              </option>
-            </Select>
-            {/*TODO enable this button if the select value has changed */}
-            <Button colorScheme="blue" isDisabled={true}>
-              Update
-            </Button>
-          </Flex>
-          <Flex>
-            <Badge>{event.status}</Badge>
-            {/*TODO use state machine to work out what the next stage(s) are for this event and display action buttons*/}
-            <Spacer />
-            <ButtonGroup>
-              <Button colorScheme="blue">Send Invoice</Button>
-              <Button colorScheme="blue">Mark Paid</Button>
-              <Button colorScheme="blue">Approve</Button>
-            </ButtonGroup>
-          </Flex>
-        </Stack>
-      </CardBody>
-    </Card>
+    <Container maxW="4xl">
+      <Stack spacing={4}>
+        <Breadcrumb>
+          <BreadcrumbItem>
+            <BreadcrumbLink as={ReactRouterLink} to="/admin">
+              Dashboard
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <BreadcrumbLink>Review "{event.name}"</BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumb>
+        <Card>
+          <CardHeader>
+            <Heading size="m">{event.name}</Heading>
+          </CardHeader>
+          <CardBody>
+            <Stack divider={<StackDivider />} spacing="4">
+              <Box>{eventDates}</Box>
+              <Box>
+                {event.contact} [{event.email}]
+              </Box>
+              {visibility}
+              <Flex gap={2}>
+                <Select>
+                  <option value="external" selected>
+                    External Hirer
+                  </option>
+                  <option value="regular-external">
+                    Regular External Hirer
+                  </option>
+                  <option value="girlguiding">Girlguiding Hirer</option>
+                  <option value="girlguiding-residential">
+                    Girlguiding Residential
+                  </option>
+                  <option value="district-event">
+                    Girlguiding Staplehurst District Event
+                  </option>
+                  <option value="unit-meeting">Unit Meeting</option>
+                  <option value="unit-meeting-rainbows">
+                    Unit Meeting (Rainbows)
+                  </option>
+                  <option value="unit-meeting-trefoil">
+                    Unit Meeting (Trefoil)
+                  </option>
+                </Select>
+                {/*TODO enable this button if the select value has changed */}
+                <Button colorScheme="blue" isDisabled={true}>
+                  Update
+                </Button>
+              </Flex>
+              <Flex>
+                <Text>{event.status}  </Text>
+                {/*TODO use state machine to work out what the next stage(s) are for this event and display action buttons*/}
+                <Spacer />
+                <ButtonGroup>
+                  <Button colorScheme="blue">Send Invoice</Button>
+                  <Button colorScheme="blue">Mark Paid</Button>
+                  <Button colorScheme="blue">Approve</Button>
+                </ButtonGroup>
+              </Flex>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Stack>
+    </Container>
   );
 }

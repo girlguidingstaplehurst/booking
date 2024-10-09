@@ -19,26 +19,28 @@ import Login from "./admin/Login";
 import "./index.css";
 import AdminLayout from "./admin/AdminLayout";
 import { AuthProvider } from "./admin/useAuth";
-import { AdminHome, populateAdminHome } from "./admin/AdminHome";
+import { Dashboard, populateDashboard } from "./admin/Dashboard";
 import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<Layout />}>
-      <Route
-        index
-        element={<ShowCalendar />}
-        loader={async () => await fetch("/api/v1/events")}
-      />
-      <Route path="add-event" element={<AddEvent />} />
+    <Route>
+      <Route element={<Layout />}>
+        <Route
+          index
+          element={<ShowCalendar />}
+          loader={async () => await fetch("/api/v1/events")}
+        />
+        <Route path="add-event" element={<AddEvent />} />
+        <Route path="*" element={<NoMatch />} />
+      </Route>
 
       <Route path="admin" element={<AdminLayout />} >
-        <Route path="" element={<AdminHome />} loader={populateAdminHome} />
+        <Route index element={<Dashboard />} loader={populateDashboard} />
         <Route path="review/:eventID" element={<ReviewEvent />} loader={({params}) => reviewEvent(params.eventID)} />
       </Route>
       <Route path="admin/login" element={<Login />} />
 
-      <Route path="*" element={<NoMatch />} />
     </Route>,
   ),
 );
