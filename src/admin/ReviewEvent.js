@@ -105,7 +105,7 @@ export function ReviewEvent() {
                 </Button>
               </Flex>
               <Flex>
-                <Text>{event.status}  </Text>
+                <Text>{event.status}</Text>
                 {/*TODO use state machine to work out what the next stage(s) are for this event and display action buttons*/}
                 <Spacer />
                 <ButtonGroup>
