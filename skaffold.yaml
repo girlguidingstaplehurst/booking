@@ -31,3 +31,8 @@ portForward:
     resourceName: booking
     port: 80
     localPort: 8080
+  - namespace: booking
+    resourceType: service
+    resourceName: postgres
+    port: 5432
+    localPort: 5432

@@ -5,6 +5,7 @@ resources:
   - ../base
   - resources/ingress.yaml
   - resources/db-url-externalsecret.yaml
+  - resources/smtp-password-externalsecret.yaml
 patches:
   - path: patches/deployment.yaml
 images:

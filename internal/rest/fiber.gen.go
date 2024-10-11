@@ -30,6 +30,9 @@ type ServerInterface interface {
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(c *fiber.Ctx, eventID string) error
 
+	// (POST /api/v1/admin/send-invoice)
+	AdminSendInvoice(c *fiber.Ctx) error
+
 	// (GET /api/v1/events)
 	GetApiV1Events(c *fiber.Ctx, params GetApiV1EventsParams) error
 }
@@ -98,6 +101,14 @@ func (siw *ServerInterfaceWrapper) GetApiV1AdminEventsEventID(c *fiber.Ctx) erro
 	return siw.Handler.GetApiV1AdminEventsEventID(c, eventID)
 }
 
+// AdminSendInvoice operation middleware
+func (siw *ServerInterfaceWrapper) AdminSendInvoice(c *fiber.Ctx) error {
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
+
+	return siw.Handler.AdminSendInvoice(c)
+}
+
 // GetApiV1Events operation middleware
 func (siw *ServerInterfaceWrapper) GetApiV1Events(c *fiber.Ctx) error {
 
@@ -155,6 +166,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	router.Get(options.BaseURL+"/api/v1/admin/events", wrapper.GetApiV1AdminEvents)
 
 	router.Get(options.BaseURL+"/api/v1/admin/events/:eventID", wrapper.GetApiV1AdminEventsEventID)
+
+	router.Post(options.BaseURL+"/api/v1/admin/send-invoice", wrapper.AdminSendInvoice)
 
 	router.Get(options.BaseURL+"/api/v1/events", wrapper.GetApiV1Events)
 
@@ -273,6 +286,40 @@ func (response GetApiV1AdminEventsEventID500JSONResponse) VisitGetApiV1AdminEven
 	return ctx.JSON(&response)
 }
 
+type AdminSendInvoiceRequestObject struct {
+	Body *AdminSendInvoiceJSONRequestBody
+}
+
+type AdminSendInvoiceResponseObject interface {
+	VisitAdminSendInvoiceResponse(ctx *fiber.Ctx) error
+}
+
+type AdminSendInvoice200Response struct {
+}
+
+func (response AdminSendInvoice200Response) VisitAdminSendInvoiceResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminSendInvoice404JSONResponse ErrorResponse
+
+func (response AdminSendInvoice404JSONResponse) VisitAdminSendInvoiceResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminSendInvoice500JSONResponse ErrorResponse
+
+func (response AdminSendInvoice500JSONResponse) VisitAdminSendInvoiceResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 type GetApiV1EventsRequestObject struct {
 	Params GetApiV1EventsParams
 }
@@ -319,6 +366,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error)
+
+	// (POST /api/v1/admin/send-invoice)
+	AdminSendInvoice(ctx context.Context, request AdminSendInvoiceRequestObject) (AdminSendInvoiceResponseObject, error)
 
 	// (GET /api/v1/events)
 	GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error)
@@ -422,6 +472,37 @@ func (sh *strictHandler) GetApiV1AdminEventsEventID(ctx *fiber.Ctx, eventID stri
 	return nil
 }
 
+// AdminSendInvoice operation middleware
+func (sh *strictHandler) AdminSendInvoice(ctx *fiber.Ctx) error {
+	var request AdminSendInvoiceRequestObject
+
+	var body AdminSendInvoiceJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminSendInvoice(ctx.UserContext(), request.(AdminSendInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminSendInvoice")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(AdminSendInvoiceResponseObject); ok {
+		if err := validResponse.VisitAdminSendInvoiceResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // GetApiV1Events operation middleware
 func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsParams) error {
 	var request GetApiV1EventsRequestObject
@@ -452,24 +533,26 @@ func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsPar
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xW32/bNhD+Vwhuj6rlJt3D9OYiXpChSIM464AVRkCLZ4udRKrkya4R6H8fjpQsO5JR",
-	"dwiMreiTLfF4P7/vOz3x1BSl0aDR8eSJuzSDQvi/U2uNvQdXGu2AXpTWlGBRgT8GOn4swDmx8se4LYEn",
-	"3KFVesXrOuIWPlfKguTJx2fm86g1N4tPkCKvIz5dg8Z+nNRoFCkORIg4FELldLI0thDIk+ZN1DddWlMc",
-	"WEqBgKqAIWMlB8NpUcDggUOBVeiKrgoqt7RmrZwyWlA2oqRnkHt1d5fRnJwXuVzk+zksjMlB6F67leRN",
-	"vk3pPs4u085VtGtw286js3mn3MB8YN1iRyEU/s/PFpY84T/FHbbiBlgxOQmTrndxhLVi20dMcDyUTuek",
-	"l853MOdvG+VQf25h83U2PRsjzf5RSGnBudModaRNz9JvMj/0P5Q0vMBAj06urBa5SvPt4x6FJCxFlSNP",
-	"0FYQ9Rj17yc2MKxe/H4HhuC/R8/BCw7SyirczohdoV9CFko/igozelqAsGB/a0v4/c8HQo63plr9aVdP",
-	"hljymhwrvTShRy61qkRlNE/4w/ur9zziuUqh2Qmh4fz69g82WS7BGnZ9945djsY84pXNG58uiePNZjNa",
-	"6Wpk7CpuHLhYrMr81eVoPAI9yrDIfdcV0nz4W2P+VnrFZluHULDJ3Q3JFlgXcnk9Go/GZG9K0KJUPOHk",
-	"6JKaLTDzvYhFqeL161hI+aqDlwkydljaREommIYN84YMDcMMWCpy0FJQjwiUgqxvZLCfNhOiqYHDt0Zu",
-	"W4o1oURZ5ir1l+JPjuK0G/ZrMrljsJ/GYarTNsEFMCElSL6PHAKzh1JY3L4PF+Nxv+JZlabg3LLK823j",
-	"p474m/GvL1bE4RfEQCUTbTAD27QcviiHjhnNMFOOEd18RhcX58vog8iV9J4ZfEkhvK4j/kvo4HmSmJkC",
-	"MCPsb6gvG2sakXFVUQi7beGqWSsSKFbOryMvM3xOxh34C6Xjbk2vwOd/COdrwEmpPryekPE02BKRrCgA",
-	"wZLznhhk4GdESDQLFKpJx7FG+BRZfa7AbtsFlrSa2DXqQF2HlPX0sF5oh4KGdXlyyPkwe15m9rsPqYG5",
-	"/0X6aSwrjIW2KE+KQMwzIvA+SBrrAMCEBab0mvjxHyJEs/88PPc338c5jbGlhT85zor4yf/eXNXfwo9p",
-	"uHMKTW6umFn6fbJbLhbQKlhDC1naWR1iYee76+DZYXp89wSlDqh8cz4Y3JrDTbFRmDHMBLKbq+8Bkydq",
-	"9A95/iHP/w957n+WdC+fA+fO27D76eyBvvVdh4/mdh9rd1atCWpelJXDwJUhF4Fs9bz+JwAA//9hTF3i",
-	"8BIAAA==",
+	"H4sIAAAAAAAC/+xX0W/bthP+Vwj+fo+q5STdw/zmIl7goUiDOOuAFUFAi2eLnUSq5MmuEfh/H46ULMuS",
+	"F7fIgq3Imy2e7o73fd/d6ZEnJi+MBo2Ojx65S1LIhf85sdbYW3CF0Q7oQWFNARYV+GOg44ccnBNLf4yb",
+	"AviIO7RKL/l2G3ELX0plQfLRpwPz+6g2N/PPkCDfRnyyAo3dOInRKBLsiRBxyIXK6GRhbC6Qj6onUdd0",
+	"YU3espQCAVUOfcZK9obTIofeA4cCy1AVXeZ03cKalXLKaEHZiIL+g9y7d/MympPzIpfzbD+HuTEZCN0p",
+	"t5K8yre6uo+zy7RxFe0KXJfzKDbvlevBB1Y1dxRC7n/838KCj/j/4oZbcUWsmJwEpLe7OMJasekyJjju",
+	"S6dx0knnB8D526Dsq881rJ9W0wGMhP2DkNKCc6dJ6kiZDtKvMm/770sangHQo8gV5TxTSbZ52JOQhIUo",
+	"M+QjtCVEHUV9P2I9YHXidyvQR/89efaVbAZaTvXKqATeGbn5W7ifxrNRsgSXWFWgMpqPvNqYWTBPKTa9",
+	"dAxTgQxT5ZgK0ZkoikyBY2gGPGo6QVcELcXvWZ7UPA7uO0XIn2wjTXsLIU6oo/fbU0u3P4V0mc/B0tut",
+	"aj0eqev08mmp+Ahtf700cZCUVuFmRmUJyQmZK/0gSkzp3xyEBftLjfivv99Rv/DWxHB/2jAgRSz4lhwr",
+	"vTBd/O8+XH7gEc9UAtUmEGTGr65/Y+PFAqxhVzfv2cVgyCNe2qzy6UZxvF6vB0tdDoxdxpUDF4tlkb25",
+	"GAwHoAcp5pnHUCGpkr8z5k+ll2y2cQg5G99MaViBdSGXs8FwMCR7U4AWheIjTo4uSGICU1+LWBQqXp3F",
+	"Qso3TVOp0GtfbSwlE0zDmnlDhoZhCiwRGWgpqEbEAEHWUxnsJ5UuCThwWOuOaFaF8lpI/EvxZxdIERj8",
+	"FL93fduj0U51Uic4ByakBMn3yUMtzLMprGu+DufDYffGszJJwLlFmWWbys824m+HPz/bJdp7Y89Nxtpg",
+	"CrYqOXxVDh0zOjQUarI+o/Pzl8voo8iU9J4ZfE0gPN5G/KdQwZdJYmZywJS4v6a6rK2pWoQr81zYTU1X",
+	"zerRgGLp/BLihwu/J+OG/LnScdPSl+Dzb9P5CnBcqI9nYzKeBFsSkhU5IFhy3mkGKXiMiIlmjkJV6ThW",
+	"jTtFVl9KsJt6bRnVk7ApVGum9s3T08P68doXNCxJJ4e871fP82C/W597cP+D+qexLDcW6kt5UQRhviAD",
+	"b0NLYw0BmLBAM5708S8SRDX/PD33J9+ne4KxloU/Oa6K+LEazNtv0cekGuYnyGR6SVsTzZPdcLGAVsEK",
+	"asrSzGoYCzvfTQVfnKbHZ0/o1IGVb1+OBtemPSnWCtOwgU4vfxxOOtDyTbVN7+8rh/tHrvTetvoP7SGH",
+	"3xU9haiOidSU+vctI7UTR7V0e5vJK8memWQnLgKvO8DrDvDf2AG6u2/z8JA4N96G3U5md/RB6Rp+VG93",
+	"uXZj1Yqo5huuchi00uciiG17v/0rAAD//xTk3NpLFwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

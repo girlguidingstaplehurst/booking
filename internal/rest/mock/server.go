@@ -11,10 +11,12 @@ package mock_rest
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 	time "time"
 
 	rest "github.com/girlguidingstaplehurst/booking/internal/rest"
+	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -55,6 +57,21 @@ func (mr *MockDatabaseMockRecorder) AddEvent(ctx, event any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvent", reflect.TypeOf((*MockDatabase)(nil).AddEvent), ctx, event)
 }
 
+// AddInvoice mocks base method.
+func (m *MockDatabase) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) (*rest.Invoice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddInvoice", ctx, invoice)
+	ret0, _ := ret[0].(*rest.Invoice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddInvoice indicates an expected call of AddInvoice.
+func (mr *MockDatabaseMockRecorder) AddInvoice(ctx, invoice any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddInvoice", reflect.TypeOf((*MockDatabase)(nil).AddInvoice), ctx, invoice)
+}
+
 // ListEvents mocks base method.
 func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
 	m.ctrl.T.Helper()
@@ -68,4 +85,98 @@ func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]re
 func (mr *MockDatabaseMockRecorder) ListEvents(ctx, from, to any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockDatabase)(nil).ListEvents), ctx, from, to)
+}
+
+// MarkInvoiceSent mocks base method.
+func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkInvoiceSent", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkInvoiceSent indicates an expected call of MarkInvoiceSent.
+func (mr *MockDatabaseMockRecorder) MarkInvoiceSent(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoiceSent", reflect.TypeOf((*MockDatabase)(nil).MarkInvoiceSent), ctx, id)
+}
+
+// MockPDFGenerator is a mock of PDFGenerator interface.
+type MockPDFGenerator struct {
+	ctrl     *gomock.Controller
+	recorder *MockPDFGeneratorMockRecorder
+}
+
+// MockPDFGeneratorMockRecorder is the mock recorder for MockPDFGenerator.
+type MockPDFGeneratorMockRecorder struct {
+	mock *MockPDFGenerator
+}
+
+// NewMockPDFGenerator creates a new mock instance.
+func NewMockPDFGenerator(ctrl *gomock.Controller) *MockPDFGenerator {
+	mock := &MockPDFGenerator{ctrl: ctrl}
+	mock.recorder = &MockPDFGeneratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPDFGenerator) EXPECT() *MockPDFGeneratorMockRecorder {
+	return m.recorder
+}
+
+// GenerateInvoice mocks base method.
+func (m *MockPDFGenerator) GenerateInvoice(ctx context.Context, invoice *rest.Invoice) (io.Reader, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateInvoice", ctx, invoice)
+	ret0, _ := ret[0].(io.Reader)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateInvoice indicates an expected call of GenerateInvoice.
+func (mr *MockPDFGeneratorMockRecorder) GenerateInvoice(ctx, invoice any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateInvoice", reflect.TypeOf((*MockPDFGenerator)(nil).GenerateInvoice), ctx, invoice)
+}
+
+// MockEmailSender is a mock of EmailSender interface.
+type MockEmailSender struct {
+	ctrl     *gomock.Controller
+	recorder *MockEmailSenderMockRecorder
+}
+
+// MockEmailSenderMockRecorder is the mock recorder for MockEmailSender.
+type MockEmailSenderMockRecorder struct {
+	mock *MockEmailSender
+}
+
+// NewMockEmailSender creates a new mock instance.
+func NewMockEmailSender(ctrl *gomock.Controller) *MockEmailSender {
+	mock := &MockEmailSender{ctrl: ctrl}
+	mock.recorder = &MockEmailSenderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEmailSender) EXPECT() *MockEmailSenderMockRecorder {
+	return m.recorder
+}
+
+// SendWithAttachments mocks base method.
+func (m *MockEmailSender) SendWithAttachments(ctx context.Context, to, subject, body string, attachments ...rest.EmailAttachment) error {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, to, subject, body}
+	for _, a := range attachments {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SendWithAttachments", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendWithAttachments indicates an expected call of SendWithAttachments.
+func (mr *MockEmailSenderMockRecorder) SendWithAttachments(ctx, to, subject, body any, attachments ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, to, subject, body}, attachments...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendWithAttachments", reflect.TypeOf((*MockEmailSender)(nil).SendWithAttachments), varargs...)
 }

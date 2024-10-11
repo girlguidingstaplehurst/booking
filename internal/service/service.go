@@ -9,6 +9,8 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
+	"github.com/girlguidingstaplehurst/booking/internal/email"
+	"github.com/girlguidingstaplehurst/booking/internal/pdf"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"github.com/gofiber/fiber/v2"
@@ -61,7 +63,9 @@ func (s *Service) Run(ctx context.Context) error {
 	defer dbpool.Close()
 
 	db := postgres.NewDatabase(dbpool)
-	rs := rest.NewServer(db)
+	pdfGen := pdf.NewGenerator()
+	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
+	rs := rest.NewServer(db, pdfGen, emailSender)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
 	return app.Listen(":8080")

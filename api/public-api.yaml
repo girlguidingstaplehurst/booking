@@ -88,7 +88,7 @@ paths:
   /api/v1/admin/events:
     get:
       security:
-        - admin_auth: []
+        - admin_auth: [ ]
       tags:
         - admin
       parameters:
@@ -127,7 +127,7 @@ paths:
   /api/v1/admin/events/{eventID}:
     get:
       security:
-        - admin_auth: []
+        - admin_auth: [ ]
       tags:
         - admin
       parameters:
@@ -143,6 +143,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+        '404':
+          description: "No event exists with that ID"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/send-invoice:
+    post:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      operationId: adminSendInvoice
+      requestBody:
+        description: Invoice to send
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvoiceBody'
+        required: true
+      responses:
+        '200':
+          description: "Invoice sent successfully"
         '404':
           description: "No event exists with that ID"
           content:
@@ -206,10 +236,9 @@ components:
       required:
         - events
       properties:
-        events  :
+        events:
           type: array
           items:
-            type: object
             $ref: '#/components/schemas/ListEvent'
     ListEvent:
       type: object
@@ -232,7 +261,7 @@ components:
           format: datetime
         status:
           type: string
-          enum: [provisional, approved]
+          enum: [ provisional, approved ]
     Event:
       type: object
       required:
@@ -265,6 +294,36 @@ components:
         email:
           type: string
           format: email
+    SendInvoiceBody:
+      type: object
+      required:
+        - contact
+        - items
+      properties:
+        contact:
+          type: string
+          format: email
+        events:
+          type: array
+          description: List of Event IDs that this invoice applies to.
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SendInvoiceBodyItem'
+    SendInvoiceBodyItem:
+      type: object
+      required:
+        - cost
+        - description
+      properties:
+        description:
+          type: string
+        cost:
+          type: number
+        eventID:
+          type: string
   securitySchemes:
     admin_auth:
       type: http

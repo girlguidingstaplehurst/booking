@@ -74,6 +74,22 @@ type NewEvent struct {
 	} `json:"event"`
 }
 
+// SendInvoiceBody defines model for SendInvoiceBody.
+type SendInvoiceBody struct {
+	Contact openapi_types.Email `json:"contact"`
+
+	// Events List of Event IDs that this invoice applies to.
+	Events *[]string             `json:"events,omitempty"`
+	Items  []SendInvoiceBodyItem `json:"items"`
+}
+
+// SendInvoiceBodyItem defines model for SendInvoiceBodyItem.
+type SendInvoiceBodyItem struct {
+	Cost        float32 `json:"cost"`
+	Description string  `json:"description"`
+	EventID     *string `json:"eventID,omitempty"`
+}
+
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
 type GetApiV1AdminEventsParams struct {
 	// From The date to obtain events from
@@ -94,3 +110,6 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminSendInvoiceJSONRequestBody defines body for AdminSendInvoice for application/json ContentType.
+type AdminSendInvoiceJSONRequestBody = SendInvoiceBody

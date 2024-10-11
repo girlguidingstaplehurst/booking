@@ -26,6 +26,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { TbTrash } from "react-icons/tb";
 import { useFormik } from "formik";
 import { NumericFormat } from "react-number-format";
+import useAuth from "../useAuth";
 
 dayjs.extend(duration);
 dayjs.extend(customParseFormat);
@@ -76,11 +77,11 @@ function populateInvoiceItems(events) {
 
 export function EditableInvoiceCard({ contact, events }) {
   const [submitting, setSubmitting] = useState(false);
+  const { token } = useAuth();
 
   const formik = useFormik({
     initialValues: {
       contact: contact,
-      events: events.map((event) => event.id),
       items: populateInvoiceItems(events),
     }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -88,7 +89,10 @@ export function EditableInvoiceCard({ contact, events }) {
 
       const resp = await fetch("/api/v1/admin/send-invoice", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          Authorization: "Bearer " + token.credential,
+        },
         body: JSON.stringify(values),
       });
 
