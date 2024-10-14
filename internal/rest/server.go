@@ -21,7 +21,9 @@ var _ StrictServerInterface = (*Server)(nil)
 type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
+	GetEvent(ctx context.Context, id string) (Event, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
+	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id uuid.UUID) error
 }
 
@@ -118,28 +120,40 @@ func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsReque
 }
 
 func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminEventsRequestObject) (GetApiV1AdminEventsResponseObject, error) {
+	if request.Params.From == nil && request.Params.To == nil {
+		// Get start date of this month
+		now := time.Now()
+		y, m, _ := now.Date()
+		loc := now.Location()
+
+		request.Params.From = &openapi_types.Date{
+			Time: time.Date(y, m, 1, 0, 0, 0, 0, loc),
+		}
+		// Default range is the full 18-month period
+		request.Params.To = &openapi_types.Date{
+			Time: request.Params.From.Time.AddDate(0, 18, -1),
+		}
+	}
+
+	events, err := s.db.AdminListEvents(ctx, request.Params.From.Time, request.Params.To.Time)
+	if err != nil {
+		return GetApiV1AdminEvents500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+
 	return GetApiV1AdminEvents200JSONResponse{
-		Events: []ListEvent{{
-			Id:     "aaabbbccc111222333",
-			Name:   "Test event",
-			Status: "proposed",
-			From:   "2024-10-10T09:00:00Z",
-			To:     "2024-10-10T10:00:00Z",
-		}},
+		Events: events,
 	}, nil
 }
 
 func (s *Server) GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error) {
-	return GetApiV1AdminEventsEventID200JSONResponse{
-		Id:      uuid.New().String(),
-		Name:    "Test event",
-		Contact: "Evan T Booking",
-		Email:   "evan.t.booking@example.org",
-		From:    "2024-10-10T09:00:00Z",
-		To:      "2024-10-10T10:00:00Z",
-		Status:  "proposed",
-		Visible: false,
-	}, nil
+	event, err := s.db.GetEvent(ctx, request.EventID)
+	if err != nil {
+		//TODO handle not found
+		return GetApiV1AdminEventsEventID500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+	return GetApiV1AdminEventsEventID200JSONResponse(event), nil
 }
 
 func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceRequestObject) (AdminSendInvoiceResponseObject, error) {

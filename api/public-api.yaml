@@ -110,7 +110,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventList'
+                $ref: '#/components/schemas/AdminEventList'
         '400':
           description: Request parameters are invalid
           content:
@@ -262,6 +262,15 @@ components:
         status:
           type: string
           enum: [ provisional, approved ]
+    AdminEventList:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
     Event:
       type: object
       required:

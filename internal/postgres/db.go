@@ -142,6 +142,42 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 	})
 }
 
+func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
+	rows, err := db.pool.Query(ctx,
+		`select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email 
+		from booking_events
+		where (event_start >= $1 and event_start <= $2)
+		or event_end >= $1 and event_end <= $2
+		order by event_start, event_end, event_name`, from, to, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
+		var event rest.Event
+
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email); err != nil {
+			return event, err
+		}
+
+		return event, nil
+	})
+}
+
+func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
+	row := db.pool.QueryRow(ctx,
+		`select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email 
+		from booking_events
+		where id = $1`, id, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
+
+	var event rest.Event
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email); err != nil {
+		return event, err
+	}
+
+	return event, nil
+}
+
 func (db *Database) MarkInvoiceSent(ctx context.Context, id uuid.UUID) error {
 	_, err := db.pool.Exec(ctx, "update booking_invoices set sent = $1 where id = $2", time.Now(), id)
 	if err != nil {

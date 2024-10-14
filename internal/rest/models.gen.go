@@ -23,6 +23,11 @@ const (
 	ListEventStatusProvisional ListEventStatus = "provisional"
 )
 
+// AdminEventList defines model for AdminEventList.
+type AdminEventList struct {
+	Events []Event `json:"events"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	ErrorMessage string `json:"error_message"`

@@ -52,7 +52,7 @@ function populateInvoiceItems(events) {
 
     acc.push({
       eventID: event.id,
-      title: `${event.name} - ${duration.toFixed(1)} hours`,
+      description: `${event.name} - ${duration.toFixed(1)} hours`,
       cost: duration * event.rate,
     });
 
@@ -60,14 +60,14 @@ function populateInvoiceItems(events) {
     if (discount < 0) {
       acc.push({
         eventID: event.id,
-        title: `${event.name} - Discount`,
+        description: `${event.name} - Discount`,
         cost: discount,
       });
     }
 
     acc.push({
       eventID: event.id,
-      title: `${event.name} - Refundable Deposit`,
+      description: `${event.name} - Refundable Deposit`,
       cost: 100, //TODO enable this to be configured
     });
 
@@ -151,8 +151,8 @@ export function EditableInvoiceCard({ contact, events }) {
                     </Td>
                     <Td>
                       <Input
-                        name={`items[${index}].title`}
-                        value={item.title}
+                        name={`items[${index}].description`}
+                        value={item.description}
                         onChange={formik.handleChange}
                       />
                     </Td>
