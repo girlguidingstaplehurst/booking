@@ -1,4 +1,4 @@
-import { Heading, Link, Stack } from "@chakra-ui/react";
+import { Button, Flex, Heading, Link, Spacer, Stack } from "@chakra-ui/react";
 import { Calendar, dayjsLocalizer } from "react-big-calendar";
 import dayjs from "dayjs";
 import { Link as ReactRouterLink, useLoaderData, useNavigate } from "react-router-dom";
@@ -37,10 +37,13 @@ function ShowCalendar() {
 
   return (
     <Stack spacing={4}>
-      <Heading>Bookings</Heading>
-      <Link as={ReactRouterLink} to="/add-event">
-        Add Event
-      </Link>
+      <Flex>
+        <Heading>Bookings</Heading>
+        <Spacer />
+        <Button as={ReactRouterLink} to="/add-event" colorScheme="blue">
+          Add Event
+        </Button>
+      </Flex>
       <Calendar
         localizer={localizer}
         defaultView="week"

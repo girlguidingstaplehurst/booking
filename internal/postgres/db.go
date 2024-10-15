@@ -17,8 +17,10 @@ import (
 var _ rest.Database = (*Database)(nil)
 
 const (
-	EventStatusProvisional = "provisional"
-	EventStatusApproved    = "approved"
+	EventStatusProvisional       = "provisional"
+	EventStatusAwaitingDocuments = "awaiting documents"
+	EventStatusApproved          = "approved"
+	EventStatusCancelled         = "cancelled"
 )
 
 type Database struct {
@@ -144,7 +146,8 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 
 func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
 	rows, err := db.pool.Query(ctx,
-		`select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email 
+		`select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email, 
+       		assignee, keyholder_in, keyholder_out
 		from booking_events
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
@@ -156,7 +159,8 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
 		var event rest.Event
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email); err != nil {
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status,
+			&event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
 			return event, err
 		}
 
@@ -166,12 +170,14 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx,
-		`select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email 
+		`select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
+       		assignee, keyholder_in, keyholder_out 
 		from booking_events
 		where id = $1`, id, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
 
 	var event rest.Event
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email); err != nil {
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status,
+		&event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
 		return event, err
 	}
 

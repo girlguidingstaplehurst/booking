@@ -261,7 +261,7 @@ components:
           format: datetime
         status:
           type: string
-          enum: [ provisional, approved ]
+          enum: [ provisional, "awaiting documents", approved, cancelled ]
     AdminEventList:
       type: object
       required:
@@ -282,6 +282,9 @@ components:
         - visible
         - contact
         - email
+        - assignee
+        - keyholderIn
+        - keyholderOut
       properties:
         id:
           type: string
@@ -295,12 +298,21 @@ components:
           format: datetime
         status:
           type: string
-          enum: [ provisional, approved ]
+          enum: [ provisional, "awaiting documents", approved, cancelled ]
         visible:
           type: boolean
         contact:
           type: string
         email:
+          type: string
+          format: email
+        assignee:
+          type: string
+          format: email
+        keyholderIn:
+          type: string
+          format: email
+        keyholderOut:
           type: string
           format: email
     SendInvoiceBody:

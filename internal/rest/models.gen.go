@@ -13,14 +13,18 @@ const (
 
 // Defines values for EventStatus.
 const (
-	EventStatusApproved    EventStatus = "approved"
-	EventStatusProvisional EventStatus = "provisional"
+	EventStatusApproved          EventStatus = "approved"
+	EventStatusAwaitingDocuments EventStatus = "awaiting documents"
+	EventStatusCancelled         EventStatus = "cancelled"
+	EventStatusProvisional       EventStatus = "provisional"
 )
 
 // Defines values for ListEventStatus.
 const (
-	ListEventStatusApproved    ListEventStatus = "approved"
-	ListEventStatusProvisional ListEventStatus = "provisional"
+	ListEventStatusApproved          ListEventStatus = "approved"
+	ListEventStatusAwaitingDocuments ListEventStatus = "awaiting documents"
+	ListEventStatusCancelled         ListEventStatus = "cancelled"
+	ListEventStatusProvisional       ListEventStatus = "provisional"
 )
 
 // AdminEventList defines model for AdminEventList.
@@ -35,14 +39,17 @@ type ErrorResponse struct {
 
 // Event defines model for Event.
 type Event struct {
-	Contact string              `json:"contact"`
-	Email   openapi_types.Email `json:"email"`
-	From    string              `json:"from"`
-	Id      string              `json:"id"`
-	Name    string              `json:"name"`
-	Status  EventStatus         `json:"status"`
-	To      string              `json:"to"`
-	Visible bool                `json:"visible"`
+	Assignee     openapi_types.Email `json:"assignee"`
+	Contact      string              `json:"contact"`
+	Email        openapi_types.Email `json:"email"`
+	From         string              `json:"from"`
+	Id           string              `json:"id"`
+	KeyholderIn  openapi_types.Email `json:"keyholderIn"`
+	KeyholderOut openapi_types.Email `json:"keyholderOut"`
+	Name         string              `json:"name"`
+	Status       EventStatus         `json:"status"`
+	To           string              `json:"to"`
+	Visible      bool                `json:"visible"`
 }
 
 // EventStatus defines model for Event.Status.

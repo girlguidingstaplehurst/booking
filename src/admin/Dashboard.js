@@ -32,6 +32,7 @@ export async function populateDashboard() {
         status: "provisional",
         contact: "Evan T. Booking",
         email: "evan.t.booking@example.org",
+        assignee: "booking@kathielambcentre.org",
       },
       {
         id: "dddeeefff",
@@ -41,6 +42,7 @@ export async function populateDashboard() {
         status: "approved",
         contact: "Evan T. Booking",
         email: "evan.t.booking@example.org",
+        assignee: "booking@kathielambcentre.org",
       },
     ],
   });
@@ -63,8 +65,14 @@ export function Dashboard() {
     switch (status) {
       case "provisional":
         return "blue";
+      case "awaiting documents":
+        return "orange";
       case "approved":
         return "green";
+      case "cancelled":
+        return "red";
+      default:
+        return "";
     }
   };
 
@@ -89,6 +97,7 @@ export function Dashboard() {
               <Th>From</Th>
               <Th>To</Th>
               <Th>Contact</Th>
+              <Th>Assignee</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -111,6 +120,7 @@ export function Dashboard() {
                 <Td>{dayjs(event.from).format("YYYY-MM-DD HH:mm:ss")}</Td>
                 <Td>{dayjs(event.to).format("YYYY-MM-DD HH:mm:ss")}</Td>
                 <Td>{event.contact}</Td>
+                <Td>{event.assignee}</Td>
                 <Td>
                   <Link as={ReactRouterLink} to={"/admin/review/" + event.id}>
                     Review
