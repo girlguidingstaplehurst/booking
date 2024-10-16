@@ -102,6 +102,21 @@ func (mr *MockDatabaseMockRecorder) GetEvent(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvent", reflect.TypeOf((*MockDatabase)(nil).GetEvent), ctx, id)
 }
 
+// GetInvoiceEvents mocks base method.
+func (m *MockDatabase) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.DBInvoiceEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInvoiceEvents", ctx, ids)
+	ret0, _ := ret[0].([]rest.DBInvoiceEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInvoiceEvents indicates an expected call of GetInvoiceEvents.
+func (mr *MockDatabaseMockRecorder) GetInvoiceEvents(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvoiceEvents", reflect.TypeOf((*MockDatabase)(nil).GetInvoiceEvents), ctx, ids)
+}
+
 // ListEvents mocks base method.
 func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
 	m.ctrl.T.Helper()

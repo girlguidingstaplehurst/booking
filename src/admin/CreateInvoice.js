@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 import { EditableInvoiceCard } from "./components/EditableInvoiceCard";
 
 export async function createInvoice(eventIDs) {
-  return AdminFetcher("/api/v1/admin/invoices?events=" + eventIDs, {
+  return AdminFetcher("/api/v1/admin/invoices/for-events?events=" + eventIDs, {
     "even.t.booking@example.org": [
       {
         id: "aaabbbccc",
@@ -21,8 +21,8 @@ export async function createInvoice(eventIDs) {
         status: "provisional",
         rate: 25.0,
         discountTable: {
-          5: { type: "flat", value: 25 },
-          10: { type: "flat", value: 50 },
+          "5": { type: "flat", value: 25 },
+          "10": { type: "flat", value: 50 },
         },
       },
       {
@@ -33,7 +33,7 @@ export async function createInvoice(eventIDs) {
         status: "provisional",
         rate: 25.0,
         discountTable: {
-          5: { type: "flat", value: 25 },
+          "5": { type: "flat", value: 25 },
         },
       },
     ],

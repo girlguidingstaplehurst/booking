@@ -85,13 +85,13 @@ export function EditableInvoiceCard({ contact, events }) {
       items: populateInvoiceItems(events),
     }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
-      setSubmitting(true);
+      setSubmitting(true);    
 
       const resp = await fetch("/api/v1/admin/send-invoice", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          Authorization: "Bearer " + token.credential,
+          Authorization: "Bearer " + token,
         },
         body: JSON.stringify(values),
       });

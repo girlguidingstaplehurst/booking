@@ -11,26 +11,35 @@ const (
 	Admin_authScopes = "admin_auth.Scopes"
 )
 
-// Defines values for EventStatus.
+// Defines values for DiscountTableRowType.
 const (
-	EventStatusApproved          EventStatus = "approved"
-	EventStatusAwaitingDocuments EventStatus = "awaiting documents"
-	EventStatusCancelled         EventStatus = "cancelled"
-	EventStatusProvisional       EventStatus = "provisional"
+	Flat DiscountTableRowType = "flat"
 )
 
-// Defines values for ListEventStatus.
+// Defines values for EventStatus.
 const (
-	ListEventStatusApproved          ListEventStatus = "approved"
-	ListEventStatusAwaitingDocuments ListEventStatus = "awaiting documents"
-	ListEventStatusCancelled         ListEventStatus = "cancelled"
-	ListEventStatusProvisional       ListEventStatus = "provisional"
+	Approved          EventStatus = "approved"
+	AwaitingDocuments EventStatus = "awaiting documents"
+	Cancelled         EventStatus = "cancelled"
+	Provisional       EventStatus = "provisional"
 )
 
 // AdminEventList defines model for AdminEventList.
 type AdminEventList struct {
 	Events []Event `json:"events"`
 }
+
+// DiscountTable defines model for DiscountTable.
+type DiscountTable map[string]DiscountTableRow
+
+// DiscountTableRow defines model for DiscountTableRow.
+type DiscountTableRow struct {
+	Type  DiscountTableRowType `json:"type"`
+	Value float32              `json:"value"`
+}
+
+// DiscountTableRowType defines model for DiscountTableRow.Type.
+type DiscountTableRowType string
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
@@ -52,25 +61,36 @@ type Event struct {
 	Visible      bool                 `json:"visible"`
 }
 
-// EventStatus defines model for Event.Status.
-type EventStatus string
-
 // EventList defines model for EventList.
 type EventList struct {
 	Events []ListEvent `json:"events"`
 }
 
-// ListEvent defines model for ListEvent.
-type ListEvent struct {
-	From   string          `json:"from"`
-	Id     string          `json:"id"`
-	Name   string          `json:"name"`
-	Status ListEventStatus `json:"status"`
-	To     string          `json:"to"`
+// EventStatus defines model for EventStatus.
+type EventStatus string
+
+// InvoiceEvent defines model for InvoiceEvent.
+type InvoiceEvent struct {
+	DiscountTable DiscountTable `json:"discountTable"`
+	From          string        `json:"from"`
+	Id            string        `json:"id"`
+	Name          string        `json:"name"`
+	Rate          float32       `json:"rate"`
+	Status        EventStatus   `json:"status"`
+	To            string        `json:"to"`
 }
 
-// ListEventStatus defines model for ListEvent.Status.
-type ListEventStatus string
+// InvoiceEvents defines model for InvoiceEvents.
+type InvoiceEvents map[string][]InvoiceEvent
+
+// ListEvent defines model for ListEvent.
+type ListEvent struct {
+	From   string      `json:"from"`
+	Id     string      `json:"id"`
+	Name   string      `json:"name"`
+	Status EventStatus `json:"status"`
+	To     string      `json:"to"`
+}
 
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
@@ -109,6 +129,12 @@ type GetApiV1AdminEventsParams struct {
 
 	// To The date to obtain events to
 	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+}
+
+// AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.
+type AdminGetInvoicesForEventsParams struct {
+	// Events A comma-separated list of events to generate invoices for
+	Events []string `form:"events" json:"events"`
 }
 
 // GetApiV1EventsParams defines parameters for GetApiV1Events.

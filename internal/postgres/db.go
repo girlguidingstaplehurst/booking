@@ -21,6 +21,8 @@ const (
 	EventStatusAwaitingDocuments = "awaiting documents"
 	EventStatusApproved          = "approved"
 	EventStatusCancelled         = "cancelled"
+
+	dbDateTimeFormat = `YYYY-MM-DD"T"HH24:MI:ss"Z"`
 )
 
 type Database struct {
@@ -56,8 +58,8 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 		}
 
 		_, err = tx.Exec(ctx, `insert into booking_events
-			(id, event_start, event_end, event_name, visible, contact, email, status) 
-			values($1, $2, $3, $4, $5, $6, $7, $8)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, EventStatusProvisional)
+			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id) 
+			values($1, $2, $3, $4, $5, $6, $7, $8, 'default')`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, EventStatusProvisional)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new booking"))
 		}
@@ -74,9 +76,7 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 	}
 
 	err := pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx,
-			`insert into booking_invoices (id, reference, contact) values($1, $2, $3)`,
-			inv.ID.String(), inv.Reference, inv.Contact)
+		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact) values($1, $2, $3)`, inv.ID.String(), inv.Reference, inv.Contact)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new invoice"))
 		}
@@ -96,13 +96,7 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 
 			_, err := tx.Exec(ctx, `insert into booking_invoice_items 
     				(id, invoice_id, event_id, description, cost) 
-					values($1, $2, $3, $4, $5)`,
-				i.ID.String(),
-				inv.ID.String(),
-				i.EventID.String(),
-				i.Description,
-				i.Cost.String(),
-			)
+					values($1, $2, $3, $4, $5)`, i.ID.String(), inv.ID.String(), i.EventID.String(), i.Description, i.Cost.String())
 			if err != nil {
 				return errors.Join(err, errors.New("failed to insert invoice item"))
 			}
@@ -121,7 +115,7 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 		from booking_events
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
-		order by event_start, event_end, event_name`, from, to, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
+		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +139,12 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 }
 
 func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
-	rows, err := db.pool.Query(ctx,
-		`select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email, 
+	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email, 
        		assignee, keyholder_in, keyholder_out
 		from booking_events
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
-		order by event_start, event_end, event_name`, from, to, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
+		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -159,8 +152,7 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
 		var event rest.Event
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status,
-			&event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
 			return event, err
 		}
 
@@ -169,15 +161,13 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 }
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
-	row := db.pool.QueryRow(ctx,
-		`select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
+	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
        		assignee, keyholder_in, keyholder_out 
 		from booking_events
-		where id = $1`, id, `YYYY-MM-DD"T"HH:MI:ss"Z"`)
+		where id = $1`, id, dbDateTimeFormat)
 
 	var event rest.Event
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status,
-		&event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
 		return event, err
 	}
 
@@ -191,4 +181,25 @@ func (db *Database) MarkInvoiceSent(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (db *Database) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.DBInvoiceEvent, error) {
+	rows, err := db.pool.Query(ctx, `select be.id, to_char(be.event_start, $2), to_char(be.event_end, $2), be.event_name, be.status, be.email, 
+       			br.hourly_rate::numeric::decimal, br.discount_table
+		from booking_events be
+		join booking_rates br on be.rate_id = br.id
+		where be.id = any($1)
+		order by contact, event_name`, ids, dbDateTimeFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.DBInvoiceEvent, error) {
+		var event rest.DBInvoiceEvent
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.Rate, &event.DiscountTable); err != nil {
+			return event, err
+		}
+
+		return event, nil
+	})
 }

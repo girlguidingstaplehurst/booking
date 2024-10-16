@@ -22,6 +22,7 @@ type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
+	GetInvoiceEvents(ctx context.Context, ids []string) ([]DBInvoiceEvent, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id uuid.UUID) error
@@ -175,13 +176,8 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(
-		ctx,
-		invoice.Contact,
-		"Your event booking at the Kathie Lamb Guide Centre",
-		"Event booking email contents", //TODO make this configurable
-		EmailAttachment{Filename: "invoice.pdf", Content: pdf},
-	)
+	err = s.email.SendWithAttachments(ctx, invoice.Contact, "Your event booking at the Kathie Lamb Guide Centre", "Event booking email contents", //TODO make this configurable
+		EmailAttachment{Filename: "invoice.pdf", Content: pdf})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -197,4 +193,29 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	return AdminSendInvoice200Response{}, nil
+}
+
+type DBInvoiceEvent struct {
+	InvoiceEvent
+	Email string
+}
+
+func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGetInvoicesForEventsRequestObject) (AdminGetInvoicesForEventsResponseObject, error) {
+	events, err := s.db.GetInvoiceEvents(ctx, request.Params.Events)
+	if err != nil {
+		return AdminGetInvoicesForEvents500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	eventsByEmail := make(AdminGetInvoicesForEvents200JSONResponse)
+	for _, event := range events {
+		if eventsByEmail[event.Email] == nil {
+			eventsByEmail[event.Email] = make([]InvoiceEvent, 0)
+		}
+
+		eventsByEmail[event.Email] = append(eventsByEmail[event.Email], event.InvoiceEvent)
+	}
+
+	return eventsByEmail, nil
 }

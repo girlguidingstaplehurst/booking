@@ -156,6 +156,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/invoices/for-events:
+    get:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      operationId: adminGetInvoicesForEvents
+      parameters:
+        - in: query
+          required: true
+          name: events
+          schema:
+            type: array
+            items:
+              type: string
+          description: A comma-separated list of events to generate invoices for
+      responses:
+        '200':
+          description: "Invoice sent successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceEvents'
+        '404':
+          description: "No event exists with that ID"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/send-invoice:
     post:
       security:
@@ -231,6 +267,9 @@ components:
             email_address:
               type: string
               format: email
+    EventStatus:
+      type: string
+      enum: [ provisional, "awaiting documents", approved, cancelled ]
     EventList:
       type: object
       required:
@@ -260,8 +299,7 @@ components:
           type: string
           format: datetime
         status:
-          type: string
-          enum: [ provisional, "awaiting documents", approved, cancelled ]
+          $ref: '#/components/schemas/EventStatus'
     AdminEventList:
       type: object
       required:
@@ -294,8 +332,7 @@ components:
           type: string
           format: datetime
         status:
-          type: string
-          enum: [ provisional, "awaiting documents", approved, cancelled ]
+          $ref: '#/components/schemas/EventStatus'
         visible:
           type: boolean
         contact:
@@ -342,6 +379,55 @@ components:
           type: number
         eventID:
           type: string
+    InvoiceEvents:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/InvoiceEvent'
+    InvoiceEvent:
+      type: object
+      required:
+        - id
+        - name
+        - from
+        - to
+        - status
+        - rate
+        - discountTable
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        rate:
+          type: number
+        discountTable:
+          $ref: '#/components/schemas/DiscountTable'
+    DiscountTable:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/DiscountTableRow'
+    DiscountTableRow:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum: [flat]
+        value:
+          type: number
+
   securitySchemes:
     admin_auth:
       type: http
