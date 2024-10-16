@@ -50,7 +50,7 @@ function AddEvent() {
     onSubmit: async (values) => {
       setSubmitting(true);
 
-        const from = dayjs(`${values.eventDate} ${values.eventTimeFrom}`, "YYYY-MM-DD HH:mm");
+      const from = dayjs(`${values.eventDate} ${values.eventTimeFrom}`, "YYYY-MM-DD HH:mm");
       const to = dayjs(`${values.eventDate} ${values.eventTimeTo}`, "YYYY-MM-DD HH:mm");
 
       await fetch("/api/v1/add-event", {

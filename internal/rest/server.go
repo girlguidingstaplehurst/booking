@@ -23,22 +23,13 @@ type Database interface {
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids []string) ([]DBInvoiceEvent, error)
+	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
-	MarkInvoiceSent(ctx context.Context, id uuid.UUID) error
+	MarkInvoiceSent(ctx context.Context, id string) error
 }
 
-type Invoice struct {
-	// TODO this probably will be replaced with a generated type from the REST API
-	ID        uuid.UUID
-	Reference string
-	Contact   string
-	Sent      time.Time
-	Paid      *time.Time
-	Items     []*InvoiceItem
-}
-
-type InvoiceItem struct {
+type DBInvoiceItem struct {
 	ID          uuid.UUID
 	EventID     uuid.UUID
 	Description string
@@ -176,7 +167,7 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(ctx, invoice.Contact, "Your event booking at the Kathie Lamb Guide Centre", "Event booking email contents", //TODO make this configurable
+	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), "Your event booking at the Kathie Lamb Guide Centre", "Event booking email contents", //TODO make this configurable
 		EmailAttachment{Filename: "invoice.pdf", Content: pdf})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
@@ -184,7 +175,7 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 		}, nil
 	}
 
-	err = s.db.MarkInvoiceSent(ctx, invoice.ID)
+	err = s.db.MarkInvoiceSent(ctx, invoice.Id)
 	if err != nil {
 		//TODO is this right, or do we need a special-case?
 		return AdminSendInvoice500JSONResponse{
@@ -218,4 +209,15 @@ func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGet
 	}
 
 	return eventsByEmail, nil
+}
+
+func (s *Server) AdminGetInvoiceByID(ctx context.Context, request AdminGetInvoiceByIDRequestObject) (AdminGetInvoiceByIDResponseObject, error) {
+	invoice, err := s.db.GetInvoiceByID(ctx, request.InvoiceID)
+	if err != nil {
+		return AdminGetInvoiceByID500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminGetInvoiceByID200JSONResponse(invoice), nil
 }

@@ -18,10 +18,17 @@ const (
 
 // Defines values for EventStatus.
 const (
-	Approved          EventStatus = "approved"
-	AwaitingDocuments EventStatus = "awaiting documents"
-	Cancelled         EventStatus = "cancelled"
-	Provisional       EventStatus = "provisional"
+	EventStatusApproved          EventStatus = "approved"
+	EventStatusAwaitingDocuments EventStatus = "awaiting documents"
+	EventStatusCancelled         EventStatus = "cancelled"
+	EventStatusProvisional       EventStatus = "provisional"
+)
+
+// Defines values for InvoiceStatus.
+const (
+	InvoiceStatusCancelled InvoiceStatus = "cancelled"
+	InvoiceStatusPaid      InvoiceStatus = "paid"
+	InvoiceStatusRaised    InvoiceStatus = "raised"
 )
 
 // AdminEventList defines model for AdminEventList.
@@ -53,6 +60,7 @@ type Event struct {
 	Email        openapi_types.Email  `json:"email"`
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
+	Invoices     *[]InvoiceRef        `json:"invoices,omitempty"`
 	KeyholderIn  *openapi_types.Email `json:"keyholderIn,omitempty"`
 	KeyholderOut *openapi_types.Email `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
@@ -69,6 +77,17 @@ type EventList struct {
 // EventStatus defines model for EventStatus.
 type EventStatus string
 
+// Invoice defines model for Invoice.
+type Invoice struct {
+	Contact   openapi_types.Email `json:"contact"`
+	Id        string              `json:"id"`
+	Items     []InvoiceItem       `json:"items"`
+	Paid      *string             `json:"paid,omitempty"`
+	Reference string              `json:"reference"`
+	Sent      *string             `json:"sent,omitempty"`
+	Status    InvoiceStatus       `json:"status"`
+}
+
 // InvoiceEvent defines model for InvoiceEvent.
 type InvoiceEvent struct {
 	DiscountTable DiscountTable `json:"discountTable"`
@@ -82,6 +101,24 @@ type InvoiceEvent struct {
 
 // InvoiceEvents defines model for InvoiceEvents.
 type InvoiceEvents map[string][]InvoiceEvent
+
+// InvoiceItem defines model for InvoiceItem.
+type InvoiceItem struct {
+	Cost        float32 `json:"cost"`
+	Description string  `json:"description"`
+	EventID     *string `json:"eventID,omitempty"`
+	Id          *string `json:"id,omitempty"`
+}
+
+// InvoiceRef defines model for InvoiceRef.
+type InvoiceRef struct {
+	Id        string        `json:"id"`
+	Reference string        `json:"reference"`
+	Status    InvoiceStatus `json:"status"`
+}
+
+// InvoiceStatus defines model for InvoiceStatus.
+type InvoiceStatus string
 
 // ListEvent defines model for ListEvent.
 type ListEvent struct {

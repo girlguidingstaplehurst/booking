@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/shopspring/decimal"
 	"github.com/thanhpk/randstr"
 )
 
@@ -21,6 +20,10 @@ const (
 	EventStatusAwaitingDocuments = "awaiting documents"
 	EventStatusApproved          = "approved"
 	EventStatusCancelled         = "cancelled"
+
+	InvoiceStatusRaised    = "raised"
+	InvoiceStatusPaid      = "paid"
+	InvoiceStatusCancelled = "cancelled"
 
 	dbDateTimeFormat = `YYYY-MM-DD"T"HH24:MI:ss"Z"`
 )
@@ -70,33 +73,29 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 
 func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) (*rest.Invoice, error) {
 	inv := &rest.Invoice{
-		ID:        uuid.New(),
+		Id:        uuid.New().String(),
 		Reference: randstr.String(6, consts.ReferenceLetters),
-		Contact:   string(invoice.Contact),
+		Contact:   invoice.Contact,
 	}
 
 	err := pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact) values($1, $2, $3)`, inv.ID.String(), inv.Reference, inv.Contact)
+		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact) values($1, $2, $3)`, inv.Id, inv.Reference, inv.Contact)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new invoice"))
 		}
 
 		for _, item := range invoice.Items {
-			i := &rest.InvoiceItem{
-				ID:          uuid.New(),
+			id := uuid.New().String()
+			i := rest.InvoiceItem{
+				Id:          &id,
 				Description: item.Description,
-				Cost:        decimal.NewFromFloat32(item.Cost),
-			}
-			if item.EventID != nil {
-				i.EventID, err = uuid.Parse(*item.EventID)
-				if err != nil {
-					return errors.Join(err, errors.New("failed to parse event id"))
-				}
+				Cost:        item.Cost,
+				EventID:     item.EventID,
 			}
 
 			_, err := tx.Exec(ctx, `insert into booking_invoice_items 
     				(id, invoice_id, event_id, description, cost) 
-					values($1, $2, $3, $4, $5)`, i.ID.String(), inv.ID.String(), i.EventID.String(), i.Description, i.Cost.String())
+					values($1, $2, $3, $4, $5)`, i.Id, inv.Id, i.EventID, i.Description, i.Cost)
 			if err != nil {
 				return errors.Join(err, errors.New("failed to insert invoice item"))
 			}
@@ -162,7 +161,7 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
-       		assignee, keyholder_in, keyholder_out 
+       		assignee, keyholder_in, keyholder_out	
 		from booking_events
 		where id = $1`, id, dbDateTimeFormat)
 
@@ -171,10 +170,37 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 		return event, err
 	}
 
+	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.sent, bi.paid 	
+		from booking_invoices bi
+		right join public.booking_invoice_items bii on bi.id = bii.invoice_id
+		where bii.event_id = $1`, id)
+	if err != nil {
+		return event, err
+	}
+
+	invoiceRefs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.InvoiceRef, error) {
+		var sent, paid *time.Time
+		var eventRef rest.InvoiceRef
+		if err := row.Scan(&eventRef.Id, &eventRef.Reference, &sent, &paid); err != nil {
+			return eventRef, err
+		}
+
+		if paid == nil {
+			eventRef.Status = InvoiceStatusRaised
+		} else {
+			eventRef.Status = InvoiceStatusPaid
+		}
+		//TODO express cancelled and refunded states
+
+		return eventRef, nil
+	})
+
+	event.Invoices = &invoiceRefs
+
 	return event, nil
 }
 
-func (db *Database) MarkInvoiceSent(ctx context.Context, id uuid.UUID) error {
+func (db *Database) MarkInvoiceSent(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, "update booking_invoices set sent = $1 where id = $2", time.Now(), id)
 	if err != nil {
 		return err
@@ -202,4 +228,35 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.
 
 		return event, nil
 	})
+}
+
+func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice, error) {
+	row := db.pool.QueryRow(ctx, `select id, reference, contact, sent, paid, status
+		from booking_invoices
+		where id = $1`, id)
+
+	var invoice rest.Invoice
+	if err := row.Scan(&invoice.Id, &invoice.Reference, &invoice.Contact, &invoice.Sent, &invoice.Paid, &invoice.Status); err != nil {
+		return invoice, err
+	}
+
+	rows, err := db.pool.Query(ctx, `select id, event_id, description, cost::numeric::decimal
+		from booking_invoice_items
+		where invoice_id = $1`, id)
+	if err != nil {
+		return invoice, err
+	}
+
+	items, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.InvoiceItem, error) {
+		var item rest.InvoiceItem
+		if err := row.Scan(&item.Id, &item.EventID, &item.Description, &item.Cost); err != nil {
+			return item, err
+		}
+
+		return item, nil
+	})
+
+	invoice.Items = items
+
+	return invoice, nil
 }

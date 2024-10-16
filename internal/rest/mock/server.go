@@ -16,7 +16,6 @@ import (
 	time "time"
 
 	rest "github.com/girlguidingstaplehurst/booking/internal/rest"
-	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -102,6 +101,21 @@ func (mr *MockDatabaseMockRecorder) GetEvent(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvent", reflect.TypeOf((*MockDatabase)(nil).GetEvent), ctx, id)
 }
 
+// GetInvoiceByID mocks base method.
+func (m *MockDatabase) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInvoiceByID", ctx, id)
+	ret0, _ := ret[0].(rest.Invoice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInvoiceByID indicates an expected call of GetInvoiceByID.
+func (mr *MockDatabaseMockRecorder) GetInvoiceByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvoiceByID", reflect.TypeOf((*MockDatabase)(nil).GetInvoiceByID), ctx, id)
+}
+
 // GetInvoiceEvents mocks base method.
 func (m *MockDatabase) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.DBInvoiceEvent, error) {
 	m.ctrl.T.Helper()
@@ -133,7 +147,7 @@ func (mr *MockDatabaseMockRecorder) ListEvents(ctx, from, to any) *gomock.Call {
 }
 
 // MarkInvoiceSent mocks base method.
-func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id uuid.UUID) error {
+func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MarkInvoiceSent", ctx, id)
 	ret0, _ := ret[0].(error)

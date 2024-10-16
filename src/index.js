@@ -22,6 +22,7 @@ import { AuthProvider } from "./admin/useAuth";
 import { Dashboard, populateDashboard } from "./admin/Dashboard";
 import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
+import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -51,6 +52,11 @@ const router = createBrowserRouter(
             const events = url.searchParams.get("events");
             return createInvoice(events);
           }}
+        />
+        <Route
+          path="invoice/:invoiceID"
+          element={<ManageInvoice />}
+          loader={({ params }) => manageInvoice(params.invoiceID)}
         />
       </Route>
       <Route path="admin/login" element={<Login />} />

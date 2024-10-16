@@ -151,12 +151,14 @@ func generateInvoice(invoice *rest.Invoice) (core.Maroto, error) {
 
 	var total decimal.Decimal
 	for _, item := range invoice.Items {
+		itemCost := decimal.NewFromFloat32(item.Cost)
+
 		m.AddRow(12, text.NewCol(10, item.Description, props.Text{
 			Size:   12,
 			Color:  ggDarkBlue,
 			Family: poppinsFontFamily,
 			Top:    3.5,
-		}), text.NewCol(2, "£"+item.Cost.StringFixedBank(2), props.Text{
+		}), text.NewCol(2, "£"+itemCost.StringFixedBank(2), props.Text{
 			Size:   12,
 			Color:  ggDarkBlue,
 			Family: poppinsFontFamily,
@@ -164,7 +166,7 @@ func generateInvoice(invoice *rest.Invoice) (core.Maroto, error) {
 			Top:    3.5,
 		})).WithStyle(&props.Cell{BorderType: border.Bottom, BorderColor: ggDarkBlue, BorderThickness: 0.1})
 
-		total = total.Add(item.Cost)
+		total = total.Add(itemCost)
 	}
 
 	m.AddRow(12,
