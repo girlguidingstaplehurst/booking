@@ -282,9 +282,6 @@ components:
         - visible
         - contact
         - email
-        - assignee
-        - keyholderIn
-        - keyholderOut
       properties:
         id:
           type: string

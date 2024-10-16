@@ -39,17 +39,17 @@ type ErrorResponse struct {
 
 // Event defines model for Event.
 type Event struct {
-	Assignee     openapi_types.Email `json:"assignee"`
-	Contact      string              `json:"contact"`
-	Email        openapi_types.Email `json:"email"`
-	From         string              `json:"from"`
-	Id           string              `json:"id"`
-	KeyholderIn  openapi_types.Email `json:"keyholderIn"`
-	KeyholderOut openapi_types.Email `json:"keyholderOut"`
-	Name         string              `json:"name"`
-	Status       EventStatus         `json:"status"`
-	To           string              `json:"to"`
-	Visible      bool                `json:"visible"`
+	Assignee     *openapi_types.Email `json:"assignee,omitempty"`
+	Contact      string               `json:"contact"`
+	Email        openapi_types.Email  `json:"email"`
+	From         string               `json:"from"`
+	Id           string               `json:"id"`
+	KeyholderIn  *openapi_types.Email `json:"keyholderIn,omitempty"`
+	KeyholderOut *openapi_types.Email `json:"keyholderOut,omitempty"`
+	Name         string               `json:"name"`
+	Status       EventStatus          `json:"status"`
+	To           string               `json:"to"`
+	Visible      bool                 `json:"visible"`
 }
 
 // EventStatus defines model for Event.Status.
