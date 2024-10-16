@@ -146,6 +146,20 @@ func (mr *MockDatabaseMockRecorder) ListEvents(ctx, from, to any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockDatabase)(nil).ListEvents), ctx, from, to)
 }
 
+// MarkInvoicePaid mocks base method.
+func (m *MockDatabase) MarkInvoicePaid(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkInvoicePaid", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkInvoicePaid indicates an expected call of MarkInvoicePaid.
+func (mr *MockDatabaseMockRecorder) MarkInvoicePaid(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoicePaid", reflect.TypeOf((*MockDatabase)(nil).MarkInvoicePaid), ctx, id)
+}
+
 // MarkInvoiceSent mocks base method.
 func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()

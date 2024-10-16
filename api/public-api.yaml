@@ -255,6 +255,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/invoices/by-id/{invoiceID}/mark-as-paid:
+    post:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      operationId: adminMarkInvoicePaid
+      parameters:
+        - in: path
+          name: invoiceID
+          schema:
+            type: string
+          description: The ID of the Invoice to mark as paid
+      responses:
+        '200':
+          description: "Invoice marked as paid successfully"
+        '404':
+          description: "No invoice exists with that ID"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 components:
   schemas:
     ErrorResponse:
@@ -484,7 +514,7 @@ components:
       type: object
       required:
         - id
-        - reference 
+        - reference
         - status
         - contact
         - items

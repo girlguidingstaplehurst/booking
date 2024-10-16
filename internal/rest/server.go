@@ -27,6 +27,7 @@ type Database interface {
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id string) error
+	MarkInvoicePaid(ctx context.Context, id string) error
 }
 
 type DBInvoiceItem struct {
@@ -220,4 +221,13 @@ func (s *Server) AdminGetInvoiceByID(ctx context.Context, request AdminGetInvoic
 	}
 
 	return AdminGetInvoiceByID200JSONResponse(invoice), nil
+}
+
+func (s *Server) AdminMarkInvoicePaid(ctx context.Context, request AdminMarkInvoicePaidRequestObject) (AdminMarkInvoicePaidResponseObject, error) {
+	err := s.db.MarkInvoicePaid(ctx, request.InvoiceID)
+	if err != nil {
+		return AdminMarkInvoicePaid500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+
+	return AdminMarkInvoicePaid200Response{}, nil
 }

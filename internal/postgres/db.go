@@ -223,9 +223,9 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.
 }
 
 func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice, error) {
-	row := db.pool.QueryRow(ctx, `select id, reference, contact, sent, paid, status
+	row := db.pool.QueryRow(ctx, `select id, reference, contact, to_char(sent, $2), to_char(paid, $2), status
 		from booking_invoices
-		where id = $1`, id)
+		where id = $1`, id, dbDateTimeFormat)
 
 	var invoice rest.Invoice
 	if err := row.Scan(&invoice.Id, &invoice.Reference, &invoice.Contact, &invoice.Sent, &invoice.Paid, &invoice.Status); err != nil {
@@ -251,4 +251,13 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 	invoice.Items = items
 
 	return invoice, nil
+}
+
+func (db *Database) MarkInvoicePaid(ctx context.Context, id string) error {
+	_, err := db.pool.Exec(ctx, "update booking_invoices set paid = $1, status = 'paid' where id = $2", time.Now(), id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

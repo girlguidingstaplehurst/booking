@@ -16,9 +16,11 @@ import {
   StackDivider,
   Text,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
+import { Link as ReactRouterLink, useLoaderData, useRevalidator } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
+import { AdminPoster } from "../Poster";
+import { useState } from "react";
 
 export async function manageInvoice(invoiceID) {
   return AdminFetcher("/api/v1/admin/invoices/by-id/" + invoiceID, {
@@ -26,13 +28,25 @@ export async function manageInvoice(invoiceID) {
     reference: "ABCDEF",
     sent: dayjs().startOf("hour").toDate(),
     paid: dayjs().endOf("hour").toDate(),
-    status: "paid",
+    status: "raised",
     contact: "evan.t.booking@example.org",
   });
 }
 
+async function markPaid(invoiceID) {
+  const response = await AdminPoster(
+    `/api/v1/admin/invoices/by-id/${invoiceID}/mark-as-paid`,
+    null,
+  );
+  if (response !== undefined) {
+    return response.json();
+  }
+}
+
 export function ManageInvoice() {
   const invoice = useLoaderData();
+  const revalidator = useRevalidator();
+  const [markingAsPaid, setMarkingAsPaid] = useState(false);
 
   const isPaid = invoice.status === "paid";
 
@@ -81,7 +95,18 @@ export function ManageInvoice() {
                 <Spacer />
                 {isPaid ? null : (
                   <ButtonGroup>
-                    <Button colorScheme="blue">Mark Paid</Button>
+                    <Button
+                      colorScheme="blue"
+                      isLoading={markingAsPaid}
+                      onClick={async () => {
+                        setMarkingAsPaid(true);
+                        await markPaid(invoice.id);
+                        revalidator.revalidate();
+                        setMarkingAsPaid(false);
+                      }}
+                    >
+                      Mark Paid
+                    </Button>
                   </ButtonGroup>
                 )}
               </Flex>
