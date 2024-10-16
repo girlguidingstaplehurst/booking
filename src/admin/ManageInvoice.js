@@ -82,7 +82,7 @@ export function ManageInvoice() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Resend</Button>
+                  <Button colorScheme="brand">Resend</Button>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -96,7 +96,7 @@ export function ManageInvoice() {
                 {isPaid ? null : (
                   <ButtonGroup>
                     <Button
-                      colorScheme="blue"
+                      colorScheme="brand"
                       isLoading={markingAsPaid}
                       onClick={async () => {
                         setMarkingAsPaid(true);

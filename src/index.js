@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -64,11 +64,26 @@ const router = createBrowserRouter(
   ),
 );
 
+const theme = extendTheme({
+  colors: {
+    black: '#1d1d1b',
+    brand: {
+      300: '#00a7e5',
+      500: '#007bc4',
+      900: '#161b4e'
+    },
+  },
+  fonts: {
+    body: "Poppins, Century Gothic, sans-serif",
+    heading: "Poppins, Century Gothic, sans-serif",
+  }
+})
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId="362406102359-frmsjn6et0551pciju1li4mep62thmse.apps.googleusercontent.com">
-      <ChakraProvider>
+      <ChakraProvider theme={theme}>
         <AuthProvider>
           <RouterProvider router={router} />
         </AuthProvider>

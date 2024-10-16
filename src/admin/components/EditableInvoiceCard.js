@@ -191,7 +191,7 @@ export function EditableInvoiceCard({ contact, events }) {
         <CardFooter minWidth="max-content">
           <Spacer />
           <ButtonGroup flex="0">
-            <Button colorScheme="blue" isLoading={submitting} type="submit">
+            <Button colorScheme="brand" isLoading={submitting} type="submit">
               Send Invoice
             </Button>
           </ButtonGroup>

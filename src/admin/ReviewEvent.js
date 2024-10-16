@@ -63,14 +63,14 @@ export function ReviewEvent() {
         <Text>Event details visible publicly</Text>
       </Box>
       <Spacer />
-      <Button colorScheme="blue">Hide Event Details on Public Website</Button>
+      <Button colorScheme="brand">Hide Event Details on Public Website</Button>
     </Flex>) : (<Flex>
       <Box>
         <Heading size="s">Event Visibility</Heading>
         <Text>Event details hidden publicly</Text>
       </Box>
       <Spacer />
-      <Button colorScheme="blue">Show Event Details on Public Website</Button>
+      <Button colorScheme="brand">Show Event Details on Public Website</Button>
     </Flex>);
 
   const hasInvoices = event.invoices !== undefined && event.invoices.length > 0;
@@ -100,7 +100,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Assign to Me</Button>
+                  <Button colorScheme="brand">Assign to Me</Button>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -110,7 +110,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Update Dates and Times</Button>
+                  <Button colorScheme="brand">Update Dates and Times</Button>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -122,7 +122,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Update Event Contact</Button>
+                  <Button colorScheme="brand">Update Event Contact</Button>
                 </ButtonGroup>
               </Flex>
               {visibility}
@@ -155,7 +155,7 @@ export function ReviewEvent() {
                   </Box>
                   <ButtonGroup>
                     {/*TODO enable this button if the select value has changed */}
-                    <Button colorScheme="blue" isDisabled={true}>
+                    <Button colorScheme="brand" isDisabled={true}>
                       Update
                     </Button>
                   </ButtonGroup>
@@ -175,7 +175,7 @@ export function ReviewEvent() {
                         </Button>))) : (<Button
                         as={ReactRouterLink}
                         to={`/admin/create-invoice?events=${event.id}`}
-                        colorScheme="blue"
+                        colorScheme="brand"
                       >
                         Raise Invoice
                       </Button>)}
@@ -189,8 +189,8 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Request Documents</Button>
-                  <Button colorScheme="blue">Cancel Event</Button>
+                  <Button colorScheme="brand">Request Documents</Button>
+                  <Button colorScheme="brand">Cancel Event</Button>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -201,7 +201,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="blue">Update Keyholders</Button>
+                  <Button colorScheme="brand">Update Keyholders</Button>
                 </ButtonGroup>
               </Flex>
             </Stack>

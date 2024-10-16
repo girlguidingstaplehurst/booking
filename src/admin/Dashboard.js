@@ -1,7 +1,7 @@
 import {
-  Badge, Box,
+  Badge,
+  Box,
   Button,
-  ButtonGroup,
   Checkbox,
   Flex,
   Link,
@@ -14,7 +14,7 @@ import {
   Text,
   Th,
   Thead,
-  Tr
+  Tr,
 } from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
@@ -82,10 +82,14 @@ export function Dashboard() {
         <Text>Filters will (eventually) go here</Text>
         <Spacer />
         <Box>
-          <ReactRouterLink to={`/admin/create-invoice?events=${selectedRows}`}
-                           className="chakra-button">
+          <Button
+            as={ReactRouterLink}
+            to={`/admin/create-invoice?events=${selectedRows}`}
+            colorScheme="brand"
+            isDisabled={!selectedRows.length}
+          >
             Invoice Selected
-          </ReactRouterLink>
+          </Button>
         </Box>
       </Flex>
       <TableContainer>

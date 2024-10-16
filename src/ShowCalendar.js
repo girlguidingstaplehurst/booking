@@ -40,7 +40,7 @@ function ShowCalendar() {
       <Flex>
         <Heading>Bookings</Heading>
         <Spacer />
-        <Button as={ReactRouterLink} to="/add-event" colorScheme="blue">
+        <Button as={ReactRouterLink} to="/add-event" colorScheme="brand">
           Add Event
         </Button>
       </Flex>
