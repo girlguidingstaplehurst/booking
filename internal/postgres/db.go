@@ -170,7 +170,7 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 		return event, err
 	}
 
-	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.sent, bi.paid 	
+	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.status	
 		from booking_invoices bi
 		right join public.booking_invoice_items bii on bi.id = bii.invoice_id
 		where bii.event_id = $1`, id)
@@ -179,18 +179,10 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 	}
 
 	invoiceRefs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.InvoiceRef, error) {
-		var sent, paid *time.Time
 		var eventRef rest.InvoiceRef
-		if err := row.Scan(&eventRef.Id, &eventRef.Reference, &sent, &paid); err != nil {
+		if err := row.Scan(&eventRef.Id, &eventRef.Reference, &eventRef.Status); err != nil {
 			return eventRef, err
 		}
-
-		if paid == nil {
-			eventRef.Status = InvoiceStatusRaised
-		} else {
-			eventRef.Status = InvoiceStatusPaid
-		}
-		//TODO express cancelled and refunded states
 
 		return eventRef, nil
 	})
