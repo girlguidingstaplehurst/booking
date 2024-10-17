@@ -27,6 +27,7 @@ import { TbTrash } from "react-icons/tb";
 import { useFormik } from "formik";
 import { NumericFormat } from "react-number-format";
 import useAuth from "../useAuth";
+import RoundedButton from "../../components/RoundedButton";
 
 dayjs.extend(duration);
 dayjs.extend(customParseFormat);
@@ -191,9 +192,9 @@ export function EditableInvoiceCard({ contact, events }) {
         <CardFooter minWidth="max-content">
           <Spacer />
           <ButtonGroup flex="0">
-            <Button colorScheme="brand" isLoading={submitting} type="submit">
+            <RoundedButton colorScheme="brand" isLoading={submitting} type="submit">
               Send Invoice
-            </Button>
+            </RoundedButton>
           </ButtonGroup>
         </CardFooter>
       </Card>

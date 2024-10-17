@@ -20,6 +20,7 @@ import {
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
+import RoundedButton from "../components/RoundedButton";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -63,14 +64,14 @@ export function ReviewEvent() {
         <Text>Event details visible publicly</Text>
       </Box>
       <Spacer />
-      <Button colorScheme="brand">Hide Event Details on Public Website</Button>
+    <RoundedButton colorScheme="brand">Hide Event Details on Public Website</RoundedButton>
     </Flex>) : (<Flex>
       <Box>
         <Heading size="s">Event Visibility</Heading>
         <Text>Event details hidden publicly</Text>
       </Box>
       <Spacer />
-      <Button colorScheme="brand">Show Event Details on Public Website</Button>
+    <RoundedButton colorScheme="brand">Show Event Details on Public Website</RoundedButton>
     </Flex>);
 
   const hasInvoices = event.invoices !== undefined && event.invoices.length > 0;
@@ -100,7 +101,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Assign to Me</Button>
+                  <RoundedButton colorScheme="brand">Assign to Me</RoundedButton>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -110,7 +111,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Update Dates and Times</Button>
+                  <RoundedButton colorScheme="brand">Update Dates and Times</RoundedButton>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -122,7 +123,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Update Event Contact</Button>
+                  <RoundedButton colorScheme="brand">Update Event Contact</RoundedButton>
                 </ButtonGroup>
               </Flex>
               {visibility}
@@ -155,9 +156,9 @@ export function ReviewEvent() {
                   </Box>
                   <ButtonGroup>
                     {/*TODO enable this button if the select value has changed */}
-                    <Button colorScheme="brand" isDisabled={true}>
+                    <RoundedButton colorScheme="brand" isDisabled={true}>
                       Update
-                    </Button>
+                    </RoundedButton>
                   </ButtonGroup>
                 </Flex>
               </Box>
@@ -172,13 +173,13 @@ export function ReviewEvent() {
                           colorScheme={getInvoiceColorScheme(invoice.status)}
                         >
                           {invoice.reference} - {invoice.status}
-                        </Button>))) : (<Button
+                      </Button>))) : (<Button
                         as={ReactRouterLink}
                         to={`/admin/create-invoice?events=${event.id}`}
                         colorScheme="brand"
                       >
                         Raise Invoice
-                      </Button>)}
+                    </Button>)}
                   </ButtonGroup>
                 </Box>
               </Flex>
@@ -189,8 +190,8 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Request Documents</Button>
-                  <Button colorScheme="brand">Cancel Event</Button>
+                  <RoundedButton colorScheme="brand">Request Documents</RoundedButton>
+                  <RoundedButton colorScheme="brand">Cancel Event</RoundedButton>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -201,7 +202,7 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Update Keyholders</Button>
+                  <RoundedButton colorScheme="brand">Update Keyholders</RoundedButton>
                 </ButtonGroup>
               </Flex>
             </Stack>

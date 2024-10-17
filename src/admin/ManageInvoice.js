@@ -3,7 +3,6 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  Button,
   ButtonGroup,
   Card,
   CardBody,
@@ -16,11 +15,16 @@ import {
   StackDivider,
   Text,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useLoaderData, useRevalidator } from "react-router-dom";
+import {
+  Link as ReactRouterLink,
+  useLoaderData,
+  useRevalidator,
+} from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import { AdminPoster } from "../Poster";
 import { useState } from "react";
+import RoundedButton from "../components/RoundedButton";
 
 export async function manageInvoice(invoiceID) {
   return AdminFetcher("/api/v1/admin/invoices/by-id/" + invoiceID, {
@@ -82,7 +86,7 @@ export function ManageInvoice() {
                 </Box>
                 <Spacer />
                 <ButtonGroup>
-                  <Button colorScheme="brand">Resend</Button>
+                  <RoundedButton colorScheme="brand">Resend</RoundedButton>
                 </ButtonGroup>
               </Flex>
               <Flex>
@@ -95,8 +99,7 @@ export function ManageInvoice() {
                 <Spacer />
                 {isPaid ? null : (
                   <ButtonGroup>
-                    <Button
-                      colorScheme="brand"
+                    <RoundedButton
                       isLoading={markingAsPaid}
                       onClick={async () => {
                         setMarkingAsPaid(true);
@@ -106,7 +109,7 @@ export function ManageInvoice() {
                       }}
                     >
                       Mark Paid
-                    </Button>
+                    </RoundedButton>
                   </ButtonGroup>
                 )}
               </Flex>

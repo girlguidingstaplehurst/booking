@@ -1,7 +1,6 @@
 import {
   Badge,
   Box,
-  Button,
   Checkbox,
   Flex,
   Link,
@@ -20,6 +19,7 @@ import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import { useState } from "react";
+import RoundedButton from "../components/RoundedButton";
 
 export async function populateDashboard() {
   return await AdminFetcher("/api/v1/admin/events", {
@@ -82,14 +82,13 @@ export function Dashboard() {
         <Text>Filters will (eventually) go here</Text>
         <Spacer />
         <Box>
-          <Button
+          <RoundedButton
             as={ReactRouterLink}
             to={`/admin/create-invoice?events=${selectedRows}`}
-            colorScheme="brand"
             isDisabled={!selectedRows.length}
           >
             Invoice Selected
-          </Button>
+          </RoundedButton>
         </Box>
       </Flex>
       <TableContainer>
@@ -126,9 +125,9 @@ export function Dashboard() {
                 <Td>{event.contact}</Td>
                 <Td>{event.assignee}</Td>
                 <Td>
-                  <Link as={ReactRouterLink} to={"/admin/review/" + event.id}>
+                  <RoundedButton as={ReactRouterLink} to={"/admin/review/" + event.id}>
                     Review
-                  </Link>
+                  </RoundedButton>
                 </Td>
               </Tr>
             ))}
