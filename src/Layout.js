@@ -136,16 +136,16 @@ function Nav({ breakpoint }) {
         <Image src="/logo192.png" />
         <Flex flexDirection="column" flex={1}>
           <Spacer />
-          <Flex
+          <Stack
+            divider={<StackDivider borderLeft={`1px solid ${brand500}`}/>}
+            direction="row"
             minH="2em"
-            spacing={4}
-            gap={4}
             justifyContent="center"
             alignContent="end"
           >
             <NavLink href="https://www.kathielambcentre.org">Home</NavLink>
             <NavLink as={ReactRouterLink} to="/" color="brand.500">
-              Make a Booking
+              Booking
             </NavLink>
             <NavLink href="https://www.kathielambcentre.org/whats-on/">
               What's On?
@@ -153,7 +153,7 @@ function Nav({ breakpoint }) {
             <NavLink href="https://www.kathielambcentre.org/location/">
               Location
             </NavLink>
-          </Flex>
+          </Stack>
         </Flex>
       </Flex>
     );

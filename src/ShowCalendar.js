@@ -67,11 +67,12 @@ function ShowCalendar() {
 
   const navigate = useNavigate();
 
-  const [grey300, brand500, brand900, white] = useToken("colors", [
+  const [grey300, brand500, brand900, white, black] = useToken("colors", [
     "gray.300",
     "brand.500",
     "brand.900",
     "white",
+    "black",
   ]);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -124,14 +125,17 @@ function ShowCalendar() {
         service, you can rest assured that your event will be a resounding
         success.
       </Text>
-      <Flex justifyContent="end">
+      <Flex justifyContent="end" wrap="wrap" gap={4}>
         <Stack direction="row" gap={2}>
           <Text padding={2}>Key:</Text>
-          <Box bg={brand500} color={white} padding={2}>
+          <Box bg={brand500} fontSize="12px" color={white} padding={2}>
             Provisional booking
           </Box>
-          <Box bg={brand900} color={white} padding={2}>
+          <Box bg={brand900} fontSize="12px" color={white} padding={2}>
             Confirmed booking
+          </Box>
+          <Box bg={grey300} fontSize="12px" color={black} padding={2}>
+            Unavailable time
           </Box>
         </Stack>
         <Spacer />

@@ -1,8 +1,10 @@
-import { Heading, Stack } from "@chakra-ui/react";
+import { Container, Heading, Stack } from "@chakra-ui/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 
 import useAuth from "./useAuth";
+import AdminHeader from "./components/AdminHeader";
+import Footer from "../components/Footer";
 
 function Login() {
   const navigate = useNavigate();
@@ -14,13 +16,19 @@ function Login() {
   };
 
   return (
-    <Stack spacing={4}>
-      <Heading>Login</Heading>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => console.log("login failed")}
-      />
-    </Stack>
+    <>
+      <AdminHeader />
+      <Container maxW="4xl" padding={4}>
+        <Stack minH="100vh" spacing={4}>
+          <Heading>Login</Heading>
+          <GoogleLogin
+            onSuccess={handleSuccess}
+            onError={() => console.log("login failed")}
+          />
+        </Stack>
+      </Container>
+      <Footer />
+    </>
   );
 }
 
