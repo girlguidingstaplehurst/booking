@@ -8,6 +8,8 @@ import (
 	"github.com/MicahParks/recaptcha"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ rest.CaptchaVerifier = (*Verifier)(nil)
@@ -25,6 +27,9 @@ func NewVerifier() *Verifier {
 }
 
 func (v *Verifier) Verify(ctx context.Context, token string, ip string) error {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("recaptcha.token", token), attribute.String("recaptcha.ip", ip))
+
 	resp, err := v.cli.Verify(ctx, token, ip)
 	if err != nil {
 		return err

@@ -119,6 +119,7 @@ function AddEvent() {
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
+      setSubmitErrors("");
       setSubmitting(true);
 
       const captchaToken = await ReactRecaptcha3.getToken()
