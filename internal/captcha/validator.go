@@ -24,15 +24,15 @@ func NewVerifier() *Verifier {
 	}
 }
 
-func (v *Verifier) Verify(ctx context.Context, token string, ip string) (bool, error) {
+func (v *Verifier) Verify(ctx context.Context, token string, ip string) error {
 	resp, err := v.cli.Verify(ctx, token, ip)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	if resp.Success {
-		return true, nil
+	if !resp.Success {
+		return fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
 	}
 
-	return false, fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
+	return nil
 }

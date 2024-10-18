@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 //go:generate go run go.uber.org/mock/mockgen -source server.go -destination mock/server.go
@@ -46,7 +48,7 @@ type EmailSender interface {
 }
 
 type CaptchaVerifier interface {
-	Verify(ctx context.Context, token string, ip string) (bool, error)
+	Verify(ctx context.Context, token string, ip string) error
 }
 
 type EmailAttachment struct {
@@ -78,19 +80,22 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 		return AddEvent500JSONResponse{ErrorMessage: "no ip found in context"}, nil
 	}
 
-	ok, err := s.captcha.Verify(ctx, req.Body.CaptchaToken, ip)
+	err := s.captcha.Verify(ctx, req.Body.CaptchaToken, ip)
 	if err != nil {
+		span := trace.SpanFromContext(ctx)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		return AddEvent500JSONResponse{
 			ErrorMessage: err.Error(),
 		}, nil
 	}
-	if !ok {
-		return AddEvent422JSONResponse{
-			ErrorMessage: "captcha token is invalid",
-		}, nil
-	}
 
 	if err := s.db.AddEvent(ctx, req.Body); err != nil {
+		span := trace.SpanFromContext(ctx)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		if errors.Is(err, consts.ErrBookingExists) {
 			return AddEvent409JSONResponse{
 				ErrorMessage: err.Error(),
