@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log/slog"
+	"errors"
 	"net/http"
 	"os"
 
@@ -14,6 +14,7 @@ import (
 	"github.com/girlguidingstaplehurst/booking/internal/pdf"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
+	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,14 +28,26 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) Run(ctx context.Context) error {
-	if err := dbmigrations.Migrate(); err != nil {
-		return err
+func (s *Service) Run(ctx context.Context) (err error) {
+	// Set up OpenTelemetry.
+	otelShutdown, err := setupOTelSDK(ctx)
+	if err != nil {
+		return
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		err = errors.Join(err, otelShutdown(context.Background()))
+	}()
+
+	if err = dbmigrations.Migrate(); err != nil {
+		return
 	}
 
 	app := fiber.New(fiber.Config{
 		ProxyHeader: "X-Forwarded-For",
 	})
+
+	app.Use(otelfiber.Middleware())
 
 	app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(booking.Files),
@@ -48,7 +61,7 @@ func (s *Service) Run(ctx context.Context) error {
 
 	swagger, err := rest.GetSwagger()
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	app.Use(fibermiddleware.OapiRequestValidatorWithOptions(swagger, &fibermiddleware.Options{
@@ -63,8 +76,7 @@ func (s *Service) Run(ctx context.Context) error {
 
 	dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
-		slog.Error("failed to create db pool", "error", err)
-		os.Exit(1)
+		return
 	}
 	defer dbpool.Close()
 
@@ -75,5 +87,6 @@ func (s *Service) Run(ctx context.Context) error {
 	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
-	return app.Listen(":8080")
+	err = app.Listen(":8080")
+	return
 }

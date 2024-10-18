@@ -8,8 +8,10 @@ import {
   Link,
   Stack,
   StackDivider,
-  Text, useToken
+  Text,
+  useToken,
 } from "@chakra-ui/react";
+import { Link as ReactRouterLink } from "react-router-dom";
 
 function Footer() {
   const [brand500] = useToken("colors", ["brand.500"]);
@@ -18,7 +20,9 @@ function Footer() {
       <Container maxW="4xl" padding={4}>
         <Stack
           direction="row"
-          divider={<StackDivider borderLeft={`1px solid ${brand500}`} padding={2}/>}
+          divider={
+            <StackDivider borderLeft={`1px solid ${brand500}`} padding={2} />
+          }
           marginBottom={8}
           alignContent="center"
         >
@@ -39,7 +43,7 @@ function Footer() {
               <Stack gap={4}>
                 <Heading size="sm">Kathie Lamb Guide Centre</Heading>
                 <Link href="https://www.kathielambcentre.org/">Home</Link>
-                <Link href="https://bookings.kathielambcentre.org/">
+                <Link as={ReactRouterLink} to="/">
                   Booking
                 </Link>
                 <Link href="https://www.kathielambcentre.org/whats-on/">
