@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/exaring/otelpgx"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
@@ -74,7 +75,14 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org") //TODO externalize
 	app.Use("/api/v1/admin", jwtAuth.Validate)
 
-	dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+	cfg, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return
+	}
+
+	cfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithIncludeQueryParameters())
+
+	dbpool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return
 	}

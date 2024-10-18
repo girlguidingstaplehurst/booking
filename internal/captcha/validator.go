@@ -2,9 +2,11 @@ package captcha
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MicahParks/recaptcha"
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var _ rest.CaptchaVerifier = (*Verifier)(nil)
@@ -15,7 +17,9 @@ type Verifier struct {
 
 func NewVerifier() *Verifier {
 	return &Verifier{
-		cli: recaptcha.NewVerifierV3("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW", recaptcha.VerifierV3Options{}),
+		cli: recaptcha.NewVerifierV3("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW", recaptcha.VerifierV3Options{
+			HTTPClient: &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)},
+		}),
 	}
 }
 
