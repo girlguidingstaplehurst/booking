@@ -91,7 +91,7 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	db := postgres.NewDatabase(dbpool)
 	pdfGen := pdf.NewGenerator()
 	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
-	captchaVerifier := captcha.NewVerifier()
+	captchaVerifier := captcha.NewVerifier(os.Getenv("GOOGLE_RECAPTCHA_SECRET"))
 	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 

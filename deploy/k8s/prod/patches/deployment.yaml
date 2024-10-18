@@ -25,6 +25,11 @@ spec:
                 secretKeyRef:
                   key: smtp-password
                   name: smtp-password
+            - name: GOOGLE_RECAPTCHA_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: recaptcha-secret
+                  name: recaptcha-secret
             - name: NODE_IP
               valueFrom:
                 fieldRef:

@@ -18,9 +18,9 @@ type Verifier struct {
 	cli recaptcha.VerifierV3
 }
 
-func NewVerifier() *Verifier {
+func NewVerifier(secret string) *Verifier {
 	return &Verifier{
-		cli: recaptcha.NewVerifierV3("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW", recaptcha.VerifierV3Options{
+		cli: recaptcha.NewVerifierV3(secret, recaptcha.VerifierV3Options{
 			HTTPClient: &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)},
 		}),
 	}
