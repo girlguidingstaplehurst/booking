@@ -121,7 +121,7 @@ function AddEvent() {
     onSubmit: async (values) => {
       setSubmitting(true);
 
-      const captchaToken = await ReactRecaptcha3.getToken({action: "create_event"})
+      const captchaToken = await ReactRecaptcha3.getToken()
 
       const from = dayjs(
         `${values.eventDate} ${values.eventTimeFrom}`,

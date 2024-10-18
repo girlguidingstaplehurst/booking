@@ -278,12 +278,11 @@ func (m *MockCaptchaVerifier) EXPECT() *MockCaptchaVerifierMockRecorder {
 }
 
 // Verify mocks base method.
-func (m *MockCaptchaVerifier) Verify(ctx context.Context, token string, ip string) error {
+func (m *MockCaptchaVerifier) Verify(ctx context.Context, token, ip string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Verify", ctx, token, ip)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Verify indicates an expected call of Verify.
