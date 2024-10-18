@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/MicahParks/recaptcha"
@@ -29,5 +30,9 @@ func (v *Verifier) Verify(ctx context.Context, token string, ip string) (bool, e
 		return false, err
 	}
 
-	return resp.Success, nil
+	if resp.Success {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
 }
