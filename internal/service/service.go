@@ -9,6 +9,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
+	"github.com/girlguidingstaplehurst/booking/internal/captcha"
 	"github.com/girlguidingstaplehurst/booking/internal/email"
 	"github.com/girlguidingstaplehurst/booking/internal/pdf"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
@@ -31,7 +32,9 @@ func (s *Service) Run(ctx context.Context) error {
 		return err
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ProxyHeader: "X-Forwarded-For",
+	})
 
 	app.Use("/", filesystem.New(filesystem.Config{
 		Root:       http.FS(booking.Files),
@@ -52,6 +55,9 @@ func (s *Service) Run(ctx context.Context) error {
 		Options: openapi3filter.Options{AuthenticationFunc: openapi3filter.NoopAuthenticationFunc},
 	}))
 
+	ipExtractor := rest.NewIPExtractor()
+	app.Use(ipExtractor.Extract)
+
 	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org") //TODO externalize
 	app.Use("/api/v1/admin", jwtAuth.Validate)
 
@@ -65,7 +71,8 @@ func (s *Service) Run(ctx context.Context) error {
 	db := postgres.NewDatabase(dbpool)
 	pdfGen := pdf.NewGenerator()
 	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
-	rs := rest.NewServer(db, pdfGen, emailSender)
+	captchaVerifier := captcha.NewVerifier()
+	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
 	return app.Listen(":8080")

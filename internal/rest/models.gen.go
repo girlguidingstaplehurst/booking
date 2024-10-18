@@ -131,7 +131,8 @@ type ListEvent struct {
 
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
-	Contact struct {
+	CaptchaToken string `json:"captchaToken"`
+	Contact      struct {
 		EmailAddress openapi_types.Email `json:"email_address"`
 		Name         string              `json:"name"`
 	} `json:"contact"`

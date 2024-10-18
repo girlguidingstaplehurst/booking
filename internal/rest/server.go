@@ -45,30 +45,52 @@ type EmailSender interface {
 	SendWithAttachments(ctx context.Context, to string, subject string, body string, attachments ...EmailAttachment) error
 }
 
+type CaptchaVerifier interface {
+	Verify(ctx context.Context, token string, ip string) (bool, error)
+}
+
 type EmailAttachment struct {
 	Filename string
 	Content  io.Reader
 }
 
 type Server struct {
-	db    Database
-	pdf   PDFGenerator
-	email EmailSender
+	db      Database
+	pdf     PDFGenerator
+	email   EmailSender
+	captcha CaptchaVerifier
 }
 
-func NewServer(db Database, pdf PDFGenerator, email EmailSender) *Server {
+func NewServer(db Database, pdf PDFGenerator, email EmailSender, captcha CaptchaVerifier) *Server {
 	return &Server{
-		db:    db,
-		pdf:   pdf,
-		email: email,
+		db:      db,
+		pdf:     pdf,
+		email:   email,
+		captcha: captcha,
 	}
 }
 
 func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEventResponseObject, error) {
 	//TODO validate
 
-	err := s.db.AddEvent(ctx, req.Body)
+	ip, ok := UserIPFromContext(ctx)
+	if !ok {
+		return AddEvent500JSONResponse{ErrorMessage: "no ip found in context"}, nil
+	}
+
+	ok, err := s.captcha.Verify(ctx, req.Body.CaptchaToken, ip)
 	if err != nil {
+		return AddEvent500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+	if !ok {
+		return AddEvent422JSONResponse{
+			ErrorMessage: "captcha token is invalid",
+		}, nil
+	}
+
+	if err := s.db.AddEvent(ctx, req.Body); err != nil {
 		if errors.Is(err, consts.ErrBookingExists) {
 			return AddEvent409JSONResponse{
 				ErrorMessage: err.Error(),

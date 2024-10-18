@@ -44,14 +44,6 @@ function Summary({ formik }) {
     discount = 25;
   }
 
-  console.log(
-    "rerender",
-    duration.asHours(),
-    duration.asMinutes(),
-    price,
-    discount,
-  );
-
   return (
     <>
       <Heading>Summary</Heading>

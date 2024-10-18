@@ -6,16 +6,18 @@ import {
   SimpleGrid,
   Spacer,
   Stack,
-  StackDivider,
-  Tooltip,
+  StackDivider, Text,
+  Tooltip
 } from "@chakra-ui/react";
 import Summary from "./Summary";
 import { useFormik } from "formik";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import * as Yup from "yup";
+import ReactRecaptcha3 from "react-google-recaptcha3";
 import FormFieldAndLabel from "./components/FormFieldAndLabel";
+import RoundedButton from "./components/RoundedButton";
 
 function transformDate(dateStr) {
   return dayjs(dateStr).toDate();
@@ -24,6 +26,11 @@ function transformDate(dateStr) {
 function AddEvent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [submitErrors, setSubmitErrors] = useState("")
+
+  useEffect(() => {
+    ReactRecaptcha3.init("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW")
+  }, [])
 
   const start = searchParams.has("start")
     ? searchParams.get("start")
@@ -114,6 +121,8 @@ function AddEvent() {
     onSubmit: async (values) => {
       setSubmitting(true);
 
+      const captchaToken = await ReactRecaptcha3.getToken({action: "create_event"})
+
       const from = dayjs(
         `${values.eventDate} ${values.eventTimeFrom}`,
         "YYYY-MM-DD HH:mm",
@@ -123,7 +132,7 @@ function AddEvent() {
         "YYYY-MM-DD HH:mm",
       );
 
-      await fetch("/api/v1/add-event", {
+      const resp = await fetch("/api/v1/add-event", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -137,11 +146,18 @@ function AddEvent() {
             name: values.name,
             email_address: values.email,
           },
+          captchaToken: captchaToken,
         }),
       });
 
       setSubmitting(false);
-      return navigate("/");
+
+      if (!resp.ok) {
+        const json = await resp.json()
+        setSubmitErrors(`An error occured when booking (${json.error_message}). Please retry.`)
+      } else {
+        return navigate("/");
+      }
     },
   });
 
@@ -224,19 +240,20 @@ function AddEvent() {
 
         <Summary formik={formik} />
         <Flex>
+          <Text color="red">{submitErrors}</Text>
           <Spacer />
           <Tooltip
             label="One or more fields are invalid"
             isDisabled={formik.isValid}
           >
-            <Button
+            <RoundedButton
               colorScheme="green"
               isLoading={submitting}
               isDisabled={!formik.isValid}
               type="submit"
             >
               Book
-            </Button>
+            </RoundedButton>
           </Tooltip>
         </Flex>
         <StackDivider />

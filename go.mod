@@ -3,6 +3,7 @@ module github.com/girlguidingstaplehurst/booking
 go 1.22.1
 
 require (
+	github.com/MicahParks/recaptcha v0.0.5
 	github.com/getkin/kin-openapi v0.127.0
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-migrate/migrate/v4 v4.18.1

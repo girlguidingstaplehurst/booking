@@ -1,11 +1,11 @@
 import { Button, useToken } from "@chakra-ui/react";
 
-function RoundedButton({ children, ...rest }) {
+function RoundedButton({ children, colorScheme = "brand",...rest }) {
   const [brand500, white] = useToken("colors", ["brand.500", "white"]);
 
   return (
     <Button
-      colorScheme="brand"
+      colorScheme={colorScheme}
       border={`2px solid ${brand500}`}
       borderRadius={100}
       _hover={{

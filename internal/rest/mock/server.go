@@ -253,3 +253,41 @@ func (mr *MockEmailSenderMockRecorder) SendWithAttachments(ctx, to, subject, bod
 	varargs := append([]any{ctx, to, subject, body}, attachments...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendWithAttachments", reflect.TypeOf((*MockEmailSender)(nil).SendWithAttachments), varargs...)
 }
+
+// MockCaptchaVerifier is a mock of CaptchaVerifier interface.
+type MockCaptchaVerifier struct {
+	ctrl     *gomock.Controller
+	recorder *MockCaptchaVerifierMockRecorder
+}
+
+// MockCaptchaVerifierMockRecorder is the mock recorder for MockCaptchaVerifier.
+type MockCaptchaVerifierMockRecorder struct {
+	mock *MockCaptchaVerifier
+}
+
+// NewMockCaptchaVerifier creates a new mock instance.
+func NewMockCaptchaVerifier(ctrl *gomock.Controller) *MockCaptchaVerifier {
+	mock := &MockCaptchaVerifier{ctrl: ctrl}
+	mock.recorder = &MockCaptchaVerifierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCaptchaVerifier) EXPECT() *MockCaptchaVerifierMockRecorder {
+	return m.recorder
+}
+
+// Verify mocks base method.
+func (m *MockCaptchaVerifier) Verify(ctx context.Context, token, ip string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Verify", ctx, token, ip)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Verify indicates an expected call of Verify.
+func (mr *MockCaptchaVerifierMockRecorder) Verify(ctx, token, ip any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockCaptchaVerifier)(nil).Verify), ctx, token, ip)
+}
