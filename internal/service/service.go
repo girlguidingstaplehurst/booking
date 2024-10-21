@@ -11,6 +11,7 @@ import (
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
 	"github.com/girlguidingstaplehurst/booking/internal/captcha"
+	"github.com/girlguidingstaplehurst/booking/internal/content"
 	"github.com/girlguidingstaplehurst/booking/internal/email"
 	"github.com/girlguidingstaplehurst/booking/internal/pdf"
 	"github.com/girlguidingstaplehurst/booking/internal/postgres"
@@ -30,6 +31,8 @@ func NewService() *Service {
 }
 
 func (s *Service) Run(ctx context.Context) (err error) {
+	//TODO set up config struct
+
 	// Set up OpenTelemetry.
 	otelShutdown, err := setupOTelSDK(ctx)
 	if err != nil {
@@ -92,7 +95,8 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	pdfGen := pdf.NewGenerator()
 	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
 	captchaVerifier := captcha.NewVerifier(os.Getenv("GOOGLE_RECAPTCHA_SECRET"))
-	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier)
+	contentManager := content.NewManager("https://graphql.contentful.com/content/v1/spaces/o3u1j7dkyy42", "mnamX4N0qebOgpJN6KJVgakUGcSLFrFEvcHhdtcEO14")
+	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier, contentManager)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
 	err = app.Listen(":8080")

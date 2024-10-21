@@ -290,3 +290,41 @@ func (mr *MockCaptchaVerifierMockRecorder) Verify(ctx, token, ip any) *gomock.Ca
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockCaptchaVerifier)(nil).Verify), ctx, token, ip)
 }
+
+// MockContentManager is a mock of ContentManager interface.
+type MockContentManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockContentManagerMockRecorder
+}
+
+// MockContentManagerMockRecorder is the mock recorder for MockContentManager.
+type MockContentManagerMockRecorder struct {
+	mock *MockContentManager
+}
+
+// NewMockContentManager creates a new mock instance.
+func NewMockContentManager(ctrl *gomock.Controller) *MockContentManager {
+	mock := &MockContentManager{ctrl: ctrl}
+	mock.recorder = &MockContentManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockContentManager) EXPECT() *MockContentManagerMockRecorder {
+	return m.recorder
+}
+
+// Email mocks base method.
+func (m *MockContentManager) Email(ctx context.Context, key string) (rest.EmailContent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Email", ctx, key)
+	ret0, _ := ret[0].(rest.EmailContent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Email indicates an expected call of Email.
+func (mr *MockContentManagerMockRecorder) Email(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Email", reflect.TypeOf((*MockContentManager)(nil).Email), ctx, key)
+}

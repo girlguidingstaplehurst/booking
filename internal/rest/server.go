@@ -51,6 +51,15 @@ type CaptchaVerifier interface {
 	Verify(ctx context.Context, token string, ip string) error
 }
 
+type ContentManager interface {
+	Email(ctx context.Context, key string) (EmailContent, error)
+}
+
+type EmailContent struct {
+	Subject string
+	Body    string
+}
+
 type EmailAttachment struct {
 	Filename string
 	Content  io.Reader
@@ -61,14 +70,16 @@ type Server struct {
 	pdf     PDFGenerator
 	email   EmailSender
 	captcha CaptchaVerifier
+	content ContentManager
 }
 
-func NewServer(db Database, pdf PDFGenerator, email EmailSender, captcha CaptchaVerifier) *Server {
+func NewServer(db Database, pdf PDFGenerator, email EmailSender, captcha CaptchaVerifier, content ContentManager) *Server {
 	return &Server{
 		db:      db,
 		pdf:     pdf,
 		email:   email,
 		captcha: captcha,
+		content: content,
 	}
 }
 
@@ -194,8 +205,15 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 		}, nil
 	}
 
+	emailContent, err := s.content.Email(ctx, "klgc-booking-email")
+	if err != nil {
+		return AdminSendInvoice500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), "Your event booking at the Kathie Lamb Guide Centre", "Event booking email contents", //TODO make this configurable
+	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Body, emailContent.Body,
 		EmailAttachment{Filename: "invoice.pdf", Content: pdf})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
