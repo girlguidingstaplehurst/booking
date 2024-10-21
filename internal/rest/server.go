@@ -213,7 +213,7 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Body, emailContent.Body,
+	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Subject, emailContent.Body,
 		EmailAttachment{Filename: "invoice.pdf", Content: pdf})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
