@@ -1,7 +1,8 @@
 import {
+  Box,
   Card,
-  CardBody,
-  Heading,
+  CardBody, Checkbox, Flex,
+  Heading, Link, Spacer,
   Table,
   TableCaption,
   TableContainer,
@@ -10,12 +11,13 @@ import {
   Text,
   Th,
   Thead,
-  Tr,
+  Tr
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { Link as ReactRouterLink } from "react-router-dom";
 
 dayjs.extend(duration);
 dayjs.extend(customParseFormat);
@@ -86,6 +88,26 @@ function Summary({ formik }) {
           </TableContainer>
         </CardBody>
       </Card>
+      <Box>
+        <Flex>
+          <Checkbox
+            name="privacyPolicy"
+            isChecked={formik.values.privacyPolicy}
+            onChange={formik.handleChange}
+            isInvalid={formik.errors.privacyPolicy}
+          >
+            I have read and agree to my data being processed in accordance with
+            the{" "}
+            <Link as={ReactRouterLink} to="/privacy-policy" target="_blank" rel="noopener noreferrer" >
+              Privacy Policy
+            </Link>
+          </Checkbox>
+          <Spacer />
+          {formik.errors.privacyPolicy ? (
+            <Text color="red">{formik.errors.privacyPolicy}</Text>
+          ) : null}
+        </Flex>
+      </Box>
       <Text size="l">
         Booking the hall requires acceptance of the Contract of Hire. Signing
         can either be done electronically, or via printed contract copies.

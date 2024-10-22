@@ -6,18 +6,18 @@ import {
   SimpleGrid,
   Spacer,
   Stack,
-  StackDivider, Text,
-  Tooltip
+  StackDivider,
+  Text,
+  Tooltip, useToken
 } from "@chakra-ui/react";
 import Summary from "./Summary";
 import { useFormik } from "formik";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import * as Yup from "yup";
 import ReactRecaptcha3 from "react-google-recaptcha3";
 import FormFieldAndLabel from "./components/FormFieldAndLabel";
-import RoundedButton from "./components/RoundedButton";
 
 function transformDate(dateStr) {
   return dayjs(dateStr).toDate();
@@ -26,11 +26,11 @@ function transformDate(dateStr) {
 function AddEvent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [submitErrors, setSubmitErrors] = useState("")
+  const [submitErrors, setSubmitErrors] = useState("");
 
   useEffect(() => {
-    ReactRecaptcha3.init("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW")
-  }, [])
+    ReactRecaptcha3.init("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW");
+  }, []);
 
   const start = searchParams.has("start")
     ? searchParams.get("start")
@@ -105,6 +105,7 @@ function AddEvent() {
       ),
     name: Yup.string().required("Required"),
     email: Yup.string().email().required("Required"),
+    privacyPolicy: Yup.bool().isTrue("Required"),
   });
 
   const formik = useFormik({
@@ -116,13 +117,14 @@ function AddEvent() {
       visibility: "show",
       name: "",
       email: "",
+      privacyPolicy: false,
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
       setSubmitErrors("");
       setSubmitting(true);
 
-      const captchaToken = await ReactRecaptcha3.getToken()
+      const captchaToken = await ReactRecaptcha3.getToken();
 
       const from = dayjs(
         `${values.eventDate} ${values.eventTimeFrom}`,
@@ -154,8 +156,10 @@ function AddEvent() {
       setSubmitting(false);
 
       if (!resp.ok) {
-        const json = await resp.json()
-        setSubmitErrors(`An error occured when booking (${json.error_message}). Please retry.`)
+        const json = await resp.json();
+        setSubmitErrors(
+          `An error occured when booking (${json.error_message}). Please retry.`,
+        );
       } else {
         return navigate("/");
       }
@@ -163,6 +167,26 @@ function AddEvent() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [brand500, white] = useToken("colors", ["brand.500", "white"]);
+
+  const BookButton = React.forwardRef(({ children, ...props }, ref) => (
+    <Button
+      ref={ref}
+      colorScheme="green"
+      isLoading={submitting}
+      isDisabled={!formik.isValid}
+      type="submit"
+      border={`2px solid ${brand500}`}
+      borderRadius={100}
+      _hover={{
+        bg: white,
+        color: brand500,
+      }}
+      {...props}
+    >
+      {children}
+    </Button>
+  ));
 
   return (
     <form onSubmit={formik.handleSubmit}>
@@ -247,14 +271,7 @@ function AddEvent() {
             label="One or more fields are invalid"
             isDisabled={formik.isValid}
           >
-            <RoundedButton
-              colorScheme="green"
-              isLoading={submitting}
-              isDisabled={!formik.isValid}
-              type="submit"
-            >
-              Book
-            </RoundedButton>
+            <BookButton>Book</BookButton>
           </Tooltip>
         </Flex>
         <StackDivider />
