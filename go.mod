@@ -9,6 +9,7 @@ require (
 	github.com/gofiber/contrib/otelfiber v1.0.10
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/johnfercher/maroto/v2 v2.1.5
@@ -31,6 +32,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/mock v0.4.0
+	golang.org/x/oauth2 v0.23.0
 	google.golang.org/api v0.199.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
@@ -95,7 +97,6 @@ require (
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
