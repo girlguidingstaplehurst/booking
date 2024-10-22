@@ -11,18 +11,14 @@ import {
   Container,
   Flex,
   Heading,
-  Select,
   Spacer,
   Stack,
   StackDivider,
-  Text
+  Text,
 } from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
-import RoundedButton from "../components/RoundedButton";
-import { Form, Formik, useFormik } from "formik";
-import { useFetcher } from "@mongez/react-hooks";
 import RateSelect from "./components/RateSelect";
 
 export async function reviewEvent(eventID) {
@@ -38,23 +34,37 @@ export async function reviewEvent(eventID) {
     assignee: "bookings@kathielambcentre.org",
     keyholderIn: "bookings@kathielambcentre.org",
     keyholderOut: "bookings@kathielambcentre.org",
-    invoices: [{
-      reference: "ABCDEF", id: "ggghhhiii", status: "raised"
-    }, {
-      reference: "BCDEFG", id: "jjjkkklll", status: "paid"
-    }, {
-      reference: "CDEFGH", id: "mmmnnnooo", status: "cancelled"
-    }],
+    invoices: [
+      {
+        reference: "ABCDEF",
+        id: "ggghhhiii",
+        status: "raised",
+      },
+      {
+        reference: "BCDEFG",
+        id: "jjjkkklll",
+        status: "paid",
+      },
+      {
+        reference: "CDEFGH",
+        id: "mmmnnnooo",
+        status: "cancelled",
+      },
+    ],
     rateID: "default",
   });
 }
 
 function getInvoiceColorScheme(status) {
-  switch(status) {
-    case "raised": return "purple";
-    case "paid": return "green";
-    case "cancelled": return "red";
-    default: return "";
+  switch (status) {
+    case "raised":
+      return "purple";
+    case "paid":
+      return "green";
+    case "cancelled":
+      return "red";
+    default:
+      return "";
   }
 }
 
@@ -62,25 +72,30 @@ export function ReviewEvent() {
   const event = useLoaderData();
 
   const eventDates = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
-  const visibility = event.visible ? (<Flex>
+  const visibility = event.visible ? (
+    <Flex>
       <Box>
         <Heading size="s">Event Visibility</Heading>
         <Text>Event details visible publicly</Text>
       </Box>
       <Spacer />
-    {/*<RoundedButton colorScheme="brand">Hide Event Details on Public Website</RoundedButton>*/}
-    </Flex>) : (<Flex>
+      {/*<RoundedButton colorScheme="brand">Hide Event Details on Public Website</RoundedButton>*/}
+    </Flex>
+  ) : (
+    <Flex>
       <Box>
         <Heading size="s">Event Visibility</Heading>
         <Text>Event details hidden publicly</Text>
       </Box>
       <Spacer />
-    {/*<RoundedButton colorScheme="brand">Show Event Details on Public Website</RoundedButton>*/}
-    </Flex>);
+      {/*<RoundedButton colorScheme="brand">Show Event Details on Public Website</RoundedButton>*/}
+    </Flex>
+  );
 
   const hasInvoices = event.invoices !== undefined && event.invoices.length > 0;
 
-  return (<Container maxW="4xl">
+  return (
+    <Container maxW="4xl">
       <Stack spacing={4}>
         <Breadcrumb>
           <BreadcrumbItem>
@@ -133,26 +148,31 @@ export function ReviewEvent() {
               {visibility}
               <Box>
                 <Heading size="s">Hiring Rate</Heading>
-                <RateSelect eventID={event.id} rateID={event.rateID}/>
+                <RateSelect eventID={event.id} rateID={event.rateID} />
               </Box>
               <Flex>
                 <Box>
                   <Heading size="s">Invoices</Heading>
                   <ButtonGroup>
                     {hasInvoices ? (
-                      event.invoices.map((invoice) => (<Button
+                      event.invoices.map((invoice) => (
+                        <Button
                           to={`/admin/invoice/${invoice.id}`}
                           as={ReactRouterLink}
                           colorScheme={getInvoiceColorScheme(invoice.status)}
                         >
                           {invoice.reference} - {invoice.status}
-                      </Button>))) : (<Button
+                        </Button>
+                      ))
+                    ) : (
+                      <Button
                         as={ReactRouterLink}
                         to={`/admin/create-invoice?events=${event.id}`}
                         colorScheme="brand"
                       >
                         Raise Invoice
-                    </Button>)}
+                      </Button>
+                    )}
                   </ButtonGroup>
                 </Box>
               </Flex>
@@ -182,5 +202,6 @@ export function ReviewEvent() {
           </CardBody>
         </Card>
       </Stack>
-    </Container>);
+    </Container>
+  );
 }

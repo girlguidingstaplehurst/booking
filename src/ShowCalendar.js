@@ -24,6 +24,7 @@ import {
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useCallback, useMemo, useRef, useState } from "react";
 import RoundedButton from "./components/RoundedButton";
+import ManagedContent from "./components/ManagedContent";
 
 const localizer = dayjsLocalizer(dayjs);
 
@@ -111,20 +112,21 @@ function ShowCalendar() {
 
   return (
     <Stack spacing={4}>
-      <Heading>Make a Booking</Heading>
-      <Text>
-        Booking your event at the Kathie Lamb Guide Centre is easy and
-        convenient. Simply select your preferred date and time below, and then
-        fill in the online booking form with the name of your event and your
-        contact details, check the price, and hit Book! Our team will review
-        your request promptly and get back to you with the next steps.
-      </Text>
-      <Text>
-        Once your booking is confirmed, we'll work closely with you to suit your
-        specific needs. With our dedicated staff and commitment to exceptional
-        service, you can rest assured that your event will be a resounding
-        success.
-      </Text>
+      <ManagedContent name="make-a-booking"/>
+      {/*<Heading>Make a Booking</Heading>*/}
+      {/*<Text>*/}
+      {/*  Booking your event at the Kathie Lamb Guide Centre is easy and*/}
+      {/*  convenient. Simply select your preferred date and time below, and then*/}
+      {/*  fill in the online booking form with the name of your event and your*/}
+      {/*  contact details, check the price, and hit Book! Our team will review*/}
+      {/*  your request promptly and get back to you with the next steps.*/}
+      {/*</Text>*/}
+      {/*<Text>*/}
+      {/*  Once your booking is confirmed, we'll work closely with you to suit your*/}
+      {/*  specific needs. With our dedicated staff and commitment to exceptional*/}
+      {/*  service, you can rest assured that your event will be a resounding*/}
+      {/*  success.*/}
+      {/*</Text>*/}
       <Flex justifyContent="end" wrap="wrap" gap={4}>
         <Stack direction="row" gap={2}>
           <Text padding={2}>Key:</Text>

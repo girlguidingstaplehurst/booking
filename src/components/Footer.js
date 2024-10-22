@@ -46,6 +46,9 @@ function Footer() {
                 <Link as={ReactRouterLink} to="/">
                   Booking
                 </Link>
+                <Link as={ReactRouterLink} to="/privacy-policy">
+                  Privacy Policy
+                </Link>
                 <Link href="https://www.kathielambcentre.org/whats-on/">
                   What's On?
                 </Link>

@@ -23,6 +23,7 @@ import { Dashboard, populateDashboard } from "./admin/Dashboard";
 import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
+import ManagedContent from "./components/ManagedContent";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -34,6 +35,10 @@ const router = createBrowserRouter(
           loader={async () => await fetch("/api/v1/events")}
         />
         <Route path="add-event" element={<AddEvent />} />
+        <Route
+          path="privacy-policy"
+          element={<ManagedContent name="privacy-policy" />}
+        />
         <Route path="*" element={<NoMatch />} />
       </Route>
 
@@ -66,18 +71,18 @@ const router = createBrowserRouter(
 
 const theme = extendTheme({
   colors: {
-    black: '#1d1d1b',
+    black: "#1d1d1b",
     brand: {
-      300: '#00a7e5',
-      500: '#007bc4',
-      900: '#161b4e'
+      300: "#00a7e5",
+      500: "#007bc4",
+      900: "#161b4e",
     },
   },
   fonts: {
     body: "Poppins, Century Gothic, sans-serif",
     heading: "Poppins, Century Gothic, sans-serif",
-  }
-})
+  },
+});
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
