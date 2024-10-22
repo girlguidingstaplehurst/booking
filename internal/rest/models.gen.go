@@ -143,6 +143,7 @@ type NewEvent struct {
 		PubliclyVisible bool   `json:"publicly_visible"`
 		To              string `json:"to"`
 	} `json:"event"`
+	PrivacyPolicy bool `json:"privacyPolicy"`
 }
 
 // Rate defines model for Rate.

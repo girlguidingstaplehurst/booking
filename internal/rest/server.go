@@ -104,6 +104,10 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 		}, nil
 	}
 
+	if !req.Body.PrivacyPolicy {
+		return AddEvent422JSONResponse{ErrorMessage: "privacy policy was not ticked"}, nil
+	}
+
 	if err := s.db.AddEvent(ctx, req.Body); err != nil {
 		span := trace.SpanFromContext(ctx)
 		span.RecordError(err)

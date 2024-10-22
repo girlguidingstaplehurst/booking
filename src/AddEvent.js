@@ -150,6 +150,7 @@ function AddEvent() {
             email_address: values.email,
           },
           captchaToken: captchaToken,
+          privacyPolicy: values.privacyPolicy,
         }),
       });
 

@@ -341,7 +341,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-
 components:
   schemas:
     ErrorResponse:
@@ -357,6 +356,7 @@ components:
         - event
         - contact
         - captchaToken
+        - privacyPolicy
       properties:
         event:
           type: object
@@ -390,6 +390,8 @@ components:
               format: email
         captchaToken:
           type: string
+        privacyPolicy:
+          type: boolean
     EventStatus:
       type: string
       enum: [ provisional, "awaiting documents", approved, cancelled ]
