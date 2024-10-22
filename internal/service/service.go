@@ -91,10 +91,15 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	}
 	defer dbpool.Close()
 
+	captchaArmed := true
+	if env := os.Getenv("CAPTCHA_ARMED"); env == "false" {
+		captchaArmed = false
+	}
+
 	db := postgres.NewDatabase(dbpool)
 	pdfGen := pdf.NewGenerator()
 	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
-	captchaVerifier := captcha.NewVerifier(os.Getenv("GOOGLE_RECAPTCHA_SECRET"))
+	captchaVerifier := captcha.NewVerifier(os.Getenv("GOOGLE_RECAPTCHA_SECRET"), captchaArmed)
 	contentManager := content.NewManager("https://graphql.contentful.com/content/v1/spaces/o3u1j7dkyy42", "mnamX4N0qebOgpJN6KJVgakUGcSLFrFEvcHhdtcEO14")
 	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier, contentManager)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))

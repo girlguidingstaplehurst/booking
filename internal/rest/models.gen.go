@@ -64,6 +64,7 @@ type Event struct {
 	KeyholderIn  *openapi_types.Email `json:"keyholderIn,omitempty"`
 	KeyholderOut *openapi_types.Email `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
+	RateID       string               `json:"rateID"`
 	Status       EventStatus          `json:"status"`
 	To           string               `json:"to"`
 	Visible      bool                 `json:"visible"`
@@ -144,6 +145,17 @@ type NewEvent struct {
 	} `json:"event"`
 }
 
+// Rate defines model for Rate.
+type Rate struct {
+	Description   string                  `json:"description"`
+	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
+	HourlyRate    float32                 `json:"hourlyRate"`
+	Id            string                  `json:"id"`
+}
+
+// RatesList defines model for RatesList.
+type RatesList = []Rate
+
 // SendInvoiceBody defines model for SendInvoiceBody.
 type SendInvoiceBody struct {
 	Contact openapi_types.Email `json:"contact"`
@@ -158,6 +170,11 @@ type SendInvoiceBodyItem struct {
 	Cost        float32 `json:"cost"`
 	Description string  `json:"description"`
 	EventID     *string `json:"eventID,omitempty"`
+}
+
+// SetRateBody defines model for SetRateBody.
+type SetRateBody struct {
+	Rate string `json:"rate"`
 }
 
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
@@ -186,6 +203,9 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
+type AdminEventSetRateJSONRequestBody = SetRateBody
 
 // AdminSendInvoiceJSONRequestBody defines body for AdminSendInvoice for application/json ContentType.
 type AdminSendInvoiceJSONRequestBody = SendInvoiceBody

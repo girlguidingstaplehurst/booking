@@ -26,10 +26,12 @@ type Database interface {
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids []string) ([]DBInvoiceEvent, error)
 	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
+	GetRates(ctx context.Context) ([]Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
+	SetRate(ctx context.Context, eventID string, rate string) error
 }
 
 type DBInvoiceItem struct {
@@ -275,4 +277,26 @@ func (s *Server) AdminMarkInvoicePaid(ctx context.Context, request AdminMarkInvo
 	}
 
 	return AdminMarkInvoicePaid200Response{}, nil
+}
+
+func (s *Server) AdminGetRates(ctx context.Context, _ AdminGetRatesRequestObject) (AdminGetRatesResponseObject, error) {
+	rates, err := s.db.GetRates(ctx)
+	if err != nil {
+		return AdminGetRates500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminGetRates200JSONResponse(rates), nil
+}
+
+func (s *Server) AdminEventSetRate(ctx context.Context, request AdminEventSetRateRequestObject) (AdminEventSetRateResponseObject, error) {
+	err := s.db.SetRate(ctx, request.EventID, request.Body.Rate)
+	if err != nil {
+		return AdminEventSetRate500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminEventSetRate200Response{}, nil
 }

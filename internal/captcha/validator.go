@@ -15,14 +15,16 @@ import (
 var _ rest.CaptchaVerifier = (*Verifier)(nil)
 
 type Verifier struct {
-	cli recaptcha.VerifierV3
+	cli   recaptcha.VerifierV3
+	armed bool
 }
 
-func NewVerifier(secret string) *Verifier {
+func NewVerifier(secret string, armed bool) *Verifier {
 	return &Verifier{
 		cli: recaptcha.NewVerifierV3(secret, recaptcha.VerifierV3Options{
 			HTTPClient: &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)},
 		}),
+		armed: armed,
 	}
 }
 
@@ -35,7 +37,7 @@ func (v *Verifier) Verify(ctx context.Context, token string, ip string) error {
 		return err
 	}
 
-	if !resp.Success {
+	if !resp.Success && v.armed {
 		return fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
 	}
 

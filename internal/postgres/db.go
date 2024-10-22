@@ -161,12 +161,12 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
-       		assignee, keyholder_in, keyholder_out	
+       		assignee, keyholder_in, keyholder_out, rate_id	
 		from booking_events
 		where id = $1`, id, dbDateTimeFormat)
 
 	var event rest.Event
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.RateID); err != nil {
 		return event, err
 	}
 
@@ -255,6 +255,33 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 
 func (db *Database) MarkInvoicePaid(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, "update booking_invoices set paid = $1, status = 'paid' where id = $2", time.Now(), id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
+	rows, err := db.pool.Query(ctx, `select id, description, hourly_rate::numeric::decimal, discount_table
+		from booking_rates
+		order by id`)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Rate, error) {
+		var rate rest.Rate
+		if err := row.Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable); err != nil {
+			return rate, err
+		}
+
+		return rate, nil
+	})
+}
+
+func (db *Database) SetRate(ctx context.Context, eventID string, rate string) error {
+	_, err := db.pool.Exec(ctx, "update booking_events set rate_id = $1 where id = $2", rate, eventID)
 	if err != nil {
 		return err
 	}

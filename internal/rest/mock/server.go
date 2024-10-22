@@ -131,6 +131,21 @@ func (mr *MockDatabaseMockRecorder) GetInvoiceEvents(ctx, ids any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvoiceEvents", reflect.TypeOf((*MockDatabase)(nil).GetInvoiceEvents), ctx, ids)
 }
 
+// GetRates mocks base method.
+func (m *MockDatabase) GetRates(ctx context.Context) ([]rest.Rate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRates", ctx)
+	ret0, _ := ret[0].([]rest.Rate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRates indicates an expected call of GetRates.
+func (mr *MockDatabaseMockRecorder) GetRates(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRates", reflect.TypeOf((*MockDatabase)(nil).GetRates), ctx)
+}
+
 // ListEvents mocks base method.
 func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
 	m.ctrl.T.Helper()
@@ -172,6 +187,20 @@ func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id string) error {
 func (mr *MockDatabaseMockRecorder) MarkInvoiceSent(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoiceSent", reflect.TypeOf((*MockDatabase)(nil).MarkInvoiceSent), ctx, id)
+}
+
+// SetRate mocks base method.
+func (m *MockDatabase) SetRate(ctx context.Context, eventID, rate string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRate", ctx, eventID, rate)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRate indicates an expected call of SetRate.
+func (mr *MockDatabaseMockRecorder) SetRate(ctx, eventID, rate any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRate", reflect.TypeOf((*MockDatabase)(nil).SetRate), ctx, eventID, rate)
 }
 
 // MockPDFGenerator is a mock of PDFGenerator interface.

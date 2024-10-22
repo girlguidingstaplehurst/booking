@@ -21,6 +21,9 @@ import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import RoundedButton from "../components/RoundedButton";
+import { Form, Formik, useFormik } from "formik";
+import { useFetcher } from "@mongez/react-hooks";
+import RateSelect from "./components/RateSelect";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -41,7 +44,8 @@ export async function reviewEvent(eventID) {
       reference: "BCDEFG", id: "jjjkkklll", status: "paid"
     }, {
       reference: "CDEFGH", id: "mmmnnnooo", status: "cancelled"
-    }]
+    }],
+    rateID: "default",
   });
 }
 
@@ -64,14 +68,14 @@ export function ReviewEvent() {
         <Text>Event details visible publicly</Text>
       </Box>
       <Spacer />
-    <RoundedButton colorScheme="brand">Hide Event Details on Public Website</RoundedButton>
+    {/*<RoundedButton colorScheme="brand">Hide Event Details on Public Website</RoundedButton>*/}
     </Flex>) : (<Flex>
       <Box>
         <Heading size="s">Event Visibility</Heading>
         <Text>Event details hidden publicly</Text>
       </Box>
       <Spacer />
-    <RoundedButton colorScheme="brand">Show Event Details on Public Website</RoundedButton>
+    {/*<RoundedButton colorScheme="brand">Show Event Details on Public Website</RoundedButton>*/}
     </Flex>);
 
   const hasInvoices = event.invoices !== undefined && event.invoices.length > 0;
@@ -100,9 +104,9 @@ export function ReviewEvent() {
                   <Text>{event.assignee}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Assign to Me</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Assign to Me</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
               <Flex>
                 <Box>
@@ -110,9 +114,9 @@ export function ReviewEvent() {
                   <Text>{eventDates}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Update Dates and Times</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Update Dates and Times</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
               <Flex>
                 <Box>
@@ -122,45 +126,14 @@ export function ReviewEvent() {
                   </Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Update Event Contact</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Update Event Contact</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
               {visibility}
               <Box>
                 <Heading size="s">Hiring Rate</Heading>
-                <Flex gap={2}>
-                  <Box flex="1">
-                    <Select>
-                      <option value="external" selected>
-                        External Hirer
-                      </option>
-                      <option value="regular-external">
-                        Regular External Hirer
-                      </option>
-                      <option value="girlguiding">Girlguiding Hirer</option>
-                      <option value="girlguiding-residential">
-                        Girlguiding Residential
-                      </option>
-                      <option value="district-event">
-                        Girlguiding Staplehurst District Event
-                      </option>
-                      <option value="unit-meeting">Unit Meeting</option>
-                      <option value="unit-meeting-rainbows">
-                        Unit Meeting (Rainbows)
-                      </option>
-                      <option value="unit-meeting-trefoil">
-                        Unit Meeting (Trefoil)
-                      </option>
-                    </Select>
-                  </Box>
-                  <ButtonGroup>
-                    {/*TODO enable this button if the select value has changed */}
-                    <RoundedButton colorScheme="brand" isDisabled={true}>
-                      Update
-                    </RoundedButton>
-                  </ButtonGroup>
-                </Flex>
+                <RateSelect eventID={event.id} rateID={event.rateID}/>
               </Box>
               <Flex>
                 <Box>
@@ -189,10 +162,10 @@ export function ReviewEvent() {
                   <Text>{event.status}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Request Documents</RoundedButton>
-                  <RoundedButton colorScheme="brand">Cancel Event</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Request Documents</RoundedButton>*/}
+                {/*  <RoundedButton colorScheme="brand">Cancel Event</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
               <Flex>
                 <Box>
@@ -201,9 +174,9 @@ export function ReviewEvent() {
                   <Text>Out: {event.keyholderOut}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Update Keyholders</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Update Keyholders</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
             </Stack>
           </CardBody>

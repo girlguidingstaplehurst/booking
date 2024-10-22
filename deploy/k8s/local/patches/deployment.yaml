@@ -8,5 +8,7 @@ spec:
       containers:
         - name: booking
           env:
+            - name: CAPTCHA_ARMED
+              value: "false"
             - name: DATABASE_URL
               value: postgresql://postgres:password@postgres.booking.svc.cluster.local:5432/postgres?sslmode=disable

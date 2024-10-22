@@ -85,9 +85,9 @@ export function ManageInvoice() {
                   <Text>{dayjs(invoice.sent).toString()}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <RoundedButton colorScheme="brand">Resend</RoundedButton>
-                </ButtonGroup>
+                {/*<ButtonGroup>*/}
+                {/*  <RoundedButton colorScheme="brand">Resend</RoundedButton>*/}
+                {/*</ButtonGroup>*/}
               </Flex>
               <Flex>
                 <Box>
