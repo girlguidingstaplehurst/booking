@@ -31,7 +31,7 @@ function ManagedContent({ name }) {
 
   const options = {
     renderMark: {
-      [MARKS.BOLD]: (text) => <Text fontWeight="bold">{text}</Text>,
+      [MARKS.BOLD]: (text) => <b>{text}</b>,
     },
     renderNode: {
       [BLOCKS.HEADING_2]: (node, children) => <Heading size="lg">{children}</Heading>,
