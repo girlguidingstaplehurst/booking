@@ -106,6 +106,10 @@ function AddEvent() {
     name: Yup.string().required("Required"),
     email: Yup.string().email().required("Required"),
     privacyPolicy: Yup.bool().isTrue("Required"),
+    termsOfHire: Yup.bool().isTrue("Required"),
+    cleaningAndDamage: Yup.bool().isTrue("Required"),
+    carParking: Yup.bool().isTrue("Required"),
+    adhesives: Yup.bool().isTrue("Required"),
   });
 
   const formik = useFormik({
@@ -118,6 +122,10 @@ function AddEvent() {
       name: "",
       email: "",
       privacyPolicy: false,
+      termsOfHire: false,
+      cleaningAndDamage: false,
+      carParking: false,
+      adhesives: false,
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -151,6 +159,10 @@ function AddEvent() {
           },
           captchaToken: captchaToken,
           privacyPolicy: values.privacyPolicy,
+          termsOfHire: values.termsOfHire,
+          cleaningAndDamage: values.cleaningAndDamage,
+          carParking: values.carParking,
+          adhesives: values.adhesives,
         }),
       });
 

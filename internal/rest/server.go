@@ -107,6 +107,18 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 	if !req.Body.PrivacyPolicy {
 		return AddEvent422JSONResponse{ErrorMessage: "privacy policy was not ticked"}, nil
 	}
+	if !req.Body.TermsOfHire {
+		return AddEvent422JSONResponse{ErrorMessage: "terms of hire was not ticked"}, nil
+	}
+	if !req.Body.CleaningAndDamage {
+		return AddEvent422JSONResponse{ErrorMessage: "cleaning and damage policy was not ticked"}, nil
+	}
+	if !req.Body.CarParking {
+		return AddEvent422JSONResponse{ErrorMessage: "car parking policy was not ticked"}, nil
+	}
+	if !req.Body.Adhesives {
+		return AddEvent422JSONResponse{ErrorMessage: "adhesives policy was not ticked"}, nil
+	}
 
 	if err := s.db.AddEvent(ctx, req.Body); err != nil {
 		span := trace.SpanFromContext(ctx)

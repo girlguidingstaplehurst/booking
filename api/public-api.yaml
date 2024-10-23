@@ -357,6 +357,10 @@ components:
         - contact
         - captchaToken
         - privacyPolicy
+        - termsOfHire
+        - cleaningAndDamage
+        - carParking
+        - adhesives
       properties:
         event:
           type: object
@@ -391,6 +395,14 @@ components:
         captchaToken:
           type: string
         privacyPolicy:
+          type: boolean
+        termsOfHire:
+          type: boolean
+        cleaningAndDamage:
+          type: boolean
+        carParking:
+          type: boolean
+        adhesives:
           type: boolean
     EventStatus:
       type: string

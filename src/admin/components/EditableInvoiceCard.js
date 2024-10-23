@@ -68,7 +68,7 @@ function populateInvoiceItems(events) {
 
     acc.push({
       eventID: event.id,
-      description: `${event.name} - Refundable Deposit`,
+      description: `${event.name} - Refundable Cleaning and Damage deposit`,
       cost: 100, //TODO enable this to be configured
     });
 

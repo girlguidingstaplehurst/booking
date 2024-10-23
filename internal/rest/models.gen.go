@@ -132,8 +132,11 @@ type ListEvent struct {
 
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
-	CaptchaToken string `json:"captchaToken"`
-	Contact      struct {
+	Adhesives         bool   `json:"adhesives"`
+	CaptchaToken      string `json:"captchaToken"`
+	CarParking        bool   `json:"carParking"`
+	CleaningAndDamage bool   `json:"cleaningAndDamage"`
+	Contact           struct {
 		EmailAddress openapi_types.Email `json:"email_address"`
 		Name         string              `json:"name"`
 	} `json:"contact"`
@@ -144,6 +147,7 @@ type NewEvent struct {
 		To              string `json:"to"`
 	} `json:"event"`
 	PrivacyPolicy bool `json:"privacyPolicy"`
+	TermsOfHire   bool `json:"termsOfHire"`
 }
 
 // Rate defines model for Rate.

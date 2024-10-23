@@ -39,6 +39,14 @@ const router = createBrowserRouter(
           path="privacy-policy"
           element={<ManagedContent name="privacy-policy" />}
         />
+        <Route
+          path="terms-of-hire"
+          element={<ManagedContent name="terms-of-hire" />}
+        />
+        <Route
+          path="cleaning-and-damage-policy"
+          element={<ManagedContent name="cleaning-and-damage-policy" />}
+        />
         <Route path="*" element={<NoMatch />} />
       </Route>
 

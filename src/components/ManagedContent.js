@@ -1,8 +1,9 @@
 import * as contentful from "contentful";
-import { Heading, Link, Skeleton, Stack, Text } from "@chakra-ui/react";
+import { Heading, Link, List, ListItem, OrderedList, Skeleton, Stack, Text, UnorderedList } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
+import dayjs from "dayjs";
 
 const client = contentful.createClient({
   space: "o3u1j7dkyy42",
@@ -24,7 +25,7 @@ function ManagedContent({ name }) {
     };
 
     getContent().then((item) => {
-      setContent(item.fields);
+      setContent(item);
       setLoaded(true);
     });
   }, [name]);
@@ -38,6 +39,9 @@ function ManagedContent({ name }) {
       [BLOCKS.HEADING_3]: (node, children) => <Heading size="md">{children}</Heading>,
       [BLOCKS.HEADING_4]: (node, children) => <Heading size="sm">{children}</Heading>,
       [BLOCKS.PARAGRAPH]: (node, children) => <Text>{children}</Text>,
+      [BLOCKS.OL_LIST]: (node, children) => <OrderedList>{children}</OrderedList>,
+      [BLOCKS.UL_LIST]: (node, children) => <UnorderedList>{children}</UnorderedList>,
+      [BLOCKS.LIST_ITEM]: (node, children) => <ListItem>{children}</ListItem>,
       [INLINES.HYPERLINK]: (node, children) => <Link>{children}</Link>,
     },
   };
@@ -45,8 +49,9 @@ function ManagedContent({ name }) {
   return (
     <Skeleton isLoaded={loaded}>
       <Stack gap={4}>
-        <Heading>{content.heading}</Heading>
-        {documentToReactComponents(content.richContent, options)}
+        <Heading>{content.fields?.heading}</Heading>
+        <Text>Last updated {dayjs(content.sys?.updatedAt).toString()}</Text>
+        {documentToReactComponents(content.fields?.richContent, options)}
       </Stack>
     </Skeleton>
   );
