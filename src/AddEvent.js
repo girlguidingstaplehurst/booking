@@ -9,6 +9,7 @@ import {
   Stack,
   StackDivider,
   Text,
+  Textarea,
   Tooltip,
   useToken,
 } from "@chakra-ui/react";
@@ -37,7 +38,7 @@ function AddEvent() {
   const [searchParams] = useSearchParams();
   const [submitErrors, setSubmitErrors] = useState("");
   const [cookieConsent, setCookieConsent] = useState(
-    getCookieConsentValue !== undefined
+    getCookieConsentValue !== undefined,
   );
 
   useEffect(() => {
@@ -57,6 +58,10 @@ function AddEvent() {
     eventName: Yup.string()
       .min(2, "too short")
       .max(50, "too long")
+      .required("Required"),
+    details: Yup.string()
+      .min(50, "too short")
+      .max(50000, "too long")
       .required("Required"),
     eventDate: Yup.date()
       .transform(transformDate)
@@ -163,6 +168,7 @@ function AddEvent() {
         body: JSON.stringify({
           event: {
             name: values.eventName,
+            details: values.details,
             from: from.toISOString(),
             to: to.toISOString(),
             publicly_visible: values.visibility === "show",
@@ -286,6 +292,23 @@ function AddEvent() {
             fieldProps={{ type: "time" }}
           />
         </SimpleGrid>
+
+        <FormFieldAndLabel
+          label="Event Details"
+          name="details"
+          value={formik.values.details}
+          errValue={formik.errors.details}
+          onChange={formik.handleChange}
+          fieldAs={Textarea}
+          fieldProps={{
+            rows: 8,
+            placeholder:
+              "Please provide details of your event, including details of any " +
+              "companies or organisations (eg. Caterers, Bouncy Castle hire, " +
+              "Entertainers, DJs) that you will be using. This allows us to " +
+              "ensure your event will be able to run smoothly at the Centre.",
+          }}
+        />
 
         <FormFieldAndLabel
           label="Event Visibility"

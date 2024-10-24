@@ -25,6 +25,7 @@ export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
     id: eventID,
     name: "Fake Event Right now",
+    details: "Details of the event will eventually be set in this field here",
     from: dayjs().startOf("hour").toDate(),
     to: dayjs().endOf("hour").toDate(),
     status: "provisional",
@@ -133,6 +134,10 @@ export function ReviewEvent() {
                 {/*  <RoundedButton colorScheme="brand">Update Dates and Times</RoundedButton>*/}
                 {/*</ButtonGroup>*/}
               </Flex>
+              <Box>
+                <Heading size="s">Event Details</Heading>
+                <Text>{event.details}</Text>
+              </Box>
               <Flex>
                 <Box>
                   <Heading size="s">Event Contact</Heading>

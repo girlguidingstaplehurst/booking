@@ -61,8 +61,8 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 		}
 
 		_, err = tx.Exec(ctx, `insert into booking_events
-			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, 'default')`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, EventStatusProvisional)
+			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
+			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, EventStatusProvisional, event.Event.Details)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new booking"))
 		}
@@ -161,12 +161,12 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
-       		assignee, keyholder_in, keyholder_out, rate_id	
+       		assignee, keyholder_in, keyholder_out, rate_id, details
 		from booking_events
 		where id = $1`, id, dbDateTimeFormat)
 
 	var event rest.Event
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.RateID); err != nil {
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.RateID, &event.Details); err != nil {
 		return event, err
 	}
 

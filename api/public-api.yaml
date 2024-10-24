@@ -366,11 +366,14 @@ components:
           type: object
           required:
             - name
+            - details
             - from
             - to
             - publicly_visible
           properties:
             name:
+              type: string
+            details:
               type: string
             from:
               type: string
@@ -451,6 +454,7 @@ components:
       required:
         - id
         - name
+        - details
         - from
         - to
         - status
@@ -462,6 +466,8 @@ components:
         id:
           type: string
         name:
+          type: string
+        details:
           type: string
         from:
           type: string

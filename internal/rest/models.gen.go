@@ -57,6 +57,7 @@ type ErrorResponse struct {
 type Event struct {
 	Assignee     *openapi_types.Email `json:"assignee,omitempty"`
 	Contact      string               `json:"contact"`
+	Details      string               `json:"details"`
 	Email        openapi_types.Email  `json:"email"`
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
@@ -141,6 +142,7 @@ type NewEvent struct {
 		Name         string              `json:"name"`
 	} `json:"contact"`
 	Event struct {
+		Details         string `json:"details"`
 		From            string `json:"from"`
 		Name            string `json:"name"`
 		PubliclyVisible bool   `json:"publicly_visible"`
