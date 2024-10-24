@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   ButtonGroup,
   Container,
   Drawer,
@@ -26,6 +27,7 @@ import RoundedButton from "./components/RoundedButton";
 import Footer from "./components/Footer";
 import { TbMenu2 } from "react-icons/tb";
 import { useRef } from "react";
+import { CookieConsent } from "react-cookie-consent";
 
 function NavLink({ children, ...props }) {
   const [brand500, brand900, white] = useToken("colors", [
@@ -137,7 +139,7 @@ function Nav({ breakpoint }) {
         <Flex flexDirection="column" flex={1}>
           <Spacer />
           <Stack
-            divider={<StackDivider borderLeft={`1px solid ${brand500}`}/>}
+            divider={<StackDivider borderLeft={`1px solid ${brand500}`} />}
             direction="row"
             minH="2em"
             justifyContent="center"

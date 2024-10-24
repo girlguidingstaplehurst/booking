@@ -2,22 +2,31 @@ import {
   Button,
   Flex,
   Heading,
+  Link,
   Select,
   SimpleGrid,
   Spacer,
   Stack,
   StackDivider,
   Text,
-  Tooltip, useToken
+  Tooltip,
+  useToken,
 } from "@chakra-ui/react";
 import Summary from "./Summary";
 import { useFormik } from "formik";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link as ReactRouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import * as Yup from "yup";
 import ReactRecaptcha3 from "react-google-recaptcha3";
 import FormFieldAndLabel from "./components/FormFieldAndLabel";
+import RoundedButton from "./components/RoundedButton";
+import { CookieConsent, getCookieConsentValue } from "react-cookie-consent";
+import { TbExternalLink } from "react-icons/tb";
 
 function transformDate(dateStr) {
   return dayjs(dateStr).toDate();
@@ -27,10 +36,15 @@ function AddEvent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [submitErrors, setSubmitErrors] = useState("");
+  const [cookieConsent, setCookieConsent] = useState(
+    getCookieConsentValue !== undefined
+  );
 
   useEffect(() => {
-    ReactRecaptcha3.init("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW");
-  }, []);
+    if (cookieConsent) {
+      ReactRecaptcha3.init("6LdCvFwmAAAAAKkKRWe7CuoK_7B3hteuBfx_4mlW");
+    }
+  }, [cookieConsent]);
 
   const start = searchParams.has("start")
     ? searchParams.get("start")
@@ -180,7 +194,11 @@ function AddEvent() {
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [brand500, white] = useToken("colors", ["brand.500", "white"]);
+  const [brand500, brand900, white] = useToken("colors", [
+    "brand.500",
+    "brand.900",
+    "white",
+  ]);
 
   const BookButton = React.forwardRef(({ children, ...props }, ref) => (
     <Button
@@ -203,6 +221,34 @@ function AddEvent() {
 
   return (
     <form onSubmit={formik.handleSubmit}>
+      <CookieConsent
+        style={{ background: brand900, color: white }}
+        overlay={true}
+        acceptOnOverlayClick={false}
+        ButtonComponent={RoundedButton}
+        disableButtonStyles={true}
+        onAccept={() => setCookieConsent(true)}
+        enableDeclineButton={true}
+        declineButtonText="< Back"
+        DeclineButtonComponent={RoundedButton}
+        onDecline={() => navigate(-1)}
+        setDeclineCookie={false}
+      >
+        We use cookies to make our booking form work. If you do not wish us to
+        set cookies, contact{" "}
+        <Link href="mailto:bookings@kathielambcentre.org">
+          bookings@kathielambcentre.org
+        </Link>{" "}
+        to make a booking.{" "}
+        <Link
+          as={ReactRouterLink}
+          to="/privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Privacy Policy <TbExternalLink style={{ display: "inline" }} />
+        </Link>
+      </CookieConsent>
       <Stack spacing={2}>
         <Heading>Add Event</Heading>
         <FormFieldAndLabel
