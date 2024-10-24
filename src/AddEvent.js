@@ -37,8 +37,9 @@ function AddEvent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [submitErrors, setSubmitErrors] = useState("");
+  const cookieConsentValue = getCookieConsentValue();
   const [cookieConsent, setCookieConsent] = useState(
-    getCookieConsentValue !== undefined,
+    cookieConsentValue !== undefined,
   );
 
   useEffect(() => {
@@ -228,15 +229,24 @@ function AddEvent() {
   return (
     <form onSubmit={formik.handleSubmit}>
       <CookieConsent
-        style={{ background: brand900, color: white }}
+        style={{ background: brand900, color: white, justifyContent: "center" }}
         overlay={true}
         acceptOnOverlayClick={false}
         ButtonComponent={RoundedButton}
+        // customButtonProps={{
+        //   colorScheme: "green",
+        // }}
         disableButtonStyles={true}
         onAccept={() => setCookieConsent(true)}
         enableDeclineButton={true}
         declineButtonText="< Back"
         DeclineButtonComponent={RoundedButton}
+        declineButtonStyle={{
+          marginRight: "0.5em",
+        }}
+        customDeclineButtonProps={{
+          colorScheme: "brand.900"
+        }}
         onDecline={() => navigate(-1)}
         setDeclineCookie={false}
       >
