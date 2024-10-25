@@ -115,7 +115,9 @@ type InvoiceItem struct {
 // InvoiceRef defines model for InvoiceRef.
 type InvoiceRef struct {
 	Id        string        `json:"id"`
+	Paid      *string       `json:"paid,omitempty"`
 	Reference string        `json:"reference"`
+	Sent      *string       `json:"sent,omitempty"`
 	Status    InvoiceStatus `json:"status"`
 }
 

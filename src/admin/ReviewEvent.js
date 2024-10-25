@@ -45,11 +45,14 @@ export async function reviewEvent(eventID) {
         reference: "ABCDEF",
         id: "ggghhhiii",
         status: "raised",
+        sent: dayjs().toISOString(),
       },
       {
         reference: "BCDEFG",
         id: "jjjkkklll",
         status: "paid",
+        sent: dayjs().toISOString(),
+        paid: dayjs().toISOString(),
       },
       {
         reference: "CDEFGH",
@@ -223,7 +226,7 @@ export function ReviewEvent() {
               <Flex>
                 <Box>
                   <Heading size="s">Invoices</Heading>
-                  <ButtonGroup>
+                  <ButtonGroup flexWrap="wrap" gap={2}>
                     {hasInvoices ? (
                       event.invoices.map((invoice) => (
                         <Button
@@ -231,7 +234,12 @@ export function ReviewEvent() {
                           as={ReactRouterLink}
                           colorScheme={getInvoiceColorScheme(invoice.status)}
                         >
-                          {invoice.reference} - {invoice.status}
+                          {invoice.reference} - {invoice.status}{" "}
+                          {invoice.paid
+                            ? `(${dayjs(invoice.paid).format("D MMMM YYYY")})`
+                            : invoice.sent
+                              ? `(${dayjs(invoice.sent).format("D MMMM YYYY")})`
+                              : null}
                         </Button>
                       ))
                     ) : (

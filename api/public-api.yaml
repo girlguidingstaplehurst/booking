@@ -684,6 +684,12 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/InvoiceStatus'
+        paid:
+          type: string
+          format: datetime
+        sent:
+          type: string
+          format: datetime
     InvoiceStatus:
       type: string
       enum: [ raised, paid, cancelled ]

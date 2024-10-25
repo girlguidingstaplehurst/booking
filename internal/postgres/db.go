@@ -170,12 +170,12 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 	}
 
 	invoiceRefs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.InvoiceRef, error) {
-		var eventRef rest.InvoiceRef
-		if err := row.Scan(&eventRef.Id, &eventRef.Reference, &eventRef.Status); err != nil {
-			return eventRef, err
+		var ir rest.InvoiceRef
+		if err := row.Scan(&ir.Id, &ir.Reference, &ir.Status, &ir.Sent, &ir.Paid); err != nil {
+			return ir, err
 		}
 
-		return eventRef, nil
+		return ir, nil
 	})
 
 	event.Invoices = &invoiceRefs
