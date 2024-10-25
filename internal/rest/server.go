@@ -435,7 +435,9 @@ func (s *Server) AdminEventApprove(ctx context.Context, request AdminEventApprov
 	}
 
 	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodRequest)
+	cal.SetProductId("//KLGC//Booking Service//EN")
+	cal.SetVersion("2.0")
+	cal.SetMethod(ics.MethodPublish)
 	calEvent := cal.AddEvent(event.Id)
 	calEvent.SetCreatedTime(time.Now())
 	calEvent.SetDtStampTime(time.Now())
@@ -450,7 +452,7 @@ func (s *Server) AdminEventApprove(ctx context.Context, request AdminEventApprov
 	err = s.email.SendWithAttachments(ctx, string(event.Email), emailContent.Subject, emailContent.Body,
 		EmailAttachment{Filename: "terms-of-hire.pdf", Content: termsOfHire, Mimetype: "application/pdf"},
 		EmailAttachment{Filename: "cleaning-and-damage-policy.pdf", Content: cleaningAndDamagePolicy, Mimetype: "application/pdf"},
-		EmailAttachment{Filename: "calendar.ics", Content: strings.NewReader(calEvent.Serialize()), Mimetype: "text/calendar"},
+		EmailAttachment{Filename: "calendar.ics", Content: strings.NewReader(cal.Serialize()), Mimetype: "text/calendar"},
 	)
 	if err != nil {
 		return AdminEventApprove500JSONResponse{
