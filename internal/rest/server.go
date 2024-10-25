@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
+	"github.com/arran4/golang-ical"
 	"github.com/girlguidingstaplehurst/booking/internal/consts"
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -44,6 +46,7 @@ type DBInvoiceItem struct {
 
 type PDFGenerator interface {
 	GenerateInvoice(ctx context.Context, invoice *Invoice) (io.Reader, error)
+	GeneratePageContent(ctx context.Context, key string) (io.Reader, error)
 }
 
 type EmailSender interface {
@@ -67,6 +70,7 @@ type EmailContent struct {
 
 type EmailAttachment struct {
 	Filename string
+	Mimetype string
 	Content  io.Reader
 }
 
@@ -234,7 +238,8 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Subject, emailContent.Body, EmailAttachment{Filename: "invoice.pdf", Content: pdf})
+	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Subject, emailContent.Body,
+		EmailAttachment{Filename: "invoice.pdf", Content: pdf, Mimetype: "application/pdf"})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -381,4 +386,99 @@ func (s *Server) AdminEventRequestDocuments(ctx context.Context, request AdminEv
 	}
 
 	return AdminEventRequestDocuments200Response{}, nil
+}
+
+func (s *Server) AdminEventApprove(ctx context.Context, request AdminEventApproveRequestObject) (AdminEventApproveResponseObject, error) {
+	//TODO check we're in the right state before sending
+	event, err := s.db.GetEvent(ctx, request.EventID)
+	if err != nil {
+		//TODO not found handling
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	termsOfHire, err := s.pdf.GeneratePageContent(ctx, "terms-of-hire")
+	if err != nil {
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	cleaningAndDamagePolicy, err := s.pdf.GeneratePageContent(ctx, "cleaning-and-damage-policy")
+	if err != nil {
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	//TODO avoid the panic
+	start, err := time.Parse(time.RFC3339, event.From)
+	if err != nil {
+		panic(err)
+	}
+
+	emailContent, err := s.content.EmailTemplate(ctx, "booking-confirmed", map[string]any{
+		"event": event,
+		"date":  start.Format(emailDateFormat),
+	})
+	if err != nil {
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	//TODO avoid the panic
+	end, err := time.Parse(time.RFC3339, event.To)
+	if err != nil {
+		panic(err)
+	}
+
+	cal := ics.NewCalendar()
+	cal.SetMethod(ics.MethodRequest)
+	calEvent := cal.AddEvent(event.Id)
+	calEvent.SetCreatedTime(time.Now())
+	calEvent.SetDtStampTime(time.Now())
+	calEvent.SetModifiedAt(time.Now())
+	calEvent.SetStartAt(start)
+	calEvent.SetEndAt(end)
+	calEvent.SetSummary(event.Name)
+	calEvent.SetDescription("Booking at the Kathie Lamb Guide Centre")
+	calEvent.SetLocation("Kathie Lamb Guide Centre, Jubilee Field, Headcorn Road, Staplehurst, Kent, TN12 0DS")
+	calEvent.SetOrganizer("bookings@kathielambcentre.org")
+
+	err = s.email.SendWithAttachments(ctx, string(event.Email), emailContent.Subject, emailContent.Body,
+		EmailAttachment{Filename: "terms-of-hire.pdf", Content: termsOfHire, Mimetype: "application/pdf"},
+		EmailAttachment{Filename: "cleaning-and-damage-policy.pdf", Content: cleaningAndDamagePolicy, Mimetype: "application/pdf"},
+		EmailAttachment{Filename: "calendar.ics", Content: strings.NewReader(calEvent.Serialize()), Mimetype: "text/calendar"},
+	)
+	if err != nil {
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	err = s.db.SetEventStatus(ctx, request.EventID, consts.EventStatusApproved)
+	if err != nil {
+		//TODO handle not found (probably handled earlier)
+		return AdminEventApprove500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminEventApprove200Response{}, nil
+}
+
+func (s *Server) AdminEventCancel(ctx context.Context, request AdminEventCancelRequestObject) (AdminEventCancelResponseObject, error) {
+	//TODO add more cleanup to cancel - there's a lot more that we can probably do here.
+
+	err := s.db.SetEventStatus(ctx, request.EventID, consts.EventStatusCancelled)
+	if err != nil {
+		//TODO handle not found (probably handled earlier)
+		return AdminEventCancel500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminEventCancel200Response{}, nil
 }

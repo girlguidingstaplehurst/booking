@@ -43,7 +43,8 @@ func (s *Sender) SendWithAttachments(ctx context.Context, to string, subject str
 				return err
 			}
 			return nil
-		}))
+		}),
+			gomail.SetHeader(map[string][]string{"Content-Type": {attachment.Mimetype}}))
 	}
 
 	d := gomail.Dialer{

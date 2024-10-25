@@ -1,6 +1,6 @@
 import { AdminFetcher } from "../../Fetcher";
 import { useFormik } from "formik";
-import { Box, ButtonGroup, Flex, Select, Skeleton, Text } from "@chakra-ui/react";
+import { Box, ButtonGroup, Flex, Select, Skeleton } from "@chakra-ui/react";
 import RoundedButton from "../../components/RoundedButton";
 import { useEffect, useState } from "react";
 import { AdminPoster } from "../../Poster";

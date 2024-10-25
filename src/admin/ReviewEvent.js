@@ -8,14 +8,9 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Checkbox,
   Container,
   Flex,
   Heading,
-  ModalBody,
-  ModalCloseButton,
-  ModalFooter,
-  ModalHeader,
   Spacer,
   Stack,
   StackDivider,
@@ -25,12 +20,11 @@ import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import RateSelect from "./components/RateSelect";
-import RoundedButton from "../components/RoundedButton";
 import { AdminPoster } from "../Poster";
 import TriggerModal from "./components/TriggerModal";
-import { useFormik } from "formik";
 import React from "react";
 import RequestDocumentsModalContents from "./components/RequestDocumentsModalContents";
+import ActionButton from "./components/ActionButton";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -77,6 +71,67 @@ function getInvoiceColorScheme(status) {
       return "red";
     default:
       return "";
+  }
+}
+
+function EventStateButtons({ eventID, status }) {
+  switch (status) {
+    case "provisional":
+      return (
+        <ButtonGroup>
+          <TriggerModal buttonText="Request Documents">
+            <RequestDocumentsModalContents eventID={eventID} />
+          </TriggerModal>
+          <ActionButton action={async () => await cancelEvent(eventID)}>
+            Cancel Event
+          </ActionButton>
+          <ActionButton action={async () => await approveEvent(eventID)}>
+            Approve Event
+          </ActionButton>
+        </ButtonGroup>
+      );
+    case "awaiting documents":
+      return (
+        <ButtonGroup>
+          <ActionButton action={async () => await cancelEvent(eventID)}>
+            Cancel Event
+          </ActionButton>
+          <ActionButton action={async () => await approveEvent(eventID)}>
+            Approve Event
+          </ActionButton>
+        </ButtonGroup>
+      );
+    case "approved":
+      return (
+        <ButtonGroup>
+          <ActionButton action={async () => await cancelEvent(eventID)}>
+            Cancel Event
+          </ActionButton>
+        </ButtonGroup>
+      );
+    case "cancelled":
+    default:
+      return null;
+  }
+}
+
+async function cancelEvent(eventID) {
+  const response = await AdminPoster(
+    `/api/v1/admin/events/${eventID}/cancel-event`,
+    null,
+  );
+  if (response !== undefined) {
+    return response.json();
+  }
+}
+
+async function approveEvent(eventID) {
+  const response = await AdminPoster(
+    `/api/v1/admin/events/${eventID}/approve-event`,
+    null,
+  );
+  if (response !== undefined) {
+    return response.json();
   }
 }
 
@@ -197,14 +252,7 @@ export function ReviewEvent() {
                   <Text>{event.status}</Text>
                 </Box>
                 <Spacer />
-                <ButtonGroup>
-                  <TriggerModal buttonText="Request Documents">
-                    <RequestDocumentsModalContents eventID={event.id} />
-                  </TriggerModal>
-                  {/*<RoundedButton colorScheme="brand">*/}
-                  {/*  Cancel Event*/}
-                  {/*</RoundedButton>*/}
-                </ButtonGroup>
+                <EventStateButtons eventID={event.id} status={event.status} />
               </Flex>
               <Flex>
                 <Box>

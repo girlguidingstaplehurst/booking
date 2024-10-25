@@ -30,6 +30,12 @@ type ServerInterface interface {
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(c *fiber.Ctx, eventID string) error
 
+	// (POST /api/v1/admin/events/{eventID}/approve-event)
+	AdminEventApprove(c *fiber.Ctx, eventID string) error
+
+	// (POST /api/v1/admin/events/{eventID}/cancel-event)
+	AdminEventCancel(c *fiber.Ctx, eventID string) error
+
 	// (POST /api/v1/admin/events/{eventID}/request-documents)
 	AdminEventRequestDocuments(c *fiber.Ctx, eventID string) error
 
@@ -117,6 +123,42 @@ func (siw *ServerInterfaceWrapper) GetApiV1AdminEventsEventID(c *fiber.Ctx) erro
 	c.Context().SetUserValue(Admin_authScopes, []string{})
 
 	return siw.Handler.GetApiV1AdminEventsEventID(c, eventID)
+}
+
+// AdminEventApprove operation middleware
+func (siw *ServerInterfaceWrapper) AdminEventApprove(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "eventID" -------------
+	var eventID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventID", c.Params("eventID"), &eventID, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventID: %w", err).Error())
+	}
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
+
+	return siw.Handler.AdminEventApprove(c, eventID)
+}
+
+// AdminEventCancel operation middleware
+func (siw *ServerInterfaceWrapper) AdminEventCancel(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "eventID" -------------
+	var eventID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventID", c.Params("eventID"), &eventID, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventID: %w", err).Error())
+	}
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
+
+	return siw.Handler.AdminEventCancel(c, eventID)
 }
 
 // AdminEventRequestDocuments operation middleware
@@ -299,6 +341,10 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 
 	router.Get(options.BaseURL+"/api/v1/admin/events/:eventID", wrapper.GetApiV1AdminEventsEventID)
 
+	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/approve-event", wrapper.AdminEventApprove)
+
+	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/cancel-event", wrapper.AdminEventCancel)
+
 	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/request-documents", wrapper.AdminEventRequestDocuments)
 
 	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/set-rate", wrapper.AdminEventSetRate)
@@ -424,6 +470,74 @@ func (response GetApiV1AdminEventsEventID404JSONResponse) VisitGetApiV1AdminEven
 type GetApiV1AdminEventsEventID500JSONResponse ErrorResponse
 
 func (response GetApiV1AdminEventsEventID500JSONResponse) VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventApproveRequestObject struct {
+	EventID string `json:"eventID,omitempty"`
+}
+
+type AdminEventApproveResponseObject interface {
+	VisitAdminEventApproveResponse(ctx *fiber.Ctx) error
+}
+
+type AdminEventApprove200Response struct {
+}
+
+func (response AdminEventApprove200Response) VisitAdminEventApproveResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminEventApprove404JSONResponse ErrorResponse
+
+func (response AdminEventApprove404JSONResponse) VisitAdminEventApproveResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventApprove500JSONResponse ErrorResponse
+
+func (response AdminEventApprove500JSONResponse) VisitAdminEventApproveResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventCancelRequestObject struct {
+	EventID string `json:"eventID,omitempty"`
+}
+
+type AdminEventCancelResponseObject interface {
+	VisitAdminEventCancelResponse(ctx *fiber.Ctx) error
+}
+
+type AdminEventCancel200Response struct {
+}
+
+func (response AdminEventCancel200Response) VisitAdminEventCancelResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminEventCancel404JSONResponse ErrorResponse
+
+func (response AdminEventCancel404JSONResponse) VisitAdminEventCancelResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventCancel500JSONResponse ErrorResponse
+
+func (response AdminEventCancel500JSONResponse) VisitAdminEventCancelResponse(ctx *fiber.Ctx) error {
 	ctx.Response().Header.Set("Content-Type", "application/json")
 	ctx.Status(500)
 
@@ -710,6 +824,12 @@ type StrictServerInterface interface {
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error)
 
+	// (POST /api/v1/admin/events/{eventID}/approve-event)
+	AdminEventApprove(ctx context.Context, request AdminEventApproveRequestObject) (AdminEventApproveResponseObject, error)
+
+	// (POST /api/v1/admin/events/{eventID}/cancel-event)
+	AdminEventCancel(ctx context.Context, request AdminEventCancelRequestObject) (AdminEventCancelResponseObject, error)
+
 	// (POST /api/v1/admin/events/{eventID}/request-documents)
 	AdminEventRequestDocuments(ctx context.Context, request AdminEventRequestDocumentsRequestObject) (AdminEventRequestDocumentsResponseObject, error)
 
@@ -825,6 +945,60 @@ func (sh *strictHandler) GetApiV1AdminEventsEventID(ctx *fiber.Ctx, eventID stri
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	} else if validResponse, ok := response.(GetApiV1AdminEventsEventIDResponseObject); ok {
 		if err := validResponse.VisitGetApiV1AdminEventsEventIDResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminEventApprove operation middleware
+func (sh *strictHandler) AdminEventApprove(ctx *fiber.Ctx, eventID string) error {
+	var request AdminEventApproveRequestObject
+
+	request.EventID = eventID
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminEventApprove(ctx.UserContext(), request.(AdminEventApproveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminEventApprove")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(AdminEventApproveResponseObject); ok {
+		if err := validResponse.VisitAdminEventApproveResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminEventCancel operation middleware
+func (sh *strictHandler) AdminEventCancel(ctx *fiber.Ctx, eventID string) error {
+	var request AdminEventCancelRequestObject
+
+	request.EventID = eventID
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminEventCancel(ctx.UserContext(), request.(AdminEventCancelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminEventCancel")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(AdminEventCancelResponseObject); ok {
+		if err := validResponse.VisitAdminEventCancelResponse(ctx); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 	} else if response != nil {
@@ -1066,40 +1240,41 @@ func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsPar
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"58w+MwAA",
+	"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",
+	"AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

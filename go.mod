@@ -4,13 +4,16 @@ go 1.22.1
 
 require (
 	github.com/MicahParks/recaptcha v0.0.5
+	github.com/arran4/golang-ical v0.3.1
 	github.com/exaring/otelpgx v0.6.2
 	github.com/getkin/kin-openapi v0.127.0
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/gofiber/contrib/otelfiber v1.0.10
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/google/uuid v1.6.0
+	github.com/hasura/go-graphql-client v0.13.1
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/johnfercher/maroto/v2 v2.1.5
 	github.com/magefile/mage v1.14.0
@@ -18,7 +21,6 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.0
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/shopspring/decimal v1.2.0
-	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/stretchr/testify v1.9.0
 	github.com/thanhpk/randstr v1.0.6
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0
@@ -45,6 +47,7 @@ require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/coder/websocket v1.8.12 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/f-amaral/go-async v0.3.0 // indirect

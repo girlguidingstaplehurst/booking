@@ -2,14 +2,15 @@ import {
   Checkbox,
   Flex,
   ModalBody,
-  ModalCloseButton, ModalContent, ModalContextProvider,
+  ModalCloseButton,
   ModalFooter,
   ModalHeader,
   Spacer,
   Stack,
-  Text, useModalContext
+  Text,
+  useModalContext,
 } from "@chakra-ui/react";
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import { AdminPoster } from "../../Poster";
 import RoundedButton from "../../components/RoundedButton";
@@ -44,7 +45,7 @@ function FormCheckbox({ name, isChecked, onChange, errorField, children }) {
 
 function RequestDocumentsModalContents({ eventID }) {
   const [loading, setLoading] = useState(false);
-  const {onClose} = useModalContext();
+  const { onClose } = useModalContext();
   const revalidator = useRevalidator();
 
   const formik = useFormik({

@@ -1,20 +1,12 @@
 import RoundedButton from "../../components/RoundedButton";
 import {
   Modal,
-  ModalBody,
-  ModalCloseButton,
   ModalContent,
-  ModalFooter,
-  ModalHeader,
   ModalOverlay,
   useDisclosure,
 } from "@chakra-ui/react";
 
-function TriggerModal({
-  buttonText,
-  children,
-  ...rest
-}) {
+function TriggerModal({ buttonText, children, ...rest }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (

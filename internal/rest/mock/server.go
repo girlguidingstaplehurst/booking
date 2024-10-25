@@ -255,6 +255,21 @@ func (mr *MockPDFGeneratorMockRecorder) GenerateInvoice(ctx, invoice any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateInvoice", reflect.TypeOf((*MockPDFGenerator)(nil).GenerateInvoice), ctx, invoice)
 }
 
+// GeneratePageContent mocks base method.
+func (m *MockPDFGenerator) GeneratePageContent(ctx context.Context, key string) (io.Reader, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GeneratePageContent", ctx, key)
+	ret0, _ := ret[0].(io.Reader)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GeneratePageContent indicates an expected call of GeneratePageContent.
+func (mr *MockPDFGeneratorMockRecorder) GeneratePageContent(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePageContent", reflect.TypeOf((*MockPDFGenerator)(nil).GeneratePageContent), ctx, key)
+}
+
 // MockEmailSender is a mock of EmailSender interface.
 type MockEmailSender struct {
 	ctrl     *gomock.Controller
