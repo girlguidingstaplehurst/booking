@@ -341,6 +341,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/events/{eventID}/request-documents:
+    post:
+      operationId: adminEventRequestDocuments
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      parameters:
+        - in: path
+          name: eventID
+          schema:
+            type: string
+          description: The ID of the event to request documents for
+      requestBody:
+        description: Documents to be requested
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestDocumentsBody'
+        required: true
+      responses:
+        '200':
+          description: "Documents requested"
+        '404':
+          description: "No event exists with that ID"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -661,6 +697,25 @@ components:
       properties:
         rate:
           type: string
+    RequestDocumentsBody:
+      type: object
+      required:
+        - publicLiability
+        - foodSafety
+        - riskAssessment
+        - coshhSheets
+        - dbsCertificate
+      properties:
+        publicLiability:
+          type: boolean
+        foodSafety:
+          type: boolean
+        riskAssessment:
+          type: boolean
+        coshhSheets:
+          type: boolean
+        dbsCertificate:
+          type: boolean
 
   securitySchemes:
     admin_auth:

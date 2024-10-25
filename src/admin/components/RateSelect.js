@@ -34,7 +34,12 @@ function RateSelect({ eventID, rateID = "default" }) {
           hourlyRate: 20,
         },
       ]);
-      return await resp.json();
+
+      if (resp.json !== undefined) {
+        return await resp.json();
+      } else {
+        return resp;
+      }
     };
     fetchData().then((r) => {
       setRates(r);

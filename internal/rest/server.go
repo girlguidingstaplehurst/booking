@@ -31,6 +31,7 @@ type Database interface {
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
+	SetEventStatus(Ctx context.Context, eventID string, state string) error
 	SetRate(ctx context.Context, eventID string, rate string) error
 }
 
@@ -46,6 +47,7 @@ type PDFGenerator interface {
 }
 
 type EmailSender interface {
+	Send(ctx context.Context, to string, subject string, body string, attachments ...EmailAttachment) error
 	SendWithAttachments(ctx context.Context, to string, subject string, body string, attachments ...EmailAttachment) error
 }
 
@@ -55,6 +57,7 @@ type CaptchaVerifier interface {
 
 type ContentManager interface {
 	Email(ctx context.Context, key string) (EmailContent, error)
+	EmailTemplate(ctx context.Context, key string, vars map[string]any) (EmailContent, error)
 }
 
 type EmailContent struct {
@@ -231,8 +234,7 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	//TODO consider if we need to attach more files here - may want to be configurable?
-	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Subject, emailContent.Body,
-		EmailAttachment{Filename: "invoice.pdf", Content: pdf})
+	err = s.email.SendWithAttachments(ctx, string(invoice.Contact), emailContent.Subject, emailContent.Body, EmailAttachment{Filename: "invoice.pdf", Content: pdf})
 	if err != nil {
 		return AdminSendInvoice500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -315,4 +317,68 @@ func (s *Server) AdminEventSetRate(ctx context.Context, request AdminEventSetRat
 	}
 
 	return AdminEventSetRate200Response{}, nil
+}
+
+const emailDateFormat = "Mon Jan _2 2006"
+
+func (s *Server) AdminEventRequestDocuments(ctx context.Context, request AdminEventRequestDocumentsRequestObject) (AdminEventRequestDocumentsResponseObject, error) {
+	//TODO check we're in the right state before sending
+	event, err := s.db.GetEvent(ctx, request.EventID)
+	if err != nil {
+		//TODO not found handling
+		return AdminEventRequestDocuments500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	var documents []string
+	if request.Body.CoshhSheets {
+		documents = append(documents, "COSHH Safety Data Sheets")
+	}
+	if request.Body.FoodSafety {
+		documents = append(documents, "Food Hygiene Certificate")
+	}
+	if request.Body.DbsCertificate {
+		documents = append(documents, "DBS Certificate")
+	}
+	if request.Body.PublicLiability {
+		documents = append(documents, "Public Liability Insurance Certificate")
+	}
+	if request.Body.RiskAssessment {
+		documents = append(documents, "Risk Assessment")
+	}
+
+	//TODO avoid the panic
+	start, err := time.Parse(time.RFC3339, event.From)
+	if err != nil {
+		panic(err)
+	}
+
+	emailContent, err := s.content.EmailTemplate(ctx, "request-for-additional-documents", map[string]any{
+		"event":     event,
+		"documents": documents,
+		"deadline":  start.Add(-14 * 24 * time.Hour).Format(emailDateFormat),
+		"date":      start.Format(emailDateFormat),
+	})
+	if err != nil {
+		return AdminEventRequestDocuments500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	err = s.email.SendWithAttachments(ctx, string(event.Email), emailContent.Subject, emailContent.Body)
+	if err != nil {
+		return AdminEventRequestDocuments500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	err = s.db.SetEventStatus(ctx, request.EventID, consts.EventStatusAwaitingDocuments)
+	if err != nil {
+		return AdminEventRequestDocuments500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminEventRequestDocuments200Response{}, nil
 }

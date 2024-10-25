@@ -163,6 +163,15 @@ type Rate struct {
 // RatesList defines model for RatesList.
 type RatesList = []Rate
 
+// RequestDocumentsBody defines model for RequestDocumentsBody.
+type RequestDocumentsBody struct {
+	CoshhSheets     bool `json:"coshhSheets"`
+	DbsCertificate  bool `json:"dbsCertificate"`
+	FoodSafety      bool `json:"foodSafety"`
+	PublicLiability bool `json:"publicLiability"`
+	RiskAssessment  bool `json:"riskAssessment"`
+}
+
 // SendInvoiceBody defines model for SendInvoiceBody.
 type SendInvoiceBody struct {
 	Contact openapi_types.Email `json:"contact"`
@@ -210,6 +219,9 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
+type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody

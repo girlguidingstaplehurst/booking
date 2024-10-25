@@ -189,6 +189,20 @@ func (mr *MockDatabaseMockRecorder) MarkInvoiceSent(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoiceSent", reflect.TypeOf((*MockDatabase)(nil).MarkInvoiceSent), ctx, id)
 }
 
+// SetEventStatus mocks base method.
+func (m *MockDatabase) SetEventStatus(Ctx context.Context, eventID, state string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEventStatus", Ctx, eventID, state)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEventStatus indicates an expected call of SetEventStatus.
+func (mr *MockDatabaseMockRecorder) SetEventStatus(Ctx, eventID, state any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEventStatus", reflect.TypeOf((*MockDatabase)(nil).SetEventStatus), Ctx, eventID, state)
+}
+
 // SetRate mocks base method.
 func (m *MockDatabase) SetRate(ctx context.Context, eventID, rate string) error {
 	m.ctrl.T.Helper()
@@ -262,6 +276,25 @@ func NewMockEmailSender(ctrl *gomock.Controller) *MockEmailSender {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockEmailSender) EXPECT() *MockEmailSenderMockRecorder {
 	return m.recorder
+}
+
+// Send mocks base method.
+func (m *MockEmailSender) Send(ctx context.Context, to, subject, body string, attachments ...rest.EmailAttachment) error {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, to, subject, body}
+	for _, a := range attachments {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Send", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockEmailSenderMockRecorder) Send(ctx, to, subject, body any, attachments ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, to, subject, body}, attachments...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockEmailSender)(nil).Send), varargs...)
 }
 
 // SendWithAttachments mocks base method.
@@ -356,4 +389,19 @@ func (m *MockContentManager) Email(ctx context.Context, key string) (rest.EmailC
 func (mr *MockContentManagerMockRecorder) Email(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Email", reflect.TypeOf((*MockContentManager)(nil).Email), ctx, key)
+}
+
+// EmailTemplate mocks base method.
+func (m *MockContentManager) EmailTemplate(ctx context.Context, key string, vars map[string]any) (rest.EmailContent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmailTemplate", ctx, key, vars)
+	ret0, _ := ret[0].(rest.EmailContent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EmailTemplate indicates an expected call of EmailTemplate.
+func (mr *MockContentManagerMockRecorder) EmailTemplate(ctx, key, vars any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmailTemplate", reflect.TypeOf((*MockContentManager)(nil).EmailTemplate), ctx, key, vars)
 }

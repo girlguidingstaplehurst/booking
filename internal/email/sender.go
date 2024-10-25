@@ -24,6 +24,10 @@ func NewSender(server, username, password string) *Sender {
 	}
 }
 
+func (s *Sender) Send(ctx context.Context, to string, subject string, body string, attachments ...rest.EmailAttachment) error {
+	return s.SendWithAttachments(ctx, to, subject, body)
+}
+
 func (s *Sender) SendWithAttachments(ctx context.Context, to string, subject string, body string, attachments ...rest.EmailAttachment) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", "bookings@kathielambcentre.org")

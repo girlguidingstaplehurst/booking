@@ -16,15 +16,6 @@ import (
 var _ rest.Database = (*Database)(nil)
 
 const (
-	EventStatusProvisional       = "provisional"
-	EventStatusAwaitingDocuments = "awaiting documents"
-	EventStatusApproved          = "approved"
-	EventStatusCancelled         = "cancelled"
-
-	InvoiceStatusRaised    = "raised"
-	InvoiceStatusPaid      = "paid"
-	InvoiceStatusCancelled = "cancelled"
-
 	dbDateTimeFormat = `YYYY-MM-DD"T"HH24:MI:ss"Z"`
 )
 
@@ -62,7 +53,7 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 
 		_, err = tx.Exec(ctx, `insert into booking_events
 			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, EventStatusProvisional, event.Event.Details)
+			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, consts.EventStatusProvisional, event.Event.Details)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new booking"))
 		}
@@ -282,6 +273,15 @@ func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
 
 func (db *Database) SetRate(ctx context.Context, eventID string, rate string) error {
 	_, err := db.pool.Exec(ctx, "update booking_events set rate_id = $1 where id = $2", rate, eventID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *Database) SetEventStatus(ctx context.Context, eventID string, status string) error {
+	_, err := db.pool.Exec(ctx, "update booking_events set status = $1 where id = $2", status, eventID)
 	if err != nil {
 		return err
 	}

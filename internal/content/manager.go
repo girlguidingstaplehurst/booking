@@ -3,6 +3,7 @@ package content
 import (
 	"context"
 	"strings"
+	"text/template"
 
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"github.com/gomarkdown/markdown"
@@ -13,26 +14,15 @@ import (
 )
 
 type Manager struct {
-	client       *graphql.Client
-	mdParser     *parser.Parser
-	htmlRenderer *html.Renderer
+	client *graphql.Client
 }
 
 func NewManager(url, token string) *Manager {
 	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	httpClient := oauth2.NewClient(context.Background(), src)
 
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
-	mdParser := parser.NewWithExtensions(extensions)
-
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
-	htmlRenderer := html.NewRenderer(opts)
-
 	return &Manager{
-		client:       graphql.NewClient(url, httpClient),
-		mdParser:     mdParser,
-		htmlRenderer: htmlRenderer,
+		client: graphql.NewClient(url, httpClient),
 	}
 }
 
@@ -53,12 +43,56 @@ func (m *Manager) Email(ctx context.Context, key string) (rest.EmailContent, err
 
 	i := q.EmailCollection.Items[0]
 
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	mdParser := parser.NewWithExtensions(extensions)
+
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	htmlRenderer := html.NewRenderer(opts)
+
 	mdBody := strings.Replace(string(i.Body), "\\n", "\n", -1)
-	doc := m.mdParser.Parse([]byte(mdBody))
-	htmlBody := markdown.Render(doc, m.htmlRenderer)
+	doc := mdParser.Parse([]byte(mdBody))
+	htmlBody := markdown.Render(doc, htmlRenderer)
 
 	return rest.EmailContent{
 		Subject: string(i.Subject),
 		Body:    string(htmlBody),
 	}, nil
+}
+
+func (m *Manager) EmailTemplate(ctx context.Context, key string, vars map[string]any) (rest.EmailContent, error) {
+	emailTemplate, err := m.Email(ctx, key)
+	if err != nil {
+		return rest.EmailContent{}, err
+	}
+
+	subject, err := m.applyTemplate(emailTemplate.Subject, vars)
+	if err != nil {
+		return rest.EmailContent{}, err
+	}
+
+	body, err := m.applyTemplate(emailTemplate.Body, vars)
+	if err != nil {
+		return rest.EmailContent{}, err
+	}
+
+	return rest.EmailContent{
+		Subject: subject,
+		Body:    body,
+	}, nil
+}
+
+func (m *Manager) applyTemplate(body string, vars map[string]any) (string, error) {
+	tpl, err := template.New("tpl").Parse(body)
+	if err != nil {
+		return "", err
+	}
+
+	w := strings.Builder{}
+	err = tpl.Execute(&w, vars)
+	if err != nil {
+		return "", err
+	}
+
+	return w.String(), nil
 }

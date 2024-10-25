@@ -58,7 +58,8 @@ func (s *Service) Run(ctx context.Context) (err error) {
 		PathPrefix: "/build",
 	}))
 
-	htmlPaths := []string{"/add-event", "/privacy-policy", "/admin", "/admin/login", "/admin/review/:eventID"}
+	htmlPaths := []string{"/add-event", "/privacy-policy", "/terms-of-hire", "/cleaning-and-damage-policy",
+		"/admin", "/admin/login", "/admin/review/:eventID"}
 	app.Use(htmlPaths, func(c *fiber.Ctx) error {
 		return filesystem.SendFile(c, http.FS(booking.IndexHTML), "/build/index.html")
 	})

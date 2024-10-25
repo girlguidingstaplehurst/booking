@@ -8,9 +8,14 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Checkbox,
   Container,
   Flex,
   Heading,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  ModalHeader,
   Spacer,
   Stack,
   StackDivider,
@@ -20,6 +25,12 @@ import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import RateSelect from "./components/RateSelect";
+import RoundedButton from "../components/RoundedButton";
+import { AdminPoster } from "../Poster";
+import TriggerModal from "./components/TriggerModal";
+import { useFormik } from "formik";
+import React from "react";
+import RequestDocumentsModalContents from "./components/RequestDocumentsModalContents";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -71,7 +82,6 @@ function getInvoiceColorScheme(status) {
 
 export function ReviewEvent() {
   const event = useLoaderData();
-
   const eventDates = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
   const visibility = event.visible ? (
     <Flex>
@@ -187,10 +197,14 @@ export function ReviewEvent() {
                   <Text>{event.status}</Text>
                 </Box>
                 <Spacer />
-                {/*<ButtonGroup>*/}
-                {/*  <RoundedButton colorScheme="brand">Request Documents</RoundedButton>*/}
-                {/*  <RoundedButton colorScheme="brand">Cancel Event</RoundedButton>*/}
-                {/*</ButtonGroup>*/}
+                <ButtonGroup>
+                  <TriggerModal buttonText="Request Documents">
+                    <RequestDocumentsModalContents eventID={event.id} />
+                  </TriggerModal>
+                  {/*<RoundedButton colorScheme="brand">*/}
+                  {/*  Cancel Event*/}
+                  {/*</RoundedButton>*/}
+                </ButtonGroup>
               </Flex>
               <Flex>
                 <Box>

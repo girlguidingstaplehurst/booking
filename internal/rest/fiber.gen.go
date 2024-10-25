@@ -30,6 +30,9 @@ type ServerInterface interface {
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(c *fiber.Ctx, eventID string) error
 
+	// (POST /api/v1/admin/events/{eventID}/request-documents)
+	AdminEventRequestDocuments(c *fiber.Ctx, eventID string) error
+
 	// (POST /api/v1/admin/events/{eventID}/set-rate)
 	AdminEventSetRate(c *fiber.Ctx, eventID string) error
 
@@ -114,6 +117,24 @@ func (siw *ServerInterfaceWrapper) GetApiV1AdminEventsEventID(c *fiber.Ctx) erro
 	c.Context().SetUserValue(Admin_authScopes, []string{})
 
 	return siw.Handler.GetApiV1AdminEventsEventID(c, eventID)
+}
+
+// AdminEventRequestDocuments operation middleware
+func (siw *ServerInterfaceWrapper) AdminEventRequestDocuments(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "eventID" -------------
+	var eventID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventID", c.Params("eventID"), &eventID, runtime.BindStyledParameterOptions{Explode: false, Required: false})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventID: %w", err).Error())
+	}
+
+	c.Context().SetUserValue(Admin_authScopes, []string{})
+
+	return siw.Handler.AdminEventRequestDocuments(c, eventID)
 }
 
 // AdminEventSetRate operation middleware
@@ -278,6 +299,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 
 	router.Get(options.BaseURL+"/api/v1/admin/events/:eventID", wrapper.GetApiV1AdminEventsEventID)
 
+	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/request-documents", wrapper.AdminEventRequestDocuments)
+
 	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/set-rate", wrapper.AdminEventSetRate)
 
 	router.Get(options.BaseURL+"/api/v1/admin/invoices/by-id/:invoiceID", wrapper.AdminGetInvoiceByID)
@@ -401,6 +424,41 @@ func (response GetApiV1AdminEventsEventID404JSONResponse) VisitGetApiV1AdminEven
 type GetApiV1AdminEventsEventID500JSONResponse ErrorResponse
 
 func (response GetApiV1AdminEventsEventID500JSONResponse) VisitGetApiV1AdminEventsEventIDResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventRequestDocumentsRequestObject struct {
+	EventID string `json:"eventID,omitempty"`
+	Body    *AdminEventRequestDocumentsJSONRequestBody
+}
+
+type AdminEventRequestDocumentsResponseObject interface {
+	VisitAdminEventRequestDocumentsResponse(ctx *fiber.Ctx) error
+}
+
+type AdminEventRequestDocuments200Response struct {
+}
+
+func (response AdminEventRequestDocuments200Response) VisitAdminEventRequestDocumentsResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminEventRequestDocuments404JSONResponse ErrorResponse
+
+func (response AdminEventRequestDocuments404JSONResponse) VisitAdminEventRequestDocumentsResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminEventRequestDocuments500JSONResponse ErrorResponse
+
+func (response AdminEventRequestDocuments500JSONResponse) VisitAdminEventRequestDocumentsResponse(ctx *fiber.Ctx) error {
 	ctx.Response().Header.Set("Content-Type", "application/json")
 	ctx.Status(500)
 
@@ -652,6 +710,9 @@ type StrictServerInterface interface {
 	// (GET /api/v1/admin/events/{eventID})
 	GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error)
 
+	// (POST /api/v1/admin/events/{eventID}/request-documents)
+	AdminEventRequestDocuments(ctx context.Context, request AdminEventRequestDocumentsRequestObject) (AdminEventRequestDocumentsResponseObject, error)
+
 	// (POST /api/v1/admin/events/{eventID}/set-rate)
 	AdminEventSetRate(ctx context.Context, request AdminEventSetRateRequestObject) (AdminEventSetRateResponseObject, error)
 
@@ -764,6 +825,39 @@ func (sh *strictHandler) GetApiV1AdminEventsEventID(ctx *fiber.Ctx, eventID stri
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	} else if validResponse, ok := response.(GetApiV1AdminEventsEventIDResponseObject); ok {
 		if err := validResponse.VisitGetApiV1AdminEventsEventIDResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminEventRequestDocuments operation middleware
+func (sh *strictHandler) AdminEventRequestDocuments(ctx *fiber.Ctx, eventID string) error {
+	var request AdminEventRequestDocumentsRequestObject
+
+	request.EventID = eventID
+
+	var body AdminEventRequestDocumentsJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminEventRequestDocuments(ctx.UserContext(), request.(AdminEventRequestDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminEventRequestDocuments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(AdminEventRequestDocumentsResponseObject); ok {
+		if err := validResponse.VisitAdminEventRequestDocumentsResponse(ctx); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 	} else if response != nil {
@@ -972,38 +1066,40 @@ func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsPar
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xaXW/qOBr+K5Z3L4H0fOzFcseonS6r2VNUurPSjqrKxG+Ip4mdsR0YVPHfR3YckhAH",
-	"0g84R+f0rhDn/fLzPu9j0yccijQTHLhWePyEVRhDSuyfE5oyfrUCrn9hSptvMikykJqBfQ6r8iWmIbV/",
-	"/F1ChMf4b0FlNHAWA2sJbwdYbzLAY0ykJBu83Q6whD9yJoHi8W+l0fvdMrH4HUL73iVToci5viOLBIw3",
-	"QinTTHCSzBqBHYqiYeRWrGsBdXgyi1q5F688YeB5asKOEqJrQSstGV8aUyuS5FC9gXmeLkC20rZPy9W+",
-	"5K+kFPIWVCa4As9emMcPKShFlnV3ZSD7VW4s9/qzu9XyQ5RiSw7WRSRkSjQeY0gJS7An+VBwTULtiWeA",
-	"KWjCEuV9Vhjs5SKSIm2spESDZin4FjPqdcf4SrAQ+kN5WrxwC1EbzwP8CJtYJBTklPfLYffCTa77vcFJ",
-	"Ct5UJNEwvfQ+UprovF+XzoulJjfRu7grpphrTPdsIUQChLfQxyh2KVQwcDtpPe5irYxWWBrsquJy7UTv",
-	"m7CWMfJq5qoXtUYamRQmP0NgeIDJmjDN+BJREeaptTXAJDOLwBQsJDyEJAHq5RkHyXa+tR48jquuBikr",
-	"9ZzumGpIfe2RkcJLL1BJiEACD/1oV46jepnqh38XfNkBPuRWMdWAWsGzqJEPBs52B7XS/fHWe4y9FQ8e",
-	"ZBXPDDs1pxygDS9Z2DAHe4U8thHqkJJ4Dt47WKLbvW0QT78q7a01BRVKlpkw/UPT+O/gfu+G75XXOm66",
-	"OVA7M/tasXfg6kgTn7AvDyTQpmNJmLJMaxnqGOFWg6FVhpP24rfUcr7yfoF1l3akMSi2qgvoSiKYcmc6",
-	"jMmdeAQ/wEMiZ0Q+mk9+A+YPxpcTTi9J2tTB9WXVQNxTBmYqPhBKJSj1Kh22V0VXwKZ9X+2gYzIckMrP",
-	"wlonqLJ8kbAw2TzURByFiOSJxmMtcxh4CvlSUB1Ufq1IfHXKJFuRcDMTCQs3/l3WIFN1E/2LyT6KtCh8",
-	"fYo30LjvsWneh7wGWgc16PvSuXXjdX/XD/N9Sy+07MYil8nmtmt49xkKlgDqkTSsdiWjSunda35aU565",
-	"OQdOHVn/JOjmldK20v2NwloeRyJClrTQ9FIhHRONdMwUcgdDRLIsYaCQFiNcU8MtH/sZPE837+Xr18+t",
-	"oX1cdvrsnkN2vExfzEEbQPh3fE+IdniSfmzaA0OYS6Y3c1PyciqljD+QXMfm0wKIBPlziaZ//+/OTDu7",
-	"2tCHfVqhK9Y6w9utvUKIRBtbdzeXN3iAExaCu7UpGBhff/kvmkQRSIGuZ7+gT6MLPMC5TJxNNQ6C9Xo9",
-	"WvJ8JOQycAZUQJZZMvw0uhgBH8U6TSw+mDb9j38SwrANmm+UhhRNZlNzfgapilg+jC5GF2a9yICTjOEx",
-	"NoY+Wb2jY1uLgGQsWH0ICKXDahY5ZDRTm1CKCOKwRnYh0gLpGFBIEuCUmBqZfSNm9ZQW668cyZqtAqXL",
-	"HTYQdq5sn4X2peB3VQCu6I5jvbNTHXY3mqFelQEuABFKgeI6XMx0s/gprtZsHT5eXLQznudhCEpFeZJs",
-	"nJ3tAH+++OebJdG84/NkMuFCxyBdyeFPprRCghdkRR2Nfv748XwR/UoSRq1lBH+GUHy9HeB/FBU8TxBz",
-	"kYKODfbXpi5rKRwpqDxNidyUcOWonPOaLJW9gbFqA9+bxRX4U8aDalwswcbfhPM16EnGfv1Q3ZEr20iS",
-	"pKBBGuMtMojB7pFBolhowlw4Cjn9w8yqP3KQm1J0j0tpVBWqIbd8Uqu/W6u3fE4Lid/b5b2/e95k7/d+",
-	"g/Bs/v8NiQqJUiGhzMx2RtGdZ4ThbcFrqEIBIhKMiDBN8g11hRuCFqP18ffbvdnLsjfsk+7WCJ7c5N8+",
-	"p0munFro0SvTSyPLzFDZTRgJWjJYQYlbM7gq2MLOdlXBc2L1yAAq6LpA5efzweCLaI6LNdNxIXGnl98v",
-	"JgMFeliqxVLB7CuSEpVOcr4QlAq0/cJ4Q/aE9Bpsvr00qgtqH2u52bAAk8nLpFEB8DwzA4K+I/wkCC9/",
-	"pAwWmyGjwZP7fIh/LcKvQZeHv81zide9eJx6d8F8NfItf//ybEmZRSRy/lXQWV4j/KD4DFIiH4dEDctf",
-	"/g7w8X+IfHT7NStu4V8GV+MSEYXcVf5bQ9YPMOMUaOkWqdqB8R12p4ZdJOTwyKFtjw/Vz0L2O7pNUCjS",
-	"lAwVmGUaKErcreHuKIWWwMFKgDIiFAnZccCC0mtz1taB2PeS8Ryk6op0gFqV2dSvjfcfQAQYgB3Ht72C",
-	"xyfERXXH3yEolW2Q76fuCjgdstq/2HRPsNptOz6VoG/+LnKgL+3xhL/wwvO9uc8Fsp6Xje/3jKe9u3m/",
-	"YnyrVmjfr1df7gNnZteg26v5HZrMpqrCh3u7jbWZZCsDNUu4TOmiV3wmimbb3m//CgAA//8+w+846C4A",
-	"AA==",
+	"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",
+	"58w+MwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
