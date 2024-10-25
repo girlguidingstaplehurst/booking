@@ -161,7 +161,7 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 		return event, err
 	}
 
-	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.status	
+	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.status, bi.sent, bi.paid	
 		from booking_invoices bi
 		right join public.booking_invoice_items bii on bi.id = bii.invoice_id
 		where bii.event_id = $1`, id)

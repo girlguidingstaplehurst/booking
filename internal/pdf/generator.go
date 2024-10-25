@@ -140,6 +140,16 @@ func (g *Generator) GenerateInvoice(ctx context.Context, invoice *rest.Invoice) 
 		Color:  ggDarkBlue,
 		Family: poppinsFontFamily,
 	}))
+	m.AddRow(8, text.NewCol(4, "Payment Due By:", props.Text{
+		Size:   12,
+		Color:  ggDarkBlue,
+		Style:  fontstyle.Bold,
+		Family: poppinsFontFamily,
+	}), text.NewCol(4, time.Now().Add(-14*24*time.Hour).Format("2006-01-02"), props.Text{
+		Size:   12,
+		Color:  ggDarkBlue,
+		Family: poppinsFontFamily,
+	}))
 
 	m.AddRow(8)
 
