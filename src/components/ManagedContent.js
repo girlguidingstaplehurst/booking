@@ -1,5 +1,14 @@
 import * as contentful from "contentful";
-import { Heading, Link, List, ListItem, OrderedList, Skeleton, Stack, Text, UnorderedList } from "@chakra-ui/react";
+import {
+  Heading,
+  Link,
+  ListItem,
+  OrderedList,
+  Skeleton,
+  Stack,
+  Text,
+  UnorderedList,
+} from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
@@ -10,7 +19,7 @@ const client = contentful.createClient({
   accessToken: "mnamX4N0qebOgpJN6KJVgakUGcSLFrFEvcHhdtcEO14",
 });
 
-function ManagedContent({ name }) {
+function ManagedContent({ name, showLastUpdated = true }) {
   const [content, setContent] = useState({});
   const [loaded, setLoaded] = useState(false);
 
@@ -35,12 +44,22 @@ function ManagedContent({ name }) {
       [MARKS.BOLD]: (text) => <b>{text}</b>,
     },
     renderNode: {
-      [BLOCKS.HEADING_2]: (node, children) => <Heading size="lg">{children}</Heading>,
-      [BLOCKS.HEADING_3]: (node, children) => <Heading size="md">{children}</Heading>,
-      [BLOCKS.HEADING_4]: (node, children) => <Heading size="sm">{children}</Heading>,
+      [BLOCKS.HEADING_2]: (node, children) => (
+        <Heading size="lg">{children}</Heading>
+      ),
+      [BLOCKS.HEADING_3]: (node, children) => (
+        <Heading size="md">{children}</Heading>
+      ),
+      [BLOCKS.HEADING_4]: (node, children) => (
+        <Heading size="sm">{children}</Heading>
+      ),
       [BLOCKS.PARAGRAPH]: (node, children) => <Text>{children}</Text>,
-      [BLOCKS.OL_LIST]: (node, children) => <OrderedList>{children}</OrderedList>,
-      [BLOCKS.UL_LIST]: (node, children) => <UnorderedList>{children}</UnorderedList>,
+      [BLOCKS.OL_LIST]: (node, children) => (
+        <OrderedList>{children}</OrderedList>
+      ),
+      [BLOCKS.UL_LIST]: (node, children) => (
+        <UnorderedList>{children}</UnorderedList>
+      ),
       [BLOCKS.LIST_ITEM]: (node, children) => <ListItem>{children}</ListItem>,
       [INLINES.HYPERLINK]: (node, children) => <Link>{children}</Link>,
     },
@@ -50,7 +69,9 @@ function ManagedContent({ name }) {
     <Skeleton isLoaded={loaded}>
       <Stack gap={4}>
         <Heading>{content.fields?.heading}</Heading>
-        <Text>Last updated {dayjs(content.sys?.updatedAt).toString()}</Text>
+        {showLastUpdated ? (
+          <Text>Last updated {dayjs(content.sys?.updatedAt).toString()}</Text>
+        ) : null}
         {documentToReactComponents(content.fields?.richContent, options)}
       </Stack>
     </Skeleton>

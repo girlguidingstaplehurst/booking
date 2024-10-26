@@ -36,6 +36,21 @@ type AdminEventList struct {
 	Events []Event `json:"events"`
 }
 
+// AdminNewEvents defines model for AdminNewEvents.
+type AdminNewEvents struct {
+	Contact struct {
+		EmailAddress openapi_types.Email `json:"email_address"`
+		Name         string              `json:"name"`
+	} `json:"contact"`
+	Event struct {
+		Details         string          `json:"details"`
+		Instances       []EventInstance `json:"instances"`
+		Name            string          `json:"name"`
+		PubliclyVisible bool            `json:"publicly_visible"`
+		Status          string          `json:"status"`
+	} `json:"event"`
+}
+
 // DiscountTable defines model for DiscountTable.
 type DiscountTable map[string]DiscountTableRow
 
@@ -69,6 +84,12 @@ type Event struct {
 	Status       EventStatus          `json:"status"`
 	To           string               `json:"to"`
 	Visible      bool                 `json:"visible"`
+}
+
+// EventInstance defines model for EventInstance.
+type EventInstance struct {
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 // EventList defines model for EventList.
@@ -221,6 +242,9 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
+type AdminAddEventsJSONRequestBody = AdminNewEvents
 
 // AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
 type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody

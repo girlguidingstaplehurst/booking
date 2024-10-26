@@ -1,9 +1,8 @@
 import {
   Badge,
-  Box,
+  ButtonGroup,
   Checkbox,
   Flex,
-  Link,
   Spacer,
   Stack,
   Table,
@@ -81,7 +80,7 @@ export function Dashboard() {
       <Flex>
         <Text>Filters will (eventually) go here</Text>
         <Spacer />
-        <Box>
+        <ButtonGroup>
           <RoundedButton
             as={ReactRouterLink}
             to={`/admin/create-invoice?events=${selectedRows}`}
@@ -89,7 +88,10 @@ export function Dashboard() {
           >
             Invoice Selected
           </RoundedButton>
-        </Box>
+          <RoundedButton as={ReactRouterLink} to={`/admin/create-events`}>
+            Create Events
+          </RoundedButton>
+        </ButtonGroup>
       </Flex>
       <TableContainer>
         <Table variant="striped">
@@ -125,7 +127,10 @@ export function Dashboard() {
                 <Td>{event.contact}</Td>
                 <Td>{event.assignee}</Td>
                 <Td>
-                  <RoundedButton as={ReactRouterLink} to={"/admin/review/" + event.id}>
+                  <RoundedButton
+                    as={ReactRouterLink}
+                    to={"/admin/review/" + event.id}
+                  >
                     Review
                   </RoundedButton>
                 </Td>

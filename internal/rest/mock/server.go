@@ -56,6 +56,20 @@ func (mr *MockDatabaseMockRecorder) AddEvent(ctx, event any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvent", reflect.TypeOf((*MockDatabase)(nil).AddEvent), ctx, event)
 }
 
+// AddEvents mocks base method.
+func (m *MockDatabase) AddEvents(ctx context.Context, event rest.AdminAddEventsRequestObject) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddEvents", ctx, event)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddEvents indicates an expected call of AddEvents.
+func (mr *MockDatabaseMockRecorder) AddEvents(ctx, event any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvents", reflect.TypeOf((*MockDatabase)(nil).AddEvents), ctx, event)
+}
+
 // AddInvoice mocks base method.
 func (m *MockDatabase) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) (*rest.Invoice, error) {
 	m.ctrl.T.Helper()

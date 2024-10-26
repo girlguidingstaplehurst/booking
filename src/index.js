@@ -24,6 +24,7 @@ import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
+import { CreateEvents } from "./admin/CreateEvents";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -52,6 +53,7 @@ const router = createBrowserRouter(
 
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
+        <Route path="create-events" element={<CreateEvents />}/>
         <Route
           path="review/:eventID"
           element={<ReviewEvent />}

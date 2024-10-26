@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/thanhpk/randstr"
 )
 
@@ -34,32 +35,48 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 			return errors.Join(err, errors.New("failed to lock table"))
 		}
 
-		rows, err := tx.Query(ctx, `select count(*) from booking_events 
-			where (event_start - interval '30 minutes' <= $1 and event_end + interval '30 minutes' >= $1)
-			or (event_start - interval '30 minutes' <= $2 and event_end + interval '30 minutes'>= $2)
-			or (event_start - interval '30 minutes'>= $1 and event_end + interval '30 minutes' <= $2)`, event.Event.From, event.Event.To)
+		err = db.checkForNearbyBookings(ctx, tx, event.Event.From, event.Event.To)
 		if err != nil {
-			return errors.Join(err, errors.New("failed to count existing overlapping bookings"))
+			return err
 		}
 
-		count, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+		err = db.insertEvent(ctx, tx, event, consts.EventStatusProvisional)
 		if err != nil {
-			return errors.Join(err, errors.New("failed to extract count of rows"))
-		}
-
-		if count > 0 {
-			return consts.ErrBookingExists
-		}
-
-		_, err = tx.Exec(ctx, `insert into booking_events
-			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, consts.EventStatusProvisional, event.Event.Details)
-		if err != nil {
-			return errors.Join(err, errors.New("failed to insert new booking"))
+			return err
 		}
 
 		return nil
 	})
+}
+
+func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status string) error {
+	_, err := tx.Exec(ctx, `insert into booking_events
+			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
+			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, status, event.Event.Details)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to insert new booking"))
+	}
+	return nil
+}
+
+func (db *Database) checkForNearbyBookings(ctx context.Context, tx pgx.Tx, from, to string) error {
+	rows, err := tx.Query(ctx, `select count(*) from booking_events 
+			where (event_start - interval '30 minutes' <= $1 and event_end + interval '30 minutes' >= $1)
+			or (event_start - interval '30 minutes' <= $2 and event_end + interval '30 minutes'>= $2)
+			or (event_start - interval '30 minutes'>= $1 and event_end + interval '30 minutes' <= $2)`, from, to)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to count existing overlapping bookings"))
+	}
+
+	count, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+	if err != nil {
+		return errors.Join(err, errors.New("failed to extract count of rows"))
+	}
+
+	if count > 0 {
+		return consts.ErrBookingExists
+	}
+	return nil
 }
 
 func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) (*rest.Invoice, error) {
@@ -287,4 +304,50 @@ func (db *Database) SetEventStatus(ctx context.Context, eventID string, status s
 	}
 
 	return nil
+}
+
+func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequestObject) error {
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode")
+		if err != nil {
+			return errors.Join(err, errors.New("failed to lock table"))
+		}
+
+		for _, instance := range event.Body.Event.Instances {
+			evt := &rest.NewEvent{
+				Contact: struct {
+					EmailAddress openapi_types.Email `json:"email_address"`
+					Name         string              `json:"name"`
+				}{
+					EmailAddress: event.Body.Contact.EmailAddress,
+					Name:         event.Body.Contact.Name,
+				},
+				Event: struct {
+					Details         string `json:"details"`
+					From            string `json:"from"`
+					Name            string `json:"name"`
+					PubliclyVisible bool   `json:"publicly_visible"`
+					To              string `json:"to"`
+				}{
+					Name:            event.Body.Event.Name,
+					Details:         event.Body.Event.Details,
+					From:            instance.From,
+					To:              instance.To,
+					PubliclyVisible: event.Body.Event.PubliclyVisible,
+				},
+			}
+
+			err = db.checkForNearbyBookings(ctx, tx, instance.From, instance.To)
+			if err != nil {
+				return err
+			}
+
+			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }

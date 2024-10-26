@@ -435,6 +435,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/add-events:
+    post:
+      tags:
+        - public
+      summary: Add events
+      description: Add new events to the calendar
+      operationId: adminAddEvents
+      requestBody:
+        description: Events to be added
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminNewEvents'
+        required: true
+      responses:
+        '200':
+          description: Successfully added
+        '409':
+          description: One or more conflicts exist
+#          TODO this should be a partial response, I suspect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -780,7 +817,57 @@ components:
           type: boolean
         dbsCertificate:
           type: boolean
-
+    AdminNewEvents:
+      type: object
+      required:
+        - event
+        - contact
+      properties:
+        event:
+          type: object
+          required:
+            - name
+            - details
+            - instances
+            - publicly_visible
+            - status
+          properties:
+            name:
+              type: string
+            details:
+              type: string
+            instances:
+              type: array
+              items:
+                $ref: '#/components/schemas/EventInstance'
+            publicly_visible:
+              type: boolean
+              default: true
+            status:
+              type: string
+        contact:
+          type: object
+          required:
+            - name
+            - email_address
+          properties:
+            name:
+              type: string
+            email_address:
+              type: string
+              format: email
+    EventInstance:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
   securitySchemes:
     admin_auth:
       type: http

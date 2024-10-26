@@ -24,6 +24,7 @@ var _ StrictServerInterface = (*Server)(nil)
 
 type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
+	AddEvents(ctx context.Context, event AdminAddEventsRequestObject) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids []string) ([]DBInvoiceEvent, error)
@@ -483,4 +484,16 @@ func (s *Server) AdminEventCancel(ctx context.Context, request AdminEventCancelR
 	}
 
 	return AdminEventCancel200Response{}, nil
+}
+
+func (s *Server) AdminAddEvents(ctx context.Context, request AdminAddEventsRequestObject) (AdminAddEventsResponseObject, error) {
+	//TODO validation
+	err := s.db.AddEvents(ctx, request)
+	if err != nil {
+		return AdminAddEvents500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	return AdminAddEvents200Response{}, nil
 }
