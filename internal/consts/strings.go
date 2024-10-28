@@ -10,5 +10,7 @@ const (
 	InvoiceStatusPaid      = "paid"
 	InvoiceStatusCancelled = "cancelled"
 
+	RateDefault = "default"
+
 	ReferenceLetters = "ABCDEFGHJLMPQRSTUVWYZ23456789"
 )

@@ -47,6 +47,7 @@ type AdminNewEvents struct {
 		Instances       []EventInstance `json:"instances"`
 		Name            string          `json:"name"`
 		PubliclyVisible bool            `json:"publicly_visible"`
+		Rate            string          `json:"rate"`
 		Status          string          `json:"status"`
 	} `json:"event"`
 }

@@ -19,7 +19,7 @@ import {
 import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
-import RateSelect from "./components/RateSelect";
+import { RateUpdater } from "./components/RateSelect";
 import { AdminPoster } from "../Poster";
 import TriggerModal from "./components/TriggerModal";
 import React from "react";
@@ -221,7 +221,7 @@ export function ReviewEvent() {
               {visibility}
               <Box>
                 <Heading size="s">Hiring Rate</Heading>
-                <RateSelect eventID={event.id} rateID={event.rateID} />
+                <RateUpdater eventID={event.id} rateID={event.rateID} />
               </Box>
               <Flex>
                 <Box>

@@ -142,6 +142,7 @@ function ShowCalendar() {
         slotPropGetter={markUnavailableDays}
         eventPropGetter={colorEvents}
         selectable={true}
+        showMultiDayTimes={true}
         onSelectSlot={({ start, end }) => {
           if (!dayjs(start).isBefore(minDate)) {
             navigate(

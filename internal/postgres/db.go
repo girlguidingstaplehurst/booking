@@ -3,6 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/girlguidingstaplehurst/booking/internal/consts"
@@ -40,7 +43,7 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 			return err
 		}
 
-		err = db.insertEvent(ctx, tx, event, consts.EventStatusProvisional)
+		err = db.insertEvent(ctx, tx, event, consts.EventStatusProvisional, consts.RateDefault)
 		if err != nil {
 			return err
 		}
@@ -49,10 +52,10 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 	})
 }
 
-func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status string) error {
+func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status, rate string) error {
 	_, err := tx.Exec(ctx, `insert into booking_events
 			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, 'default', $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, status, event.Event.Details)
+			values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, status, rate, event.Event.Details)
 	if err != nil {
 		return errors.Join(err, errors.New("failed to insert new booking"))
 	}
@@ -209,18 +212,33 @@ func (db *Database) MarkInvoiceSent(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *Database) GetInvoiceEvents(ctx context.Context, ids []string) ([]rest.DBInvoiceEvent, error) {
-	rows, err := db.pool.Query(ctx, `select be.id, to_char(be.event_start, $2), to_char(be.event_end, $2), be.event_name, be.status, be.email, 
-       			br.hourly_rate::numeric::decimal, br.discount_table
+func (db *Database) GetInvoiceEvents(ctx context.Context, ids ...string) ([]rest.DBInvoiceEvent, error) {
+	var idPlaceholders []string
+	var ne []any
+	for i, id := range ids {
+		idPlaceholders = append(idPlaceholders, fmt.Sprintf("$%d", i+1))
+		ne = append(ne, id)
+	}
+
+	join := strings.Join(idPlaceholders, ",")
+
+	rows, err := db.pool.Query(ctx, `select be.id, 
+			to_char(be.event_start, '`+dbDateTimeFormat+`'), 
+			to_char(be.event_end, '`+dbDateTimeFormat+`'), 
+			be.event_name, be.status, be.email, 
+       		br.hourly_rate::numeric::decimal, br.discount_table
 		from booking_events be
 		join booking_rates br on be.rate_id = br.id
-		where be.id = any($1)
-		order by contact, event_name`, ids, dbDateTimeFormat)
+		where be.id in (`+join+`)
+		order by be.contact, be.event_name, be.event_start`, ne...)
 	if err != nil {
 		return nil, err
 	}
 
+	slog.Info("dumping rows", "rows", rows)
+
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.DBInvoiceEvent, error) {
+		slog.Info("dumping row", "row", row)
 		var event rest.DBInvoiceEvent
 		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.Rate, &event.DiscountTable); err != nil {
 			return event, err
@@ -342,7 +360,7 @@ func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequ
 				return err
 			}
 
-			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status)
+			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status, event.Body.Event.Rate)
 			if err != nil {
 				return err
 			}

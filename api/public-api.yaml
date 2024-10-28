@@ -831,6 +831,7 @@ components:
             - instances
             - publicly_visible
             - status
+            - rate
           properties:
             name:
               type: string
@@ -844,6 +845,8 @@ components:
               type: boolean
               default: true
             status:
+              type: string
+            rate:
               type: string
         contact:
           type: object

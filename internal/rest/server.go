@@ -27,7 +27,7 @@ type Database interface {
 	AddEvents(ctx context.Context, event AdminAddEventsRequestObject) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
-	GetInvoiceEvents(ctx context.Context, ids []string) ([]DBInvoiceEvent, error)
+	GetInvoiceEvents(ctx context.Context, ids ...string) ([]DBInvoiceEvent, error)
 	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
 	GetRates(ctx context.Context) ([]Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
@@ -264,7 +264,9 @@ type DBInvoiceEvent struct {
 }
 
 func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGetInvoicesForEventsRequestObject) (AdminGetInvoicesForEventsResponseObject, error) {
-	events, err := s.db.GetInvoiceEvents(ctx, request.Params.Events)
+	eventIDs := strings.Split(request.Params.Events[0], ",")
+
+	events, err := s.db.GetInvoiceEvents(ctx, eventIDs...)
 	if err != nil {
 		return AdminGetInvoicesForEvents500JSONResponse{
 			ErrorMessage: err.Error(),

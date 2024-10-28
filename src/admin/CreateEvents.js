@@ -1,4 +1,5 @@
 import {
+  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -21,6 +22,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import DateTimeRangeAccumulator from "./components/DateTimeRangeAccumulator";
 import { AdminPoster } from "../Poster";
+import { RateSelect } from "./components/RateSelect";
 
 const EventSchema = Yup.object().shape({
   eventName: Yup.string()
@@ -67,6 +69,7 @@ export function CreateEvents() {
       name: "",
       email: "",
       status: "approved",
+      rate: "",
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -80,6 +83,7 @@ export function CreateEvents() {
           instances: eventDates,
           publicly_visible: values.visibility === "show",
           status: values.status,
+          rate: values.rate,
         },
         contact: {
           name: values.name,
@@ -179,6 +183,15 @@ export function CreateEvents() {
               ],
             }}
           />
+
+          <Box>
+            <Heading size="s">Hiring Rate</Heading>
+            <RateSelect
+              rateID={formik.values.rate}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+            />
+          </Box>
 
           <Heading>Contact Info</Heading>
           <FormFieldAndLabel
