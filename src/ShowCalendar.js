@@ -7,7 +7,6 @@ import {
   AlertDialogOverlay,
   Box,
   Flex,
-  Heading,
   Spacer,
   Stack,
   Text,
@@ -48,7 +47,7 @@ function ShowCalendar() {
         {
           name: "Approved event",
           from: minDate.add(35, "hours").toDate(),
-          to: minDate.add(36, "hours").toDate(),
+          to: minDate.add(76, "hours").toDate(),
           status: "approved",
         },
       ],
@@ -86,33 +85,35 @@ function ShowCalendar() {
         },
       }),
     }),
-    [minDate],
+    [minDate, grey300],
   );
 
-  const colorEvents = useCallback((event) => {
+  const colorEvents = (event) => {
     return {
       ...(event.status === "provisional" && {
         style: {
           backgroundColor: brand500,
-          color: white,
+          color: brand500,
           fontSize: "12px",
         },
       }),
       ...(event.status === "approved" && {
         style: {
           backgroundColor: brand900,
-          color: white,
+          color: brand900,
           fontSize: "12px",
         },
       }),
     };
-  });
+  };
 
   const closeRef = useRef();
 
+  const empty = () => "";
+
   return (
     <Stack spacing={4}>
-      <ManagedContent name="make-a-booking" showLastUpdated={false}/>
+      <ManagedContent name="make-a-booking" showLastUpdated={false} />
       <Flex justifyContent="end" wrap="wrap" gap={4}>
         <Stack direction="row" gap={2}>
           <Text padding={2}>Key:</Text>
@@ -143,6 +144,12 @@ function ShowCalendar() {
         eventPropGetter={colorEvents}
         selectable={true}
         showMultiDayTimes={true}
+        titleAccessor={empty}
+        views={["month", "week"]}
+        formats={{
+          dayFormat: "dd DD",
+          timeGutterFormat: "HH:mm",
+        }}
         onSelectSlot={({ start, end }) => {
           if (!dayjs(start).isBefore(minDate)) {
             navigate(

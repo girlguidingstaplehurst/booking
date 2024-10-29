@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   ButtonGroup,
   Container,
   Drawer,
@@ -27,7 +26,6 @@ import RoundedButton from "./components/RoundedButton";
 import Footer from "./components/Footer";
 import { TbMenu2 } from "react-icons/tb";
 import { useRef } from "react";
-import { CookieConsent } from "react-cookie-consent";
 
 function NavLink({ children, ...props }) {
   const [brand500, brand900, white] = useToken("colors", [
