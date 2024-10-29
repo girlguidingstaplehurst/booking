@@ -146,25 +146,29 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 	return AddEvent200Response{}, nil
 }
 
-func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
-	if request.Params.From == nil && request.Params.To == nil {
+func (s *Server) getAllEvents(ctx context.Context, from, to *openapi_types.Date) ([]ListEvent, error) {
+	if from == nil && to == nil {
 		// Get start date of this month
 		now := time.Now()
 		y, m, _ := now.Date()
 		loc := now.Location()
 
-		request.Params.From = &openapi_types.Date{
+		from = &openapi_types.Date{
 			Time: time.Date(y, m, 1, 0, 0, 0, 0, loc),
 		}
 		// Default range is the full 18-month period
-		request.Params.To = &openapi_types.Date{
-			Time: request.Params.From.Time.AddDate(0, 18, -1),
+		to = &openapi_types.Date{
+			Time: from.Time.AddDate(0, 18, -1),
 		}
 	}
 
+	return s.db.ListEvents(ctx, from.Time, to.Time)
+}
+
+func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
 	//TODO validate
 
-	events, err := s.db.ListEvents(ctx, request.Params.From.Time, request.Params.To.Time)
+	events, err := s.getAllEvents(ctx, request.Params.From, request.Params.To)
 	if err != nil {
 		return GetApiV1Events500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -498,4 +502,48 @@ func (s *Server) AdminAddEvents(ctx context.Context, request AdminAddEventsReque
 	}
 
 	return AdminAddEvents200Response{}, nil
+}
+
+func (s *Server) GetEventsICS(ctx context.Context, request GetEventsICSRequestObject) (GetEventsICSResponseObject, error) {
+	events, err := s.getAllEvents(ctx, nil, nil)
+	if err != nil {
+		return GetEventsICS500JSONResponse{
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+
+	cal := ics.NewCalendar()
+	cal.SetProductId("//KLGC//Booking Service//EN")
+	cal.SetVersion("2.0")
+	cal.SetMethod(ics.MethodPublish)
+
+	for _, event := range events {
+		from, err := time.Parse(time.RFC3339, event.From)
+		if err != nil {
+			return GetEventsICS500JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+
+		to, err := time.Parse(time.RFC3339, event.To)
+		if err != nil {
+			return GetEventsICS500JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+
+		calEvent := cal.AddEvent(event.Id)
+		calEvent.SetCreatedTime(time.Now())
+		calEvent.SetDtStampTime(time.Now())
+		calEvent.SetModifiedAt(time.Now())
+		calEvent.SetStartAt(from)
+		calEvent.SetEndAt(to)
+		calEvent.SetSummary(event.Name)
+		calEvent.SetDescription("Booking at the Kathie Lamb Guide Centre")
+		calEvent.SetLocation("Kathie Lamb Guide Centre, Jubilee Field, Headcorn Road, Staplehurst, Kent, TN12 0DS")
+		calEvent.SetOrganizer("bookings@kathielambcentre.org")
+	}
+
+	icsCal := cal.Serialize()
+
+	return GetEventsICS200TextcalendarResponse{
+		Body:          strings.NewReader(icsCal),
+		ContentLength: int64(len(icsCal)),
+	}, nil
 }

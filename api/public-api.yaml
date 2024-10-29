@@ -85,6 +85,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/events.ics:
+    get:
+      operationId: getEventsICS
+      tags:
+        - public
+      responses:
+        '200':
+          description: "Zero or more events exist"
+          content:
+            text/calendar: {}
+        '400':
+          description: Request parameters are invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/events:
     get:
       security:

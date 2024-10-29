@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/url"
 	"path"
 	"strings"
@@ -62,6 +63,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/events)
 	GetApiV1Events(c *fiber.Ctx, params GetApiV1EventsParams) error
+
+	// (GET /api/v1/events.ics)
+	GetEventsICS(c *fiber.Ctx) error
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -323,6 +327,12 @@ func (siw *ServerInterfaceWrapper) GetApiV1Events(c *fiber.Ctx) error {
 	return siw.Handler.GetApiV1Events(c, params)
 }
 
+// GetEventsICS operation middleware
+func (siw *ServerInterfaceWrapper) GetEventsICS(c *fiber.Ctx) error {
+
+	return siw.Handler.GetEventsICS(c)
+}
+
 // FiberServerOptions provides options for the Fiber server.
 type FiberServerOptions struct {
 	BaseURL     string
@@ -371,6 +381,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	router.Post(options.BaseURL+"/api/v1/admin/send-invoice", wrapper.AdminSendInvoice)
 
 	router.Get(options.BaseURL+"/api/v1/events", wrapper.GetApiV1Events)
+
+	router.Get(options.BaseURL+"/api/v1/events.ics", wrapper.GetEventsICS)
 
 }
 
@@ -866,6 +878,50 @@ func (response GetApiV1Events500JSONResponse) VisitGetApiV1EventsResponse(ctx *f
 	return ctx.JSON(&response)
 }
 
+type GetEventsICSRequestObject struct {
+}
+
+type GetEventsICSResponseObject interface {
+	VisitGetEventsICSResponse(ctx *fiber.Ctx) error
+}
+
+type GetEventsICS200TextcalendarResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetEventsICS200TextcalendarResponse) VisitGetEventsICSResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "text/calendar")
+	if response.ContentLength != 0 {
+		ctx.Response().Header.Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	ctx.Status(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(ctx.Response().BodyWriter(), response.Body)
+	return err
+}
+
+type GetEventsICS400JSONResponse ErrorResponse
+
+func (response GetEventsICS400JSONResponse) VisitGetEventsICSResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(400)
+
+	return ctx.JSON(&response)
+}
+
+type GetEventsICS500JSONResponse ErrorResponse
+
+func (response GetEventsICS500JSONResponse) VisitGetEventsICSResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Add an event
@@ -910,6 +966,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/events)
 	GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error)
+
+	// (GET /api/v1/events.ics)
+	GetEventsICS(ctx context.Context, request GetEventsICSRequestObject) (GetEventsICSResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *fiber.Ctx, args interface{}) (interface{}, error)
@@ -1325,45 +1384,71 @@ func (sh *strictHandler) GetApiV1Events(ctx *fiber.Ctx, params GetApiV1EventsPar
 	return nil
 }
 
+// GetEventsICS operation middleware
+func (sh *strictHandler) GetEventsICS(ctx *fiber.Ctx) error {
+	var request GetEventsICSRequestObject
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEventsICS(ctx.UserContext(), request.(GetEventsICSRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEventsICS")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	} else if validResponse, ok := response.(GetEventsICSResponseObject); ok {
+		if err := validResponse.VisitGetEventsICSResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"qVSZ710ismi5fdz+GQAA//+/q6ya6j8AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
