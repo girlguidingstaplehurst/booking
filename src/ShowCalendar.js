@@ -5,8 +5,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  Box, Container,
-  Flex,
+  Box,
+  Button,
+  ButtonGroup,
+  Container,
+  Flex, Link,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
   Spacer,
   Stack,
   Text,
@@ -129,9 +139,43 @@ function ShowCalendar() {
             </Box>
           </Stack>
           <Spacer />
-          <RoundedButton as={ReactRouterLink} to="/add-event">
-            Add Event
-          </RoundedButton>
+          <ButtonGroup>
+            <Popover>
+              <PopoverTrigger>
+                <Button
+                  color={brand500}
+                  colorScheme="white"
+                  border={`2px solid ${white}`}
+                  borderRadius={100}
+                  _hover={{
+                    bg: white,
+                    border: `2px solid ${brand500}`,
+                    color: brand500,
+                  }}
+                >
+                  Add Residential
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <PopoverArrow />
+                <PopoverCloseButton />
+                <PopoverHeader fontWeight="bold">Planning a Residential booking?</PopoverHeader>
+                <PopoverBody>
+                  To arrange a residential booking, please contact us at{" "}
+                  <Link
+                    href="mailto:bookings@kathielambcentre.org"
+                    color={brand500}
+                  >
+                    bookings@kathielambcentre.org
+                  </Link>{" "}
+                  where our bookings team will be happy to assist.
+                </PopoverBody>
+              </PopoverContent>
+            </Popover>
+            <RoundedButton as={ReactRouterLink} to="/add-event">
+              Add Event
+            </RoundedButton>
+          </ButtonGroup>
         </Flex>
         <Calendar
           localizer={localizer}

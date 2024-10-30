@@ -102,7 +102,11 @@ function ManagedContent({ name, showLastUpdated = true }) {
         <UnorderedList>{children}</UnorderedList>
       ),
       [BLOCKS.LIST_ITEM]: (node, children) => <ListItem>{children}</ListItem>,
-      [INLINES.HYPERLINK]: (node, children) => <Link>{children}</Link>,
+      [INLINES.HYPERLINK]: (node, children) => (
+        <Link href={node.data.uri} color="brand.500">
+          {children}
+        </Link>
+      ),
     },
   };
 
