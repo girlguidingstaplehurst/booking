@@ -1,6 +1,9 @@
 import * as contentful from "contentful";
 import {
+  Box,
+  Container,
   Heading,
+  Image,
   Link,
   ListItem,
   OrderedList,
@@ -13,6 +16,8 @@ import { useEffect, useState } from "react";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
 import dayjs from "dayjs";
+import HeroImageAndText from "./HeroImageAndText";
+import Carousel from "./Carousel";
 
 const client = contentful.createClient({
   space: "o3u1j7dkyy42",
@@ -44,16 +49,53 @@ function ManagedContent({ name, showLastUpdated = true }) {
       [MARKS.BOLD]: (text) => <b>{text}</b>,
     },
     renderNode: {
+      [BLOCKS.EMBEDDED_ASSET]: (node, children) => {
+        console.log(node, children);
+        return (
+          <Container maxW="5xl">
+            <Image
+              objectFit="contain"
+              src={node.data.target.fields.file.url}
+              alt={node.data.target.fields.description}
+            />
+          </Container>
+        );
+      },
+      [BLOCKS.EMBEDDED_ENTRY]: (node, children) => {
+        switch (node.data.target.sys.contentType.sys.id) {
+          case "slideshow":
+            console.log("Slideshow", node.data.target.fields);
+            return (
+              <Box bg="brand.500">
+                <Container maxW="5xl">
+                  <Carousel images={node.data.target.fields.images} />
+                </Container>
+              </Box>
+            );
+          default:
+            return <Box>Meow</Box>;
+        }
+      },
       [BLOCKS.HEADING_2]: (node, children) => (
-        <Heading size="lg">{children}</Heading>
+        <Container maxW="4xl">
+          <Heading size="lg">{children}</Heading>
+        </Container>
       ),
       [BLOCKS.HEADING_3]: (node, children) => (
-        <Heading size="md">{children}</Heading>
+        <Container maxW="4xl">
+          <Heading size="md">{children}</Heading>
+        </Container>
       ),
       [BLOCKS.HEADING_4]: (node, children) => (
-        <Heading size="sm">{children}</Heading>
+        <Container maxW="4xl">
+          <Heading size="sm">{children}</Heading>
+        </Container>
       ),
-      [BLOCKS.PARAGRAPH]: (node, children) => <Text>{children}</Text>,
+      [BLOCKS.PARAGRAPH]: (node, children) => (
+        <Container maxW="4xl">
+          <Text>{children}</Text>
+        </Container>
+      ),
       [BLOCKS.OL_LIST]: (node, children) => (
         <OrderedList>{children}</OrderedList>
       ),
@@ -68,10 +110,12 @@ function ManagedContent({ name, showLastUpdated = true }) {
   return (
     <Skeleton isLoaded={loaded}>
       <Stack gap={4}>
-        <Heading>{content.fields?.heading}</Heading>
-        {showLastUpdated ? (
-          <Text>Last updated {dayjs(content.sys?.updatedAt).toString()}</Text>
-        ) : null}
+        <Container maxW="4xl" padding={4}>
+          <Heading>{content.fields?.heading}</Heading>
+          {showLastUpdated ? (
+            <Text>Last updated {dayjs(content.sys?.updatedAt).toString()}</Text>
+          ) : null}
+        </Container>
         {documentToReactComponents(content.fields?.richContent, options)}
       </Stack>
     </Skeleton>

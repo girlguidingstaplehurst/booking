@@ -25,6 +25,7 @@ import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
+import Location from "./Location";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -36,6 +37,16 @@ const router = createBrowserRouter(
           loader={async () => await fetch("/api/v1/events")}
         />
         <Route path="add-event" element={<AddEvent />} />
+        <Route
+          path="home"
+          element={
+            <ManagedContent
+              name="kathie-lamb-guide-centre"
+              showLastUpdated={false}
+            />
+          }
+        />
+        <Route path="location" element={<Location />} />
         <Route
           path="privacy-policy"
           element={<ManagedContent name="privacy-policy" />}
@@ -53,7 +64,7 @@ const router = createBrowserRouter(
 
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
-        <Route path="create-events" element={<CreateEvents />}/>
+        <Route path="create-events" element={<CreateEvents />} />
         <Route
           path="review/:eventID"
           element={<ReviewEvent />}

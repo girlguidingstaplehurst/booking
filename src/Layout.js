@@ -172,8 +172,8 @@ function Layout() {
         </Container>
       </Box>
       <Box>
+        <Outlet />
         <Container maxW="4xl" padding={4}>
-          <Outlet />
           <Box margin={8} textAlign="center">
             <RoundedButton as="a" href="#top">
               Back to top

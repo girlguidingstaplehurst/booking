@@ -112,94 +112,96 @@ function ShowCalendar() {
   const empty = () => "";
 
   return (
-    <Stack spacing={4}>
-      <ManagedContent name="make-a-booking" showLastUpdated={false} />
-      <Flex justifyContent="end" wrap="wrap" gap={4}>
-        <Stack direction="row" gap={2}>
-          <Text padding={2}>Key:</Text>
-          <Box bg={brand500} fontSize="12px" color={white} padding={2}>
-            Provisional booking
-          </Box>
-          <Box bg={brand900} fontSize="12px" color={white} padding={2}>
-            Confirmed booking
-          </Box>
-          <Box bg={grey300} fontSize="12px" color={black} padding={2}>
-            Unavailable time
-          </Box>
-        </Stack>
-        <Spacer />
-        <RoundedButton as={ReactRouterLink} to="/add-event">
-          Add Event
-        </RoundedButton>
-      </Flex>
-      <Calendar
-        localizer={localizer}
-        defaultView="week"
-        events={events}
-        date={date}
-        min={minTime}
-        max={maxTime}
-        dayPropGetter={markUnavailableDays}
-        slotPropGetter={markUnavailableDays}
-        eventPropGetter={colorEvents}
-        selectable={true}
-        showMultiDayTimes={true}
-        titleAccessor={empty}
-        views={["month", "week"]}
-        formats={{
-          dayFormat: "dd DD",
-          timeGutterFormat: "HH:mm",
-        }}
-        onSelectSlot={({ start, end }) => {
-          if (!dayjs(start).isBefore(minDate)) {
-            navigate(
-              `/add-event?start=${dayjs(start).toISOString()}&end=${dayjs(end).toISOString()}`,
-            );
-          } else {
-            onOpen();
-          }
-        }}
-        onSelecting={({ start }) => {
-          if (dayjs(start).isBefore(minDate)) {
-            onOpen();
-            return false;
-          }
-          return true;
-        }}
-        onNavigate={(newDate) => {
-          if (dayjs(newDate).isBefore(dayjs())) {
-            setDate(dayjs().toDate());
-          } else {
-            setDate(newDate);
-          }
-        }}
-        style={{ height: "80vh" }}
-      />
-      <AlertDialog
-        isOpen={isOpen}
-        leastDestructiveRef={closeRef}
-        onClose={onClose}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Unable to book this date
-            </AlertDialogHeader>
+    <Container maxW="4xl" padding={4}>
+      <Stack spacing={4}>
+        <ManagedContent name="make-a-booking" showLastUpdated={false} />
+        <Flex justifyContent="end" wrap="wrap" gap={4}>
+          <Stack direction="row" gap={2}>
+            <Text padding={2}>Key:</Text>
+            <Box bg={brand500} fontSize="12px" color={white} padding={2}>
+              Provisional booking
+            </Box>
+            <Box bg={brand900} fontSize="12px" color={white} padding={2}>
+              Confirmed booking
+            </Box>
+            <Box bg={grey300} fontSize="12px" color={black} padding={2}>
+              Unavailable time
+            </Box>
+          </Stack>
+          <Spacer />
+          <RoundedButton as={ReactRouterLink} to="/add-event">
+            Add Event
+          </RoundedButton>
+        </Flex>
+        <Calendar
+          localizer={localizer}
+          defaultView="week"
+          events={events}
+          date={date}
+          min={minTime}
+          max={maxTime}
+          dayPropGetter={markUnavailableDays}
+          slotPropGetter={markUnavailableDays}
+          eventPropGetter={colorEvents}
+          selectable={true}
+          showMultiDayTimes={true}
+          titleAccessor={empty}
+          views={["month", "week"]}
+          formats={{
+            dayFormat: "dd DD",
+            timeGutterFormat: "HH:mm",
+          }}
+          onSelectSlot={({ start, end }) => {
+            if (!dayjs(start).isBefore(minDate)) {
+              navigate(
+                `/add-event?start=${dayjs(start).toISOString()}&end=${dayjs(end).toISOString()}`,
+              );
+            } else {
+              onOpen();
+            }
+          }}
+          onSelecting={({ start }) => {
+            if (dayjs(start).isBefore(minDate)) {
+              onOpen();
+              return false;
+            }
+            return true;
+          }}
+          onNavigate={(newDate) => {
+            if (dayjs(newDate).isBefore(dayjs())) {
+              setDate(dayjs().toDate());
+            } else {
+              setDate(newDate);
+            }
+          }}
+          style={{ height: "80vh" }}
+        />
+        <AlertDialog
+          isOpen={isOpen}
+          leastDestructiveRef={closeRef}
+          onClose={onClose}
+        >
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                Unable to book this date
+              </AlertDialogHeader>
 
-            <AlertDialogBody>
-              We are unable to accept bookings for dates less than 14 days in
-              the future.
-            </AlertDialogBody>
+              <AlertDialogBody>
+                We are unable to accept bookings for dates less than 14 days in
+                the future.
+              </AlertDialogBody>
 
-            <AlertDialogFooter>
-              <RoundedButton ref={closeRef} onClick={onClose} ml={3}>
-                Close
-              </RoundedButton>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </Stack>
+              <AlertDialogFooter>
+                <RoundedButton ref={closeRef} onClick={onClose} ml={3}>
+                  Close
+                </RoundedButton>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
+      </Stack>
+    </Container>
   );
 }
 
