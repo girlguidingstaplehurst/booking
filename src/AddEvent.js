@@ -1,5 +1,5 @@
 import {
-  Button,
+  Button, Container,
   Flex,
   Heading,
   Link,
@@ -11,7 +11,7 @@ import {
   Text,
   Textarea,
   Tooltip,
-  useToken,
+  useToken
 } from "@chakra-ui/react";
 import Summary from "./Summary";
 import { useFormik } from "formik";
@@ -227,148 +227,154 @@ function AddEvent() {
   ));
 
   return (
-    <form onSubmit={formik.handleSubmit}>
-      <CookieConsent
-        style={{ background: brand900, color: white, justifyContent: "center" }}
-        overlay={true}
-        acceptOnOverlayClick={false}
-        ButtonComponent={RoundedButton}
-        // customButtonProps={{
-        //   colorScheme: "green",
-        // }}
-        disableButtonStyles={true}
-        onAccept={() => setCookieConsent(true)}
-        enableDeclineButton={true}
-        declineButtonText="< Back"
-        DeclineButtonComponent={RoundedButton}
-        declineButtonStyle={{
-          marginRight: "0.5em",
-        }}
-        customDeclineButtonProps={{
-          colorScheme: "brand.900"
-        }}
-        onDecline={() => navigate(-1)}
-        setDeclineCookie={false}
-      >
-        We use cookies to make our booking form work. If you do not wish us to
-        set cookies, contact{" "}
-        <Link href="mailto:bookings@kathielambcentre.org">
-          bookings@kathielambcentre.org
-        </Link>{" "}
-        to make a booking.{" "}
-        <Link
-          as={ReactRouterLink}
-          to="/privacy-policy"
-          target="_blank"
-          rel="noopener noreferrer"
+    <Container maxW="4xl">
+      <form onSubmit={formik.handleSubmit}>
+        <CookieConsent
+          style={{
+            background: brand900,
+            color: white,
+            justifyContent: "center",
+          }}
+          overlay={true}
+          acceptOnOverlayClick={false}
+          ButtonComponent={RoundedButton}
+          // customButtonProps={{
+          //   colorScheme: "green",
+          // }}
+          disableButtonStyles={true}
+          onAccept={() => setCookieConsent(true)}
+          enableDeclineButton={true}
+          declineButtonText="< Back"
+          DeclineButtonComponent={RoundedButton}
+          declineButtonStyle={{
+            marginRight: "0.5em",
+          }}
+          customDeclineButtonProps={{
+            colorScheme: "brand.900",
+          }}
+          onDecline={() => navigate(-1)}
+          setDeclineCookie={false}
         >
-          Privacy Policy <TbExternalLink style={{ display: "inline" }} />
-        </Link>
-      </CookieConsent>
-      <Stack spacing={2}>
-        <Heading>Add Event</Heading>
-        <FormFieldAndLabel
-          label="Event Name"
-          name="eventName"
-          value={formik.values.eventName}
-          errValue={formik.errors.eventName}
-          onChange={formik.handleChange}
-        />
-
-        <FormFieldAndLabel
-          label="Event Date"
-          name="eventDate"
-          value={formik.values.eventDate}
-          errValue={formik.errors.eventDate}
-          onChange={formik.handleChange}
-          fieldProps={{ type: "date" }}
-        />
-
-        <SimpleGrid columns={2} gap={4}>
-          <FormFieldAndLabel
-            label="From"
-            name="eventTimeFrom"
-            value={formik.values.eventTimeFrom}
-            errValue={formik.errors.eventTimeFrom}
-            onChange={formik.handleChange}
-            fieldProps={{ type: "time" }}
-          />
-          <FormFieldAndLabel
-            label="To"
-            name="eventTimeTo"
-            value={formik.values.eventTimeTo}
-            errValue={formik.errors.eventTimeTo}
-            onChange={formik.handleChange}
-            fieldProps={{ type: "time" }}
-          />
-        </SimpleGrid>
-
-        <FormFieldAndLabel
-          label="Event Details"
-          name="details"
-          value={formik.values.details}
-          errValue={formik.errors.details}
-          onChange={formik.handleChange}
-          fieldAs={Textarea}
-          fieldProps={{
-            rows: 8,
-            placeholder:
-              "Please provide details of your event, including details of any " +
-              "companies or organisations (eg. Caterers, Bouncy Castle hire, " +
-              "Entertainers, DJs) that you will be using. This allows us to " +
-              "ensure your event will be able to run smoothly at the Centre.",
-          }}
-        />
-
-        <FormFieldAndLabel
-          label="Event Visibility"
-          name="visibility"
-          value={formik.values.visiblity}
-          onChange={formik.handleChange}
-          fieldAs={Select}
-          fieldProps={{
-            children: [
-              <option value="show">
-                Show event information on public calendar
-              </option>,
-              <option value="hide">
-                Hide event information on public calendar
-              </option>,
-            ],
-          }}
-        />
-
-        <Heading>Contact Info</Heading>
-        <FormFieldAndLabel
-          label="Name"
-          name="name"
-          value={formik.values.name}
-          errValue={formik.errors.name}
-          onChange={formik.handleChange}
-        />
-
-        <FormFieldAndLabel
-          label="Email"
-          name="email"
-          value={formik.values.email}
-          errValue={formik.errors.email}
-          onChange={formik.handleChange}
-        />
-
-        <Summary formik={formik} />
-        <Flex>
-          <Text color="red">{submitErrors}</Text>
-          <Spacer />
-          <Tooltip
-            label="One or more fields are invalid"
-            isDisabled={formik.isValid}
+          We use cookies to make our booking form work. If you do not wish us to
+          set cookies, contact{" "}
+          <Link href="mailto:bookings@kathielambcentre.org">
+            bookings@kathielambcentre.org
+          </Link>{" "}
+          to make a booking.{" "}
+          <Link
+            as={ReactRouterLink}
+            to="/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <BookButton>Book</BookButton>
-          </Tooltip>
-        </Flex>
-        <StackDivider />
-      </Stack>
-    </form>
+            Privacy Policy <TbExternalLink style={{ display: "inline" }} />
+          </Link>
+        </CookieConsent>
+        <Stack spacing={2}>
+          <Heading>Add Event</Heading>
+          <FormFieldAndLabel
+            label="Event Name"
+            name="eventName"
+            value={formik.values.eventName}
+            errValue={formik.errors.eventName}
+            onChange={formik.handleChange}
+          />
+
+          <FormFieldAndLabel
+            label="Event Date"
+            name="eventDate"
+            value={formik.values.eventDate}
+            errValue={formik.errors.eventDate}
+            onChange={formik.handleChange}
+            fieldProps={{ type: "date" }}
+          />
+
+          <SimpleGrid columns={2} gap={4}>
+            <FormFieldAndLabel
+              label="From"
+              name="eventTimeFrom"
+              value={formik.values.eventTimeFrom}
+              errValue={formik.errors.eventTimeFrom}
+              onChange={formik.handleChange}
+              fieldProps={{ type: "time" }}
+            />
+            <FormFieldAndLabel
+              label="To"
+              name="eventTimeTo"
+              value={formik.values.eventTimeTo}
+              errValue={formik.errors.eventTimeTo}
+              onChange={formik.handleChange}
+              fieldProps={{ type: "time" }}
+            />
+          </SimpleGrid>
+
+          <FormFieldAndLabel
+            label="Event Details"
+            name="details"
+            value={formik.values.details}
+            errValue={formik.errors.details}
+            onChange={formik.handleChange}
+            fieldAs={Textarea}
+            fieldProps={{
+              rows: 8,
+              placeholder:
+                "Please provide details of your event, including details of any " +
+                "companies or organisations (eg. Caterers, Bouncy Castle hire, " +
+                "Entertainers, DJs) that you will be using. This allows us to " +
+                "ensure your event will be able to run smoothly at the Centre.",
+            }}
+          />
+
+          <FormFieldAndLabel
+            label="Event Visibility"
+            name="visibility"
+            value={formik.values.visiblity}
+            onChange={formik.handleChange}
+            fieldAs={Select}
+            fieldProps={{
+              children: [
+                <option value="show">
+                  Show event information on public calendar
+                </option>,
+                <option value="hide">
+                  Hide event information on public calendar
+                </option>,
+              ],
+            }}
+          />
+
+          <Heading>Contact Info</Heading>
+          <FormFieldAndLabel
+            label="Name"
+            name="name"
+            value={formik.values.name}
+            errValue={formik.errors.name}
+            onChange={formik.handleChange}
+          />
+
+          <FormFieldAndLabel
+            label="Email"
+            name="email"
+            value={formik.values.email}
+            errValue={formik.errors.email}
+            onChange={formik.handleChange}
+          />
+
+          <Summary formik={formik} />
+          <Flex>
+            <Text color="red">{submitErrors}</Text>
+            <Spacer />
+            <Tooltip
+              label="One or more fields are invalid"
+              isDisabled={formik.isValid}
+            >
+              <BookButton>Book</BookButton>
+            </Tooltip>
+          </Flex>
+          <StackDivider />
+        </Stack>
+      </form>
+    </Container>
   );
 }
 

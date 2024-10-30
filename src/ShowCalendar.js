@@ -5,13 +5,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  Box,
+  Box, Container,
   Flex,
   Spacer,
   Stack,
   Text,
   useDisclosure,
-  useToken,
+  useToken
 } from "@chakra-ui/react";
 import { Calendar, dayjsLocalizer } from "react-big-calendar";
 import dayjs from "dayjs";

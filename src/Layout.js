@@ -20,27 +20,107 @@ import {
   useDisclosure,
   useToken,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, Outlet } from "react-router-dom";
+import { Link as ReactRouterLink, Outlet, useLocation } from "react-router-dom";
 import "./App.css";
 import RoundedButton from "./components/RoundedButton";
 import Footer from "./components/Footer";
 import { TbMenu2 } from "react-icons/tb";
 import { useRef } from "react";
 
-function NavLink({ children, ...props }) {
+function DrawerLink({ label, children, to, ...props }) {
+  const { pathname } = useLocation();
   const [brand500, brand900, white] = useToken("colors", [
     "brand.500",
     "brand.900",
     "white",
   ]);
 
+  const linkColor = pathname === to ? brand500 : brand900;
+
   return (
     <Link
+      as={ReactRouterLink}
+      to={to}
+      flex={1}
+      fontWeight="bold"
+      color={linkColor}
+      {...props}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function NavInDrawer() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const btnRef = useRef();
+
+  const [brand900] = useToken("colors", ["brand.900"]);
+
+  return (
+    <>
+      <Flex gap={4} direction="column" align="center">
+        <Image src="/logo192.png" boxSize="192px" />
+        <ButtonGroup>
+          <IconButton
+            icon={<TbMenu2 />}
+            ariaLabel="Open Navigation Menu"
+            onClick={onOpen}
+          />
+        </ButtonGroup>
+      </Flex>
+      <Drawer
+        isOpen={isOpen}
+        placement="right"
+        onClose={onClose}
+        finalFocusRef={btnRef}
+      >
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>Navigate</DrawerHeader>
+
+          <DrawerBody>
+            <Stack
+              divider={<StackDivider borderTop={`1px solid ${brand900}`} />}
+            >
+              <DrawerLink label="Home" to="/" onClick={onClose} />
+              <DrawerLink label="About" to="/about" onClick={onClose} />
+              <DrawerLink label="Booking" to="/booking" onClick={onClose} />
+              <DrawerLink label="What's On?" to="/whats-on" onClick={onClose} />
+              <DrawerLink label="Location" to="/location" onClick={onClose} />
+            </Stack>
+          </DrawerBody>
+
+          <DrawerFooter bg="brand.900" justifyContent="center">
+            <Image src="/logo192.png" />
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </>
+  );
+}
+
+function MenuLink({ label, children, to, ...props }) {
+  const { pathname } = useLocation();
+  const [brand500, brand900, white] = useToken("colors", [
+    "brand.500",
+    "brand.900",
+    "white",
+  ]);
+
+  const linkColor = pathname === to ? brand500 : white;
+
+  return (
+    <Link
+      as={ReactRouterLink}
+      to={to}
       flex={1}
       textAlign="center"
       justifySelf="end"
       fontWeight="bold"
       borderTop={`3px solid ${brand900}`}
+      color={linkColor}
       borderTopRadius={3}
       _hover={{
         bg: white,
@@ -49,126 +129,54 @@ function NavLink({ children, ...props }) {
       }}
       {...props}
     >
-      {children}
+      {label}
     </Link>
   );
 }
 
-function Nav({ breakpoint }) {
-  const navInDrawer = breakpoint === "base" || breakpoint === "sm";
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const btnRef = useRef();
-  const [brand500, brand900, white] = useToken("colors", [
-    "brand.500",
-    "brand.900",
-    "white",
-  ]);
+function TopNav() {
+  const [brand500] = useToken("colors", ["brand.500"]);
 
-  if (navInDrawer) {
-    return (
-      <>
-        <Flex gap={4} direction="column" align="center">
-          <Image src="/logo192.png" boxSize="192px" />
-          <ButtonGroup>
-            <IconButton
-              icon={<TbMenu2 />}
-              ariaLabel="Open Navigation Menu"
-              onClick={onOpen}
-            />
-          </ButtonGroup>
-        </Flex>
-        <Drawer
-          isOpen={isOpen}
-          placement="right"
-          onClose={onClose}
-          finalFocusRef={btnRef}
+  return (
+    <Flex
+      spacing={4}
+      flex={1}
+      gap={4}
+      justifyContent="center"
+      alignContent="end"
+      wrap="wrap"
+    >
+      <Image src="/logo192.png" />
+      <Flex flexDirection="column" flex={1}>
+        <Spacer />
+        <Stack
+          divider={<StackDivider borderLeft={`1px solid ${brand500}`} />}
+          direction="row"
+          minH="2em"
+          justifyContent="center"
+          alignContent="end"
         >
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader>Navigate</DrawerHeader>
-
-            <DrawerBody>
-              <Stack
-                divider={<StackDivider borderTop={`1px solid ${brand900}`} />}
-              >
-                <Link fontWeight="bold" href="https://www.kathielambcentre.org">
-                  Home
-                </Link>
-                <Link
-                  fontWeight="bold"
-                  as={ReactRouterLink}
-                  to="/"
-                  color="brand.500"
-                >
-                  Make a Booking
-                </Link>
-                <Link
-                  fontWeight="bold"
-                  href="https://www.kathielambcentre.org/whats-on/"
-                >
-                  What's On?
-                </Link>
-                <Link
-                  fontWeight="bold"
-                  href="https://www.kathielambcentre.org/location/"
-                >
-                  Location
-                </Link>
-              </Stack>
-            </DrawerBody>
-
-            <DrawerFooter />
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
-  } else {
-    return (
-      <Flex
-        spacing={4}
-        flex={1}
-        gap={4}
-        justifyContent="center"
-        alignContent="end"
-        wrap="wrap"
-      >
-        <Image src="/logo192.png" />
-        <Flex flexDirection="column" flex={1}>
-          <Spacer />
-          <Stack
-            divider={<StackDivider borderLeft={`1px solid ${brand500}`} />}
-            direction="row"
-            minH="2em"
-            justifyContent="center"
-            alignContent="end"
-          >
-            <NavLink href="https://www.kathielambcentre.org">Home</NavLink>
-            <NavLink as={ReactRouterLink} to="/" color="brand.500">
-              Booking
-            </NavLink>
-            <NavLink href="https://www.kathielambcentre.org/whats-on/">
-              What's On?
-            </NavLink>
-            <NavLink href="https://www.kathielambcentre.org/location/">
-              Location
-            </NavLink>
-          </Stack>
-        </Flex>
+          <MenuLink to="/" label="Home" />
+          <MenuLink to="/about" label="About" />
+          <MenuLink to="/booking" label="Booking" />
+          <MenuLink to="/whats-on" label="What's On?" />
+          <MenuLink to="/location" label="Location" />
+        </Stack>
       </Flex>
-    );
-  }
+    </Flex>
+  );
 }
 
 function Layout() {
   const breakpoint = useBreakpoint({ ssr: false });
+  const navInDrawer = breakpoint === "base" || breakpoint === "sm";
 
   return (
     <>
-      <a id="top"></a>
+      <div id="top"></div>
       <Box bg="brand.900" color="white">
         <Container maxW="4xl" padding={4}>
-          <Nav breakpoint={breakpoint} />
+          {navInDrawer ? <NavInDrawer /> : <TopNav />}
         </Container>
       </Box>
       <Box>

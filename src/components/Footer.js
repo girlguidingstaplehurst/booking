@@ -41,26 +41,31 @@ function Footer() {
           >
             <GridItem>
               <Stack gap={4}>
-                <Heading size="sm">Kathie Lamb Guide Centre</Heading>
-                <Link href="https://www.kathielambcentre.org/">Home</Link>
-                <Link as={ReactRouterLink} to="/">
+                <Link as={ReactRouterLink} to="/"><Heading size="sm">Kathie Lamb Guide Centre</Heading></Link>
+                <Link as={ReactRouterLink} to="/about">About</Link>
+                <Link as={ReactRouterLink} to="/booking">
                   Booking
                 </Link>
                 <Link as={ReactRouterLink} to="/privacy-policy">
                   Privacy Policy
                 </Link>
-                <Link href="https://www.kathielambcentre.org/whats-on/">
+                <Link as={ReactRouterLink} to="/terms-of-hire">
+                  Terms of Hire
+                </Link>
+                <Link as={ReactRouterLink} to="/cleaning-and-damage-policy">
+                  Cleaning and Damage Policy
+                </Link>
+                <Link as={ReactRouterLink} to="/whats-on">
                   What's On?
                 </Link>
-                <Link href="https://www.kathielambcentre.org/location/">
+                <Link as={ReactRouterLink} to="/location/">
                   Location
                 </Link>
               </Stack>
             </GridItem>
             <GridItem>
               <Stack gap={4}>
-                <Heading size="sm">Girlguiding Staplehurst District</Heading>
-                <Link href="https://staplehurstguiding.org.uk/">Home</Link>
+                <Link href="https://staplehurstguiding.org.uk/"><Heading size="sm">Girlguiding Staplehurst District</Heading></Link>
                 <Link href="https://staplehurstguiding.org.uk/about-us">
                   About Us
                 </Link>

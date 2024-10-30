@@ -33,12 +33,6 @@ const router = createBrowserRouter(
       <Route element={<Layout />}>
         <Route
           index
-          element={<ShowCalendar />}
-          loader={async () => await fetch("/api/v1/events")}
-        />
-        <Route path="add-event" element={<AddEvent />} />
-        <Route
-          path="home"
           element={
             <ManagedContent
               name="kathie-lamb-guide-centre"
@@ -46,6 +40,13 @@ const router = createBrowserRouter(
             />
           }
         />
+        <Route path="about" element={<ManagedContent name="about" showLastUpdated={false}/>} />
+        <Route
+          path="booking"
+          element={<ShowCalendar />}
+          loader={async () => await fetch("/api/v1/events")}
+        />
+        <Route path="add-event" element={<AddEvent />} />
         <Route path="location" element={<Location />} />
         <Route
           path="privacy-policy"

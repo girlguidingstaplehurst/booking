@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
 import dayjs from "dayjs";
-import HeroImageAndText from "./HeroImageAndText";
 import Carousel from "./Carousel";
 
 const client = contentful.createClient({
