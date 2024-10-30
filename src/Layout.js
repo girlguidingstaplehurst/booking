@@ -29,11 +29,7 @@ import { useRef } from "react";
 
 function DrawerLink({ label, children, to, ...props }) {
   const { pathname } = useLocation();
-  const [brand500, brand900, white] = useToken("colors", [
-    "brand.500",
-    "brand.900",
-    "white",
-  ]);
+  const [brand500, brand900] = useToken("colors", ["brand.500", "brand.900"]);
 
   const linkColor = pathname === to ? brand500 : brand900;
 

@@ -1,9 +1,13 @@
 import React from "react";
-import { Box, IconButton, useBreakpointValue } from "@chakra-ui/react";
-// Here we have used react-icons package for the icons
+import {
+  Box,
+  IconButton,
+  useBreakpointValue,
+  useToken,
+} from "@chakra-ui/react"; // Here we have used react-icons package for the icons
 // And react-slick as our Carousel Lib
 import Slider from "react-slick";
-import { TbArrowLeft, TbArrowRight } from "react-icons/tb";
+import { TbArrowLeft, TbArrowRight } from "react-icons/tb"; // Settings for the slider
 
 // Settings for the slider
 const settings = {
@@ -27,6 +31,7 @@ export default function Carousel({ images }) {
   // buttons as the screen size changes
   const top = useBreakpointValue({ base: "90%", md: "50%" });
   const side = useBreakpointValue({ base: "30%", md: "10px" });
+  const [brand900, white] = useToken("colors", ["brand.900", "white"]);
 
   // These are the images used in the slide
   return (
@@ -51,12 +56,18 @@ export default function Carousel({ images }) {
       {/* Left Icon */}
       <IconButton
         aria-label="left-arrow"
-        colorScheme="brand"
+        bg="brand.900"
+        color="white"
         borderRadius="full"
         position="absolute"
         left={side}
         top={top}
         transform={"translate(0%, -50%)"}
+        border={`2px solid ${brand900}`}
+        _hover={{
+          bg: white,
+          color: brand900,
+        }}
         zIndex={2}
         onClick={() => slider?.slickPrev()}
       >
@@ -65,12 +76,18 @@ export default function Carousel({ images }) {
       {/* Right Icon */}
       <IconButton
         aria-label="right-arrow"
-        colorScheme="brand"
+        bg="brand.900"
+        color="white"
         borderRadius="full"
         position="absolute"
         right={side}
         top={top}
         transform={"translate(0%, -50%)"}
+        border={`2px solid ${brand900}`}
+        _hover={{
+          bg: white,
+          color: brand900,
+        }}
         zIndex={2}
         onClick={() => slider?.slickNext()}
       >

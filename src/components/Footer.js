@@ -41,8 +41,12 @@ function Footer() {
           >
             <GridItem>
               <Stack gap={4}>
-                <Link as={ReactRouterLink} to="/"><Heading size="sm">Kathie Lamb Guide Centre</Heading></Link>
-                <Link as={ReactRouterLink} to="/about">About</Link>
+                <Link as={ReactRouterLink} to="/">
+                  <Heading size="sm">Kathie Lamb Guide Centre</Heading>
+                </Link>
+                <Link as={ReactRouterLink} to="/about">
+                  About
+                </Link>
                 <Link as={ReactRouterLink} to="/booking">
                   Booking
                 </Link>
@@ -65,7 +69,9 @@ function Footer() {
             </GridItem>
             <GridItem>
               <Stack gap={4}>
-                <Link href="https://staplehurstguiding.org.uk/"><Heading size="sm">Girlguiding Staplehurst District</Heading></Link>
+                <Link href="https://staplehurstguiding.org.uk/">
+                  <Heading size="sm">Girlguiding Staplehurst District</Heading>
+                </Link>
                 <Link href="https://staplehurstguiding.org.uk/about-us">
                   About Us
                 </Link>

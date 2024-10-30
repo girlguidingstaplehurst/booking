@@ -26,6 +26,7 @@ import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
 import Location from "./Location";
+import WhatsOn from "./WhatsOn";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -47,6 +48,11 @@ const router = createBrowserRouter(
           loader={async () => await fetch("/api/v1/events")}
         />
         <Route path="add-event" element={<AddEvent />} />
+        <Route
+          path="whats-on"
+          element={<WhatsOn />}
+          loader={async () => await fetch("/api/v1/events")}
+        />
         <Route path="location" element={<Location />} />
         <Route
           path="privacy-policy"
