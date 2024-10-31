@@ -20,7 +20,7 @@ properties:
             secretRef: smtp-password
           - name: GOOGLE_RECAPTCHA_SECRET
             secretRef: recaptcha-secret
-        image: ghcr.io/girlguidingstaplehurst/booking:v0.37.5
+        image: ghcr.io/girlguidingstaplehurst/booking:v0.37.6
         imagePullPolicy: IfNotPresent
         name: booking
         ports:
