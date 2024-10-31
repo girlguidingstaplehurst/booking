@@ -51,7 +51,7 @@ jobs:
         run:
           GOFLAGS="-ldflags=-X=github.com/girlguidingstaplehurst/booking/internal/config.Version=${{steps.semver.outputs.next}}" ko build ./cmd/booking --tags ${{steps.semver.outputs.next}} --tags latest --bare --platform=linux/amd64,linux/arm64
 
-      - name: Update values.yaml
+      - name: Update kustomization
         uses: fjogeleit/yaml-update-action@main
         with:
           valueFile: 'deploy/k8s/prod/kustomization.yaml'
@@ -59,6 +59,16 @@ jobs:
           value: "${{steps.semver.outputs.next}}"
           commitChange: true
           message: "deploy: Booking ${{steps.semver.outputs.next}} [no ci]"
+          branch: main
+
+      - name: Update azure config
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          valueFile: 'deploy/azure/prod/configuration.yaml'
+          propertyPath: 'properties.template.containers[0].image'
+          value: "ghcr.io/girlguidingstaplehurst/booking:${{steps.semver.outputs.next}}"
+          commitChange: true
+          message: "deploy: Booking ${{steps.semver.outputs.next}} to azure [no ci]"
           branch: main
 
       - name: Log in to Azure
@@ -69,8 +79,6 @@ jobs:
       - name: Build and deploy Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          imageToDeploy: ghcr.io/girlguidingstaplehurst/booking:${{steps.semver.outputs.next}}
-          containerAppName: booking
           containerAppEnvironment: managedEnvironment-KLC-965e
           resourceGroup: KLC
           yamlConfigPath: deploy/azure/prod/configuration.yaml

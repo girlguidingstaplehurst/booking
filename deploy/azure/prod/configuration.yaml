@@ -21,6 +21,7 @@ properties:
             secretRef: recaptcha-secret
 #          - name: OTEL_EXPORTER_OTLP_ENDPOINT
 #            value: http://$(NODE_IP):4317
+        image: ghcr.io/girlguidingstaplehurst/booking:v0.37.1
         imagePullPolicy: IfNotPresent
         name: booking
         ports:
