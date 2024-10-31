@@ -79,6 +79,4 @@ jobs:
       - name: Build and deploy Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppEnvironment: managedEnvironment-KLC-965e
-          resourceGroup: KLC
           yamlConfigPath: deploy/azure/prod/configuration.yaml

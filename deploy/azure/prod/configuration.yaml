@@ -1,4 +1,5 @@
 properties:
+  managedEnvironmentId: /subscriptions/c31a467b-0b00-4347-a9ce-5d1bac3ff56a/resourceGroups/KLC/providers/Microsoft.App/managedEnvironments/managedEnvironment-KLC-965e
   configuration:
     ingress:
       external: true
