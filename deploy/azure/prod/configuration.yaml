@@ -1,0 +1,31 @@
+properties:
+  configuration:
+    ingress:
+      external: true
+      allowInsecure: false
+      targetPort: 8080
+  template:
+    containers:
+      - env:
+          - name: DATABASE_URL
+            secretRef: db-url
+          - name: GOOGLE_CLIENT_ID
+            value: 362406102359-frmsjn6et0551pciju1li4mep62thmse.apps.googleusercontent.com
+          - name: SMTP_SERVER
+            value: smtp.gmail.com
+          - name: SMTP_USERNAME
+            value: bookings@kathielambcentre.org
+          - name: SMTP_PASSWORD
+            secretRef: smtp-password
+          - name: GOOGLE_RECAPTCHA_SECRET
+            secretRef: recaptcha-secret
+#          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+#            value: http://$(NODE_IP):4317
+        imagePullPolicy: IfNotPresent
+        name: booking
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        resources:
+          cpu: "0.5"
+          memory: "1Gi"

@@ -73,3 +73,4 @@ jobs:
           containerAppName: booking
           containerAppEnvironment: managedEnvironment-KLC-965e
           resourceGroup: KLC
+          yamlConfigPath: deploy/azure/prod/configuration.yaml
