@@ -80,5 +80,6 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppEnvironment: managedEnvironment-KLC-965e
+          containerAppName: booking
           resourceGroup: KLC
           yamlConfigPath: deploy/azure/prod/configuration.yaml
