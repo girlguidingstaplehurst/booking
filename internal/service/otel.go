@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/girlguidingstaplehurst/booking/internal/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
@@ -86,13 +85,9 @@ func newPropagator() propagation.TextMapPropagator {
 }
 
 func newTraceProvider(ctx context.Context, res *resource.Resource) (*trace.TracerProvider, error) {
-	//traceExporter, err := otlptracegrpc.New(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	traceExporter, err := otlptracegrpc.New(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("creating stdout exporter: %w", err)
+		return nil, err
 	}
 
 	traceProvider := trace.NewTracerProvider(
