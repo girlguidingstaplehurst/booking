@@ -23,7 +23,9 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/stretchr/testify v1.9.0
 	github.com/thanhpk/randstr v1.0.6
+	go.opentelemetry.io/contrib/bridges/otelslog v0.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.56.0
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.7.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.31.0

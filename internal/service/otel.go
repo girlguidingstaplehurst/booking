@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/girlguidingstaplehurst/booking/internal/config"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -107,6 +110,12 @@ func newMeterProvider(ctx context.Context, res *resource.Resource) (*metric.Mete
 		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
 		metric.WithResource(res),
 	)
+
+	// Start go runtime metric collection.
+	if err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second)); err != nil {
+		return nil, err
+	}
+
 	return meterProvider, nil
 }
 
@@ -120,6 +129,12 @@ func newLoggerProvider(ctx context.Context, res *resource.Resource) (*log.Logger
 		log.WithProcessor(log.NewBatchProcessor(logExporter)),
 		log.WithResource(res),
 	)
+
+	global.SetLoggerProvider(loggerProvider)
+
+	// Configure slog to use OTLP
+	slog.SetDefault(otelslog.NewLogger())
+
 	return loggerProvider, nil
 }
 
