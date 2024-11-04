@@ -21,14 +21,14 @@ properties:
           - name: GOOGLE_RECAPTCHA_SECRET
             secretRef: google-recaptcha-secret
           - name: OTEL_SERVICE_NAME
-            value: "booking"
+            value: booking
           - name: OTEL_EXPORTER_OTLP_PROTOCOL
-            value: "http/protobuf"
+            value: http/protobuf
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
-            value: "https://api.honeycomb.io"
+            value: https://api.honeycomb.io
           - name: OTEL_EXPORTER_OTLP_HEADERS
             secretRef: honeycomb-otlp-header
-        image: ghcr.io/girlguidingstaplehurst/booking:v0.38.0
+        image: ghcr.io/girlguidingstaplehurst/booking:v0.38.1
         imagePullPolicy: IfNotPresent
         name: booking
         ports:
