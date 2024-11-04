@@ -8,6 +8,7 @@ import (
 
 	"github.com/girlguidingstaplehurst/booking/internal/config"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
@@ -113,6 +114,9 @@ func newMeterProvider(ctx context.Context, res *resource.Resource) (*metric.Mete
 
 	// Start go runtime metric collection.
 	if err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second)); err != nil {
+		return nil, err
+	}
+	if err := host.Start(host.WithMeterProvider(meterProvider)); err != nil {
 		return nil, err
 	}
 
