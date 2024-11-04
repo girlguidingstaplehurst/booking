@@ -76,7 +76,7 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	ipExtractor := rest.NewIPExtractor()
 	app.Use(ipExtractor.Extract)
 
-	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org") //TODO externalize
+	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org", "staplehurstguiding.org.uk") //TODO externalize
 	app.Use("/api/v1/admin", jwtAuth.Validate)
 
 	cfg, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))

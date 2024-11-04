@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,14 +11,14 @@ import (
 )
 
 type JWTAuthenticator struct {
-	clientID     string
-	hostedDomain string
+	clientID      string
+	hostedDomains []string
 }
 
-func NewJWTAuthenticator(clientID, hostedDomain string) *JWTAuthenticator {
+func NewJWTAuthenticator(clientID string, hostedDomains ...string) *JWTAuthenticator {
 	return &JWTAuthenticator{
-		clientID:     clientID,
-		hostedDomain: hostedDomain,
+		clientID:      clientID,
+		hostedDomains: hostedDomains,
 	}
 }
 
@@ -44,7 +45,8 @@ func (a *JWTAuthenticator) Validate(ctx *fiber.Ctx) error {
 		return unauthorized()
 	}
 
-	if payload.Claims["hd"] != a.hostedDomain {
+	hd := payload.Claims["hd"].(string)
+	if !slices.Contains(a.hostedDomains, hd) {
 		slog.Error("invalid hosted domain", "hd", payload.Claims["hd"])
 		return unauthorized()
 	}
