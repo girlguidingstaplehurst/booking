@@ -28,7 +28,7 @@ properties:
             value: https://api.honeycomb.io
           - name: OTEL_EXPORTER_OTLP_HEADERS
             secretRef: honeycomb-otlp-header
-        image: ghcr.io/girlguidingstaplehurst/booking:v0.38.2
+        image: ghcr.io/girlguidingstaplehurst/booking:v0.40.1
         imagePullPolicy: IfNotPresent
         name: booking
         ports:
