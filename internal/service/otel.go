@@ -137,7 +137,7 @@ func newLoggerProvider(ctx context.Context, res *resource.Resource) (*log.Logger
 	global.SetLoggerProvider(loggerProvider)
 
 	// Configure slog to use OTLP
-	slog.SetDefault(otelslog.NewLogger())
+	slog.SetDefault(otelslog.NewLogger("booking"))
 
 	return loggerProvider, nil
 }

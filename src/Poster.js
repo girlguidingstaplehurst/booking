@@ -13,9 +13,6 @@ export async function Poster(url, body, headers = {}) {
       window.location.reload();
       return;
     }
-    if (!response.ok || response.status !== 200 || response.headers.get('content-type') !== 'application/json') {
-      return;
-    }
 
     return response;
   } catch (error) {

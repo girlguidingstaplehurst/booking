@@ -32,16 +32,17 @@ func NewService() *Service {
 
 func (s *Service) Run(ctx context.Context) (err error) {
 	//TODO set up config struct
-
-	// Set up OpenTelemetry.
-	otelShutdown, err := setupOTelSDK(ctx)
-	if err != nil {
-		return
+	if _, ok := os.LookupEnv("OTEL_SERVICE_NAME"); ok {
+		// Set up OpenTelemetry.
+		otelShutdown, err := setupOTelSDK(ctx)
+		if err != nil {
+			return err
+		}
+		// Handle shutdown properly so nothing leaks.
+		defer func() {
+			err = errors.Join(err, otelShutdown(context.Background()))
+		}()
 	}
-	// Handle shutdown properly so nothing leaks.
-	defer func() {
-		err = errors.Join(err, otelShutdown(context.Background()))
-	}()
 
 	if err = dbmigrations.Migrate(); err != nil {
 		return

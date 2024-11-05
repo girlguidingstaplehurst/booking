@@ -15,7 +15,7 @@ import {
   Tooltip,
   useToken,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { Link as ReactRouterLink, useNavigate } from "react-router-dom";
 import FormFieldAndLabel from "../components/FormFieldAndLabel";
 import React, { useState } from "react";
 import { useFormik } from "formik";
@@ -38,6 +38,8 @@ const EventSchema = Yup.object().shape({
 });
 
 export function CreateEvents() {
+  const navigate = useNavigate();
+
   const [submitErrors, setSubmitErrors] = useState("");
   const [eventDates, setEventDates] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +71,7 @@ export function CreateEvents() {
       name: "",
       email: "",
       status: "approved",
-      rate: "",
+      rate: "default",
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -93,13 +95,17 @@ export function CreateEvents() {
 
       setSubmitting(false);
 
-      if (!resp.ok) {
-        const json = await resp.json();
-        setSubmitErrors(
-          `An error occured when booking (${json.error_message}). Please retry.`,
-        );
+      if (resp !== undefined) {
+        if (!resp.ok) {
+          const json = await resp.json();
+          setSubmitErrors(
+            `An error occured when booking (${json.error_message}). Please retry.`,
+          );
+        } else {
+          return navigate("/admin")
+        }
       } else {
-        formik.resetForm();
+        setSubmitErrors("Something went wrong - please try again later.")
       }
     },
   });
