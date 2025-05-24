@@ -127,6 +127,11 @@ paths:
             type: string
             format: date
           description: The date to obtain events to
+        - in: query
+          name: contact
+          schema:
+            type: string
+          description: Optional filter to events for a specific contact. Value is the contact's email.
       responses:
         '200':
           description: "Zero or more events exist"
@@ -460,8 +465,8 @@ paths:
 
   /api/v1/admin/add-events:
     post:
-      tags:
-        - public
+      security:
+        - admin_auth: [ ]
       summary: Add events
       description: Add new events to the calendar
       operationId: adminAddEvents
@@ -517,38 +522,9 @@ components:
         - adhesives
       properties:
         event:
-          type: object
-          required:
-            - name
-            - details
-            - from
-            - to
-            - publicly_visible
-          properties:
-            name:
-              type: string
-            details:
-              type: string
-            from:
-              type: string
-              format: datetime
-            to:
-              type: string
-              format: datetime
-            publicly_visible:
-              type: boolean
-              default: true
+          $ref: "#/components/schemas/EventDetails"
         contact:
-          type: object
-          required:
-            - name
-            - email_address
-          properties:
-            name:
-              type: string
-            email_address:
-              type: string
-              format: email
+          $ref: "#/components/schemas/Contact"
         captchaToken:
           type: string
         privacyPolicy:
@@ -561,6 +537,39 @@ components:
           type: boolean
         adhesives:
           type: boolean
+    EventDetails:
+      type: object
+      required:
+        - name
+        - details
+        - from
+        - to
+        - publicly_visible
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
+        publicly_visible:
+          type: boolean
+          default: true
+    Contact:
+      type: object
+      required:
+        - name
+        - email_address
+      properties:
+        name:
+          type: string
+        email_address:
+          type: string
+          format: email
     EventStatus:
       type: string
       enum: [ provisional, "awaiting documents", approved, cancelled ]

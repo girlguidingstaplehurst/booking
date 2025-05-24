@@ -11,6 +11,7 @@ import (
 	"github.com/girlguidingstaplehurst/booking"
 	dbmigrations "github.com/girlguidingstaplehurst/booking/db"
 	"github.com/girlguidingstaplehurst/booking/internal/captcha"
+	"github.com/girlguidingstaplehurst/booking/internal/config"
 	"github.com/girlguidingstaplehurst/booking/internal/content"
 	"github.com/girlguidingstaplehurst/booking/internal/email"
 	"github.com/girlguidingstaplehurst/booking/internal/pdf"
@@ -30,7 +31,13 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) Run(ctx context.Context) (err error) {
+func (s *Service) Run(ctx context.Context) error {
+	svcCfg := new(config.Config)
+
+	if err := config.Load(svcCfg); err != nil {
+		return err
+	}
+
 	//TODO set up config struct
 	if _, ok := os.LookupEnv("OTEL_SERVICE_NAME"); ok {
 		// Set up OpenTelemetry.
@@ -44,8 +51,8 @@ func (s *Service) Run(ctx context.Context) (err error) {
 		}()
 	}
 
-	if err = dbmigrations.Migrate(); err != nil {
-		return
+	if err := dbmigrations.Migrate(); err != nil {
+		return err
 	}
 
 	app := fiber.New(fiber.Config{
@@ -67,7 +74,7 @@ func (s *Service) Run(ctx context.Context) (err error) {
 
 	swagger, err := rest.GetSwagger()
 	if err != nil {
-		return
+		return err
 	}
 
 	app.Use(fibermiddleware.OapiRequestValidatorWithOptions(swagger, &fibermiddleware.Options{
@@ -82,14 +89,14 @@ func (s *Service) Run(ctx context.Context) (err error) {
 
 	cfg, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
 	if err != nil {
-		return
+		return err
 	}
 
 	cfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithIncludeQueryParameters())
 
 	dbpool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
-		return
+		return err
 	}
 	defer dbpool.Close()
 
@@ -106,6 +113,5 @@ func (s *Service) Run(ctx context.Context) (err error) {
 	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier, contentManager)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
-	err = app.Listen(":8080")
-	return
+	return app.Listen(":8080")
 }

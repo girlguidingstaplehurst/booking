@@ -23,6 +23,7 @@ import (
 type MockDatabase struct {
 	ctrl     *gomock.Controller
 	recorder *MockDatabaseMockRecorder
+	isgomock struct{}
 }
 
 // MockDatabaseMockRecorder is the mock recorder for MockDatabase.
@@ -180,6 +181,21 @@ func (mr *MockDatabaseMockRecorder) ListEvents(ctx, from, to any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockDatabase)(nil).ListEvents), ctx, from, to)
 }
 
+// ListEventsForContact mocks base method.
+func (m *MockDatabase) ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]rest.ListEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListEventsForContact", ctx, contactID, from, to)
+	ret0, _ := ret[0].([]rest.ListEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListEventsForContact indicates an expected call of ListEventsForContact.
+func (mr *MockDatabaseMockRecorder) ListEventsForContact(ctx, contactID, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventsForContact", reflect.TypeOf((*MockDatabase)(nil).ListEventsForContact), ctx, contactID, from, to)
+}
+
 // MarkInvoicePaid mocks base method.
 func (m *MockDatabase) MarkInvoicePaid(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
@@ -240,6 +256,7 @@ func (mr *MockDatabaseMockRecorder) SetRate(ctx, eventID, rate any) *gomock.Call
 type MockPDFGenerator struct {
 	ctrl     *gomock.Controller
 	recorder *MockPDFGeneratorMockRecorder
+	isgomock struct{}
 }
 
 // MockPDFGeneratorMockRecorder is the mock recorder for MockPDFGenerator.
@@ -293,6 +310,7 @@ func (mr *MockPDFGeneratorMockRecorder) GeneratePageContent(ctx, key any) *gomoc
 type MockEmailSender struct {
 	ctrl     *gomock.Controller
 	recorder *MockEmailSenderMockRecorder
+	isgomock struct{}
 }
 
 // MockEmailSenderMockRecorder is the mock recorder for MockEmailSender.
@@ -354,6 +372,7 @@ func (mr *MockEmailSenderMockRecorder) SendWithAttachments(ctx, to, subject, bod
 type MockCaptchaVerifier struct {
 	ctrl     *gomock.Controller
 	recorder *MockCaptchaVerifierMockRecorder
+	isgomock struct{}
 }
 
 // MockCaptchaVerifierMockRecorder is the mock recorder for MockCaptchaVerifier.
@@ -391,6 +410,7 @@ func (mr *MockCaptchaVerifierMockRecorder) Verify(ctx, token, ip any) *gomock.Ca
 type MockContentManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockContentManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockContentManagerMockRecorder is the mock recorder for MockContentManager.

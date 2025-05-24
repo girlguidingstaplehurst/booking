@@ -32,6 +32,10 @@ func NewDatabase(pool *pgxpool.Pool) *Database {
 }
 
 func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONRequestBody) error {
+	if err := db.ensureContactExists(ctx, string(event.Contact.EmailAddress), event.Contact.Name); err != nil {
+		return err
+	}
+
 	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode")
 		if err != nil {
@@ -52,10 +56,22 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 	})
 }
 
+func (db *Database) ensureContactExists(ctx context.Context, email, name string) error {
+	// We only insert if the contact (identified by email) doesn't already exist - we don't update the name if the
+	// record already exists.
+	_, err := db.pool.Exec(ctx, `INSERT INTO booking_contacts (email, name) 
+				SELECT $1, $2 WHERE NOT EXISTS(SELECT 1 FROM booking_contacts WHERE email=$1)`, email, name)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to ensure contact exists"))
+	}
+
+	return nil
+}
+
 func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status, rate string) error {
 	_, err := tx.Exec(ctx, `insert into booking_events
-			(id, event_start, event_end, event_name, visible, contact, email, status, rate_id, details) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.Name, event.Contact.EmailAddress, status, rate, event.Event.Details)
+			(id, event_start, event_end, event_name, visible, email, status, rate_id, details) 
+			values($1, $2, $3, $4, $5, $6, $7, $8, $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.EmailAddress, status, rate, event.Event.Details)
 	if err != nil {
 		return errors.Join(err, errors.New("failed to insert new booking"))
 	}
@@ -148,10 +164,41 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 	})
 }
 
-func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
-	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact, email, 
-       		assignee, keyholder_in, keyholder_out
+func (db *Database) ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]rest.ListEvent, error) {
+	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status 
 		from booking_events
+		where (
+		    (event_start >= $1 and event_start <= $2) or (event_end >= $1 and event_end <= $2)
+		)
+		and email = $4
+		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat, contactID)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.ListEvent, error) {
+		var (
+			event   rest.ListEvent
+			visible bool
+		)
+
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &visible, &event.Status); err != nil {
+			return event, err
+		}
+
+		if !visible {
+			event.Name = "Private Event"
+		}
+
+		return event, nil
+	})
+}
+
+func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
+	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact.name, contact.email, 
+       		assignee, keyholder_in, keyholder_out
+		from booking_events e
+		JOIN booking_contacts contact ON e.email = contact.email 
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
 		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat)
@@ -171,9 +218,10 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]
 }
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
-	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact, email, 
+	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact.name, contact.email, 
        		assignee, keyholder_in, keyholder_out, rate_id, details
-		from booking_events
+		from booking_events e
+		JOIN booking_contacts contact ON e.email = contact.email
 		where id = $1`, id, dbDateTimeFormat)
 
 	var event rest.Event
@@ -230,7 +278,7 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids ...string) ([]rest
 		from booking_events be
 		join booking_rates br on be.rate_id = br.id
 		where be.id in (`+join+`)
-		order by be.contact, be.event_name, be.event_start`, ne...)
+		order by be.email, be.event_name, be.event_start`, ne...)
 	if err != nil {
 		return nil, err
 	}
@@ -353,6 +401,16 @@ func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequ
 					To:              instance.To,
 					PubliclyVisible: event.Body.Event.PubliclyVisible,
 				},
+			}
+
+			err = db.ensureContactExists(ctx, string(event.Body.Contact.EmailAddress), event.Body.Contact.Name)
+			if err != nil {
+				rberr := tx.Rollback(ctx)
+				if rberr != nil {
+					err = errors.Join(err, rberr)
+				}
+
+				return err
 			}
 
 			err = db.checkForNearbyBookings(ctx, tx, instance.From, instance.To)

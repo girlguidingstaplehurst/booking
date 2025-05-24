@@ -52,6 +52,12 @@ type AdminNewEvents struct {
 	} `json:"event"`
 }
 
+// Contact defines model for Contact.
+type Contact struct {
+	EmailAddress openapi_types.Email `json:"email_address"`
+	Name         string              `json:"name"`
+}
+
 // DiscountTable defines model for DiscountTable.
 type DiscountTable map[string]DiscountTableRow
 
@@ -85,6 +91,15 @@ type Event struct {
 	Status       EventStatus          `json:"status"`
 	To           string               `json:"to"`
 	Visible      bool                 `json:"visible"`
+}
+
+// EventDetails defines model for EventDetails.
+type EventDetails struct {
+	Details         string `json:"details"`
+	From            string `json:"from"`
+	Name            string `json:"name"`
+	PubliclyVisible bool   `json:"publicly_visible"`
+	To              string `json:"to"`
 }
 
 // EventInstance defines model for EventInstance.
@@ -157,23 +172,14 @@ type ListEvent struct {
 
 // NewEvent defines model for NewEvent.
 type NewEvent struct {
-	Adhesives         bool   `json:"adhesives"`
-	CaptchaToken      string `json:"captchaToken"`
-	CarParking        bool   `json:"carParking"`
-	CleaningAndDamage bool   `json:"cleaningAndDamage"`
-	Contact           struct {
-		EmailAddress openapi_types.Email `json:"email_address"`
-		Name         string              `json:"name"`
-	} `json:"contact"`
-	Event struct {
-		Details         string `json:"details"`
-		From            string `json:"from"`
-		Name            string `json:"name"`
-		PubliclyVisible bool   `json:"publicly_visible"`
-		To              string `json:"to"`
-	} `json:"event"`
-	PrivacyPolicy bool `json:"privacyPolicy"`
-	TermsOfHire   bool `json:"termsOfHire"`
+	Adhesives         bool         `json:"adhesives"`
+	CaptchaToken      string       `json:"captchaToken"`
+	CarParking        bool         `json:"carParking"`
+	CleaningAndDamage bool         `json:"cleaningAndDamage"`
+	Contact           Contact      `json:"contact"`
+	Event             EventDetails `json:"event"`
+	PrivacyPolicy     bool         `json:"privacyPolicy"`
+	TermsOfHire       bool         `json:"termsOfHire"`
 }
 
 // Rate defines model for Rate.
@@ -224,6 +230,9 @@ type GetApiV1AdminEventsParams struct {
 
 	// To The date to obtain events to
 	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+
+	// Contact Optional filter to events for a specific contact. Value is the contact's email.
+	Contact *string `form:"contact,omitempty" json:"contact,omitempty"`
 }
 
 // AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.

@@ -31,6 +31,7 @@ type Database interface {
 	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
 	GetRates(ctx context.Context) ([]Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
+	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
@@ -146,7 +147,12 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 	return AddEvent200Response{}, nil
 }
 
-func (s *Server) getAllEvents(ctx context.Context, from, to *openapi_types.Date) ([]ListEvent, error) {
+func (s *Server) getAllEvents(ctx context.Context, from, to *openapi_types.Date, contactID *string) ([]ListEvent, error) {
+	if (from != nil && to == nil) ||
+		(from == nil && to != nil) {
+		return nil, errors.New("if restricting by date, both from and to must be specified")
+	}
+
 	if from == nil && to == nil {
 		// Get start date of this month
 		now := time.Now()
@@ -162,13 +168,17 @@ func (s *Server) getAllEvents(ctx context.Context, from, to *openapi_types.Date)
 		}
 	}
 
+	if contactID != nil {
+		return s.db.ListEventsForContact(ctx, *contactID, from.Time, to.Time)
+	}
+
 	return s.db.ListEvents(ctx, from.Time, to.Time)
 }
 
 func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsRequestObject) (GetApiV1EventsResponseObject, error) {
 	//TODO validate
 
-	events, err := s.getAllEvents(ctx, request.Params.From, request.Params.To)
+	events, err := s.getAllEvents(ctx, request.Params.From, request.Params.To, nil)
 	if err != nil {
 		return GetApiV1Events500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -505,7 +515,7 @@ func (s *Server) AdminAddEvents(ctx context.Context, request AdminAddEventsReque
 }
 
 func (s *Server) GetEventsICS(ctx context.Context, request GetEventsICSRequestObject) (GetEventsICSResponseObject, error) {
-	events, err := s.getAllEvents(ctx, nil, nil)
+	events, err := s.getAllEvents(ctx, nil, nil, nil)
 	if err != nil {
 		return GetEventsICS500JSONResponse{
 			ErrorMessage: err.Error(),
