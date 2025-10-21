@@ -154,8 +154,8 @@ function TopNav() {
         >
           <MenuLink to="/" label="Home" />
           <MenuLink to="/about" label="About" />
-          <MenuLink to="/booking" label="Booking" />
-          <MenuLink to="/whats-on" label="What's On?" />
+          {/*<MenuLink to="/booking" label="Booking" />*/}
+          {/*<MenuLink to="/whats-on" label="What's On?" />*/}
           <MenuLink to="/location" label="Location" />
         </Stack>
       </Flex>

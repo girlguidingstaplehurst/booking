@@ -47,9 +47,9 @@ function Footer() {
                 <Link as={ReactRouterLink} to="/about">
                   About
                 </Link>
-                <Link as={ReactRouterLink} to="/booking">
-                  Booking
-                </Link>
+                {/*<Link as={ReactRouterLink} to="/booking">*/}
+                {/*  Booking*/}
+                {/*</Link>*/}
                 <Link as={ReactRouterLink} to="/privacy-policy">
                   Privacy Policy
                 </Link>
@@ -59,9 +59,9 @@ function Footer() {
                 <Link as={ReactRouterLink} to="/cleaning-and-damage-policy">
                   Cleaning and Damage Policy
                 </Link>
-                <Link as={ReactRouterLink} to="/whats-on">
-                  What's On?
-                </Link>
+                {/*<Link as={ReactRouterLink} to="/whats-on">*/}
+                {/*  What's On?*/}
+                {/*</Link>*/}
                 <Link as={ReactRouterLink} to="/location/">
                   Location
                 </Link>
