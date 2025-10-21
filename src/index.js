@@ -69,31 +69,31 @@ const router = createBrowserRouter(
         <Route path="*" element={<NoMatch />} />
       </Route>
 
-    {/*  <Route path="admin" element={<AdminLayout />}>*/}
-    {/*    <Route index element={<Dashboard />} loader={populateDashboard} />*/}
-    {/*    <Route path="create-events" element={<CreateEvents />} />*/}
-    {/*    <Route*/}
-    {/*      path="review/:eventID"*/}
-    {/*      element={<ReviewEvent />}*/}
-    {/*      loader={({ params }) => reviewEvent(params.eventID)}*/}
-    {/*    />*/}
-    {/*    <Route*/}
-    {/*      path="create-invoice"*/}
-    {/*      element={<CreateInvoice />}*/}
-    {/*      loader={({ request }) => {*/}
-    {/*        const url = new URL(request.url);*/}
-    {/*        const events = url.searchParams.get("events");*/}
-    {/*        return createInvoice(events);*/}
-    {/*      }}*/}
-    {/*    />*/}
-    {/*    <Route*/}
-    {/*      path="invoice/:invoiceID"*/}
-    {/*      element={<ManageInvoice />}*/}
-    {/*      loader={({ params }) => manageInvoice(params.invoiceID)}*/}
-    {/*    />*/}
-    {/*  </Route>*/}
-    {/*  <Route path="admin/login" element={<Login />} />*/}
-    {/*</Route>,*/}
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} loader={populateDashboard} />
+        <Route path="create-events" element={<CreateEvents />} />
+        <Route
+          path="review/:eventID"
+          element={<ReviewEvent />}
+          loader={({ params }) => reviewEvent(params.eventID)}
+        />
+        <Route
+          path="create-invoice"
+          element={<CreateInvoice />}
+          loader={({ request }) => {
+            const url = new URL(request.url);
+            const events = url.searchParams.get("events");
+            return createInvoice(events);
+          }}
+        />
+        <Route
+          path="invoice/:invoiceID"
+          element={<ManageInvoice />}
+          loader={({ params }) => manageInvoice(params.invoiceID)}
+        />
+      </Route>
+      <Route path="admin/login" element={<Login />} />
+    </Route>,
   ),
 );
 
