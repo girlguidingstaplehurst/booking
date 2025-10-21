@@ -94,8 +94,8 @@ function Footer() {
             </GridItem>
           </Grid>
         </Stack>
-        <Text fontSize={12} align="left">
-          &copy; 2024 Girlguiding Staplehurst District. Registered Charity
+        <Text fontSize={12} align="center">
+          &copy; {new Date().getFullYear()} Girlguiding Staplehurst District. Registered Charity
           801848
         </Text>
       </Container>
