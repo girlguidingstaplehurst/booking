@@ -47,6 +47,9 @@ function Footer() {
                 <Link as={ReactRouterLink} to="/about">
                   About
                 </Link>
+                <Link as={ReactRouterLink} to="/contact">
+                  Contact Us
+                </Link>
                 {/*<Link as={ReactRouterLink} to="/booking">*/}
                 {/*  Booking*/}
                 {/*</Link>*/}
@@ -86,9 +89,6 @@ function Footer() {
                 </Link>
                 <Link href="https://staplehurstguiding.org.uk/rangers">
                   Rangers
-                </Link>
-                <Link href="https://staplehurstguiding.org.uk/contact-us">
-                  Contact Us
                 </Link>
               </Stack>
             </GridItem>

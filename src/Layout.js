@@ -82,8 +82,9 @@ function NavInDrawer() {
             >
               <DrawerLink label="Home" to="/" onClick={onClose} />
               <DrawerLink label="About" to="/about" onClick={onClose} />
-              <DrawerLink label="Booking" to="/booking" onClick={onClose} />
-              <DrawerLink label="What's On?" to="/whats-on" onClick={onClose} />
+              <DrawerLink label="Contact Us" to="/contact" onClick={onClose} />
+              {/*<DrawerLink label="Booking" to="/booking" onClick={onClose} />*/}
+              {/*<DrawerLink label="What's On?" to="/whats-on" onClick={onClose} />*/}
               <DrawerLink label="Location" to="/location" onClick={onClose} />
             </Stack>
           </DrawerBody>
@@ -154,6 +155,7 @@ function TopNav() {
         >
           <MenuLink to="/" label="Home" />
           <MenuLink to="/about" label="About" />
+          <MenuLink to="/contact" label="Contact Us" />
           {/*<MenuLink to="/booking" label="Booking" />*/}
           {/*<MenuLink to="/whats-on" label="What's On?" />*/}
           <MenuLink to="/location" label="Location" />

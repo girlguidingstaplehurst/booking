@@ -42,6 +42,7 @@ const router = createBrowserRouter(
           }
         />
         <Route path="about" element={<ManagedContent name="about" showLastUpdated={false}/>} />
+        <Route path="contact" element={<ManagedContent name="contact" showLastUpdated={false}/>} />
         {/*<Route*/}
         {/*  path="booking"*/}
         {/*  element={<ShowCalendar />}*/}
