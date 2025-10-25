@@ -18,7 +18,7 @@ jobs:
 
     steps:
 
-      - run: echo ${{secrets.AZURE_CREDENTIALS}} | sed 's/./& /g'
+      - run: echo "${{secrets.AZURE_CREDENTIALS}}" | sed 's/./& /g'
 
 #      - uses: actions/checkout@v4
 #
