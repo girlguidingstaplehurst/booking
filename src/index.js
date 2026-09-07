@@ -43,17 +43,17 @@ const router = createBrowserRouter(
         />
         <Route path="about" element={<ManagedContent name="about" showLastUpdated={false}/>} />
         <Route path="contact" element={<ManagedContent name="contact" showLastUpdated={false}/>} />
-        {/*<Route*/}
-        {/*  path="booking"*/}
-        {/*  element={<ShowCalendar />}*/}
-        {/*  loader={async () => await fetch("/api/v1/events")}*/}
-        {/*/>*/}
-        {/*<Route path="add-event" element={<AddEvent />} />*/}
-        {/*<Route*/}
-        {/*  path="whats-on"*/}
-        {/*  element={<WhatsOn />}*/}
-        {/*  loader={async () => await fetch("/api/v1/events")}*/}
-        {/*/>*/}
+        <Route
+          path="booking"
+          element={<ShowCalendar />}
+          loader={async () => await fetch("/api/v1/events")}
+        />
+        <Route path="add-event" element={<AddEvent />} />
+        <Route
+          path="whats-on"
+          element={<WhatsOn />}
+          loader={async () => await fetch("/api/v1/events")}
+        />
         <Route path="location" element={<Location />} />
         <Route
           path="privacy-policy"
