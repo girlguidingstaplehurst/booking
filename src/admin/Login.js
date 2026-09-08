@@ -1,4 +1,4 @@
-import { Container, Heading, Stack } from "@chakra-ui/react";
+import { Box, Container, Heading, Stack } from "@chakra-ui/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 
@@ -18,6 +18,9 @@ function Login() {
   return (
     <>
       <AdminHeader />
+      <Box bg="brand.300" position="sticky" top={0} zIndex={10}>
+        <Container maxW="4xl" paddingY={3} textAlign="center" />
+      </Box>
       <Container maxW="4xl" padding={4}>
         <Stack minH="100vh" spacing={4}>
           <Heading>Login</Heading>
