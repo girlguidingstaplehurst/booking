@@ -15,18 +15,21 @@ function WhatsOn() {
           from: date.add(10, "hours").toDate(),
           to: date.add(11, "hours").toDate(),
           status: "provisional",
+          visible: true,
         },
         {
           name: "Approved event",
           from: date.add(35, "hours").toDate(),
           to: date.add(76, "hours").toDate(),
           status: "approved",
+          visible: true,
         },
         {
           name: "Private event",
           from: date.add(50, "hours").toDate(),
           to: date.add(52, "hours").toDate(),
-          status: "private",
+          status: "approved",
+          visible: false,
         },
       ],
     };
@@ -38,7 +41,7 @@ function WhatsOn() {
         <ManagedContent name="whats-on" showLastUpdated={false} />
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
           {eventsList.events
-            .filter((event) => event.status?.toLowerCase() !== "private")
+            .filter((event) => event.visible !== false)
             .map((event) => {
               const from = dayjs(event.from);
               const to = dayjs(event.to);
