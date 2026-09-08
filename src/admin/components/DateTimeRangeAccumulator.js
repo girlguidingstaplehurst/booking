@@ -17,7 +17,13 @@ function DateTimeRangeAccumulator({ children, value, name, setter }) {
   const [to, setTo] = useState("");
 
   const handler = async () => {
-    setter([...value, { from: from, to: to }]);
+    setter([
+      ...value,
+      {
+        from: dayjs(from, "YYYY-MM-DD[T]HH:mm").toISOString(),
+        to: dayjs(to, "YYYY-MM-DD[T]HH:mm").toISOString(),
+      },
+    ]);
 
     await setFrom(
       dayjs(from, "YYYY-MM-DD[T]HH:mm")

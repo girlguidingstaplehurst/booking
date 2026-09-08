@@ -193,13 +193,19 @@ paths:
       operationId: adminGetInvoicesForEvents
       parameters:
         - in: query
-          required: true
+          required: false
           name: events
           schema:
             type: array
             items:
               type: string
           description: A comma-separated list of events to generate invoices for
+        - in: query
+          required: false
+          name: eventGroup
+          schema:
+            type: string
+          description: An event group to generate an invoice for
       responses:
         '200':
           description: "Invoice sent successfully"
@@ -500,6 +506,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/add-event-group:
+    post:
+      security:
+        - admin_auth: [ ]
+      summary: Add an event group
+      operationId: adminAddEventGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminNewEventGroup'
+      responses:
+        '200':
+          description: Successfully added
+        '409':
+          description: One or more conflicts exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -610,11 +650,34 @@ components:
       type: object
       required:
         - events
+        - eventGroups
       properties:
         events:
           type: array
           items:
             $ref: '#/components/schemas/Event'
+        eventGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEventGroup'
+    AdminEventGroup:
+      type: object
+      required:
+        - id
+        - name
+        - from
+        - to
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
     Event:
       type: object
       required:
@@ -665,6 +728,8 @@ components:
             $ref: '#/components/schemas/InvoiceRef'
         rateID:
           type: string
+        eventGroupID:
+          type: string
     SendInvoiceBody:
       type: object
       required:
@@ -679,6 +744,8 @@ components:
           description: List of Event IDs that this invoice applies to.
           items:
             type: string
+        eventGroup:
+          type: string
         items:
           type: array
           items:
@@ -817,6 +884,7 @@ components:
         - id
         - description
         - hourlyRate
+        - perSession
       properties:
         id:
           type: string
@@ -825,6 +893,8 @@ components:
         hourlyRate:
           type: number
         discountTable:
+          type: object
+        perSession:
           type: object
     SetRateBody:
       type: object
@@ -883,6 +953,46 @@ components:
               type: string
             rate:
               type: string
+        contact:
+          type: object
+          required:
+            - name
+            - email_address
+          properties:
+            name:
+              type: string
+            email_address:
+              type: string
+              format: email
+    AdminNewEventGroup:
+      type: object
+      required:
+        - name
+        - details
+        - instances
+        - publicly_visible
+        - standard_rate
+        - per_session_rate
+        - keyholder
+        - contact
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+        publicly_visible:
+          type: boolean
+        standard_rate:
+          type: string
+        per_session_rate:
+          type: string
+        keyholder:
+          type: string
+          format: email
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventInstance'
         contact:
           type: object
           required:

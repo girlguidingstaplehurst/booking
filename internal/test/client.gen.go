@@ -77,9 +77,33 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// AdminEventGroup defines model for AdminEventGroup.
+type AdminEventGroup struct {
+	From string `json:"from"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	To   string `json:"to"`
+}
+
 // AdminEventList defines model for AdminEventList.
 type AdminEventList struct {
-	Events []Event `json:"events"`
+	EventGroups []AdminEventGroup `json:"eventGroups"`
+	Events      []Event           `json:"events"`
+}
+
+// AdminNewEventGroup defines model for AdminNewEventGroup.
+type AdminNewEventGroup struct {
+	Contact struct {
+		EmailAddress openapi_types.Email `json:"email_address"`
+		Name         string              `json:"name"`
+	} `json:"contact"`
+	Details         string              `json:"details"`
+	Instances       []EventInstance     `json:"instances"`
+	Keyholder       openapi_types.Email `json:"keyholder"`
+	Name            string              `json:"name"`
+	PerSessionRate  string              `json:"per_session_rate"`
+	PubliclyVisible bool                `json:"publicly_visible"`
+	StandardRate    string              `json:"standard_rate"`
 }
 
 // AdminNewEvents defines model for AdminNewEvents.
@@ -127,6 +151,7 @@ type Event struct {
 	Contact      string               `json:"contact"`
 	Details      string               `json:"details"`
 	Email        openapi_types.Email  `json:"email"`
+	EventGroupID *string              `json:"eventGroupID,omitempty"`
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
 	Invoices     *[]InvoiceRef        `json:"invoices,omitempty"`
@@ -235,6 +260,7 @@ type Rate struct {
 	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
 	HourlyRate    float32                 `json:"hourlyRate"`
 	Id            string                  `json:"id"`
+	PerSession    map[string]interface{}  `json:"perSession"`
 }
 
 // RatesList defines model for RatesList.
@@ -251,7 +277,8 @@ type RequestDocumentsBody struct {
 
 // SendInvoiceBody defines model for SendInvoiceBody.
 type SendInvoiceBody struct {
-	Contact openapi_types.Email `json:"contact"`
+	Contact    openapi_types.Email `json:"contact"`
+	EventGroup *string             `json:"eventGroup,omitempty"`
 
 	// Events List of Event IDs that this invoice applies to.
 	Events *[]string             `json:"events,omitempty"`
@@ -285,7 +312,10 @@ type GetApiV1AdminEventsParams struct {
 // AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.
 type AdminGetInvoicesForEventsParams struct {
 	// Events A comma-separated list of events to generate invoices for
-	Events []string `form:"events" json:"events"`
+	Events *[]string `form:"events,omitempty" json:"events,omitempty"`
+
+	// EventGroup An event group to generate an invoice for
+	EventGroup *string `form:"eventGroup,omitempty" json:"eventGroup,omitempty"`
 }
 
 // GetApiV1EventsParams defines parameters for GetApiV1Events.
@@ -299,6 +329,9 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminAddEventGroupJSONRequestBody defines body for AdminAddEventGroup for application/json ContentType.
+type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
@@ -404,6 +437,20 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/add-event (the `AddEvent` operationId).
 	AddEvent(ctx context.Context, body AddEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AdminAddEventGroupWithBody Add an event group
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+	AdminAddEventGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminAddEventGroup Add an event group
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+	AdminAddEventGroup(ctx context.Context, body AdminAddEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AdminAddEventsWithBody Add events
 	//
 	// Add new events to the calendar.
@@ -505,6 +552,40 @@ func (c *Client) AddEventWithBody(ctx context.Context, contentType string, body 
 // Corresponds with POST /api/v1/add-event (the `AddEvent` operationId).
 func (c *Client) AddEvent(ctx context.Context, body AddEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddEventRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminAddEventGroupWithBody Add an event group
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+func (c *Client) AdminAddEventGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminAddEventGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminAddEventGroup Add an event group
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+func (c *Client) AdminAddEventGroup(ctx context.Context, body AdminAddEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminAddEventGroupRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -788,6 +869,46 @@ func NewAddEventRequestWithBody(server string, contentType string, body io.Reade
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/add-event")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminAddEventGroupRequest calls the generic AdminAddEventGroup builder with application/json body
+func NewAdminAddEventGroupRequest(server string, body AdminAddEventGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminAddEventGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAdminAddEventGroupRequestWithBody constructs an http.Request for the AdminAddEventGroup method, with any body, and a specified content type
+func NewAdminAddEventGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/add-event-group")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1219,7 +1340,19 @@ func NewAdminGetInvoicesForEventsRequest(server string, params *AdminGetInvoices
 
 		if params.Events != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "events", params.Events, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "events", *params.Events, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EventGroup != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "eventGroup", *params.EventGroup, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -1465,6 +1598,20 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/add-event (the `AddEvent` operationId).
 	AddEventWithResponse(ctx context.Context, body AddEventJSONRequestBody, reqEditors ...RequestEditorFn) (*AddEventResponse, error)
 
+	// AdminAddEventGroupWithBodyWithResponse Add an event group
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+	AdminAddEventGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminAddEventGroupResponse, error)
+
+	// AdminAddEventGroupWithResponse Add an event group
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+	AdminAddEventGroupWithResponse(ctx context.Context, body AdminAddEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminAddEventGroupResponse, error)
+
 	// AdminAddEventsWithBodyWithResponse Add events
 	//
 	// Add new events to the calendar.
@@ -1613,6 +1760,61 @@ func (r AddEventResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AddEventResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminAddEventGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminAddEventGroupResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminAddEventGroupResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminAddEventGroupResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminAddEventGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminAddEventGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminAddEventGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminAddEventGroupResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2363,6 +2565,32 @@ func (c *ClientWithResponses) AddEventWithResponse(ctx context.Context, body Add
 	return ParseAddEventResponse(rsp)
 }
 
+// AdminAddEventGroupWithBodyWithResponse Add an event group
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+func (c *ClientWithResponses) AdminAddEventGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminAddEventGroupResponse, error) {
+	rsp, err := c.AdminAddEventGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminAddEventGroupResponse(rsp)
+}
+
+// AdminAddEventGroupWithResponse Add an event group
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/add-event-group (the `AdminAddEventGroup` operationId).
+func (c *ClientWithResponses) AdminAddEventGroupWithResponse(ctx context.Context, body AdminAddEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminAddEventGroupResponse, error) {
+	rsp, err := c.AdminAddEventGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminAddEventGroupResponse(rsp)
+}
+
 // AdminAddEventsWithBodyWithResponse Add events
 //
 // Add new events to the calendar.
@@ -2578,6 +2806,49 @@ func ParseAddEventResponse(rsp *http.Response) (*AddEventResponse, error) {
 	}
 
 	response := &AddEventResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminAddEventGroupResponse parses an HTTP response from a AdminAddEventGroupWithResponse call
+func ParseAdminAddEventGroupResponse(rsp *http.Response) (*AdminAddEventGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminAddEventGroupResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

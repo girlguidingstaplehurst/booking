@@ -106,6 +106,20 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 	}
 
 	err := pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		for _, item := range invoice.Items {
+			if item.EventID == nil {
+				continue
+			}
+
+			var grouped bool
+			if err := tx.QueryRow(ctx, `select event_group_id is not null from booking_events where id = $1`, *item.EventID).Scan(&grouped); err != nil {
+				return err
+			}
+			if grouped && invoice.EventGroup == nil {
+				return errors.New("individual invoices are not allowed for event group events")
+			}
+		}
+
 		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact) values($1, $2, $3)`, inv.Id, inv.Reference, inv.Contact)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new invoice"))
@@ -188,27 +202,55 @@ func (db *Database) ListEventsForContact(ctx context.Context, contactID string, 
 	})
 }
 
-func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) ([]rest.Event, error) {
-	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact.name, contact.email, 
-       		assignee, keyholder_in, keyholder_out
+func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (rest.AdminEventList, error) {
+	rows, err := db.pool.Query(ctx, `select e.id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact.name, contact.email, 
+	        	assignee, keyholder_in, keyholder_out, event_group_id
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email 
 		where (event_start >= $1 and event_start <= $2)
 		or event_end >= $1 and event_end <= $2
 		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
-		return nil, err
+		return rest.AdminEventList{}, err
 	}
 
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
+	events, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
 		var event rest.Event
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut); err != nil {
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.EventGroupID); err != nil {
 			return event, err
 		}
 
 		return event, nil
 	})
+	if err != nil {
+		return rest.AdminEventList{}, err
+	}
+
+	groupRows, err := db.pool.Query(ctx, `select g.id, g.event_name,
+		to_char(min(event_start), $3), to_char(max(event_end), $3)
+		from booking_event_groups g
+		join booking_events e on e.event_group_id = g.id
+		where (event_start >= $1 and event_start <= $2)
+		or event_end >= $1 and event_end <= $2
+		group by g.id, g.event_name
+		order by min(event_start), g.event_name`, from, to, dbDateTimeFormat)
+	if err != nil {
+		return rest.AdminEventList{}, err
+	}
+
+	eventGroups, err := pgx.CollectRows(groupRows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
+		var group rest.AdminEventGroup
+		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To); err != nil {
+			return group, err
+		}
+		return group, nil
+	})
+	if err != nil {
+		return rest.AdminEventList{}, err
+	}
+
+	return rest.AdminEventList{Events: events, EventGroups: eventGroups}, nil
 }
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
@@ -290,6 +332,30 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids ...string) ([]rest
 	})
 }
 
+func (db *Database) GetInvoiceEventsForGroup(ctx context.Context, groupID string) ([]rest.DBInvoiceEvent, error) {
+	rows, err := db.pool.Query(ctx, `select be.id,
+		to_char(be.event_start, '`+dbDateTimeFormat+`'),
+		to_char(be.event_end, '`+dbDateTimeFormat+`'),
+		be.event_name, be.status, be.email,
+		br.hourly_rate::numeric::decimal, br.discount_table
+		from booking_events be
+		join booking_event_groups beg on beg.id = be.event_group_id
+		join booking_rates br on br.id = beg.standard_rate
+		where be.event_group_id = $1
+		order by be.event_start`, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.DBInvoiceEvent, error) {
+		var event rest.DBInvoiceEvent
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.Rate, &event.DiscountTable); err != nil {
+			return event, err
+		}
+		return event, nil
+	})
+}
+
 func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice, error) {
 	row := db.pool.QueryRow(ctx, `select id, reference, contact, to_char(sent, $2), to_char(paid, $2), status
 		from booking_invoices
@@ -331,7 +397,7 @@ func (db *Database) MarkInvoicePaid(ctx context.Context, id string) error {
 }
 
 func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
-	rows, err := db.pool.Query(ctx, `select id, description, hourly_rate::numeric::decimal, discount_table
+	rows, err := db.pool.Query(ctx, `select id, description, hourly_rate::numeric::decimal, discount_table, per_session
 		from booking_rates
 		order by id`)
 	if err != nil {
@@ -340,7 +406,7 @@ func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Rate, error) {
 		var rate rest.Rate
-		if err := row.Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable); err != nil {
+		if err := row.Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession); err != nil {
 			return rate, err
 		}
 
@@ -415,6 +481,42 @@ func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequ
 			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status, event.Body.Event.Rate)
 			if err != nil {
 				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEventGroupRequestObject) error {
+	group := request.Body
+	if err := db.ensureContactExists(ctx, string(group.Contact.EmailAddress), group.Contact.Name); err != nil {
+		return err
+	}
+
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		groupID := uuid.New().String()
+		if _, err := tx.Exec(ctx, `insert into booking_event_groups
+			(id, event_name, details, visible, email, standard_rate, per_session_rate)
+			values ($1, $2, $3, $4, $5, $6, $7)`, groupID, group.Name, group.Details,
+			group.PubliclyVisible, group.Contact.EmailAddress, group.StandardRate, group.PerSessionRate); err != nil {
+			return errors.Join(err, errors.New("failed to insert event group"))
+		}
+
+		_, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode")
+		if err != nil {
+			return errors.Join(err, errors.New("failed to lock table"))
+		}
+
+		for _, instance := range group.Instances {
+			if err := db.checkForNearbyBookings(ctx, tx, instance.From, instance.To); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `insert into booking_events
+				(id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in, keyholder_out)
+				values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $10)`, uuid.New(), instance.From, instance.To,
+				group.Name, group.PubliclyVisible, group.Contact.EmailAddress, group.StandardRate, group.Details, groupID, group.Keyholder); err != nil {
+				return errors.Join(err, errors.New("failed to insert event group instance"))
 			}
 		}
 

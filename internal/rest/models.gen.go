@@ -67,9 +67,33 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// AdminEventGroup defines model for AdminEventGroup.
+type AdminEventGroup struct {
+	From string `json:"from"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	To   string `json:"to"`
+}
+
 // AdminEventList defines model for AdminEventList.
 type AdminEventList struct {
-	Events []Event `json:"events"`
+	EventGroups []AdminEventGroup `json:"eventGroups"`
+	Events      []Event           `json:"events"`
+}
+
+// AdminNewEventGroup defines model for AdminNewEventGroup.
+type AdminNewEventGroup struct {
+	Contact struct {
+		EmailAddress openapi_types.Email `json:"email_address"`
+		Name         string              `json:"name"`
+	} `json:"contact"`
+	Details         string              `json:"details"`
+	Instances       []EventInstance     `json:"instances"`
+	Keyholder       openapi_types.Email `json:"keyholder"`
+	Name            string              `json:"name"`
+	PerSessionRate  string              `json:"per_session_rate"`
+	PubliclyVisible bool                `json:"publicly_visible"`
+	StandardRate    string              `json:"standard_rate"`
 }
 
 // AdminNewEvents defines model for AdminNewEvents.
@@ -117,6 +141,7 @@ type Event struct {
 	Contact      string               `json:"contact"`
 	Details      string               `json:"details"`
 	Email        openapi_types.Email  `json:"email"`
+	EventGroupID *string              `json:"eventGroupID,omitempty"`
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
 	Invoices     *[]InvoiceRef        `json:"invoices,omitempty"`
@@ -225,6 +250,7 @@ type Rate struct {
 	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
 	HourlyRate    float32                 `json:"hourlyRate"`
 	Id            string                  `json:"id"`
+	PerSession    map[string]interface{}  `json:"perSession"`
 }
 
 // RatesList defines model for RatesList.
@@ -241,7 +267,8 @@ type RequestDocumentsBody struct {
 
 // SendInvoiceBody defines model for SendInvoiceBody.
 type SendInvoiceBody struct {
-	Contact openapi_types.Email `json:"contact"`
+	Contact    openapi_types.Email `json:"contact"`
+	EventGroup *string             `json:"eventGroup,omitempty"`
 
 	// Events List of Event IDs that this invoice applies to.
 	Events *[]string             `json:"events,omitempty"`
@@ -275,7 +302,10 @@ type GetApiV1AdminEventsParams struct {
 // AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.
 type AdminGetInvoicesForEventsParams struct {
 	// Events A comma-separated list of events to generate invoices for
-	Events []string `form:"events" json:"events"`
+	Events *[]string `form:"events,omitempty" json:"events,omitempty"`
+
+	// EventGroup An event group to generate an invoice for
+	EventGroup *string `form:"eventGroup,omitempty" json:"eventGroup,omitempty"`
 }
 
 // GetApiV1EventsParams defines parameters for GetApiV1Events.
@@ -289,6 +319,9 @@ type GetApiV1EventsParams struct {
 
 // AddEventJSONRequestBody defines body for AddEvent for application/json ContentType.
 type AddEventJSONRequestBody = NewEvent
+
+// AdminAddEventGroupJSONRequestBody defines body for AdminAddEventGroup for application/json ContentType.
+type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents

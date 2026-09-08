@@ -25,6 +25,7 @@ import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
+import { CreateEventGroup } from "./admin/CreateEventGroup";
 import Location from "./Location";
 import WhatsOn from "./WhatsOn";
 
@@ -41,8 +42,14 @@ const router = createBrowserRouter(
             />
           }
         />
-        <Route path="about" element={<ManagedContent name="about" showLastUpdated={false}/>} />
-        <Route path="contact" element={<ManagedContent name="contact" showLastUpdated={false}/>} />
+        <Route
+          path="about"
+          element={<ManagedContent name="about" showLastUpdated={false} />}
+        />
+        <Route
+          path="contact"
+          element={<ManagedContent name="contact" showLastUpdated={false} />}
+        />
         <Route
           path="booking"
           element={<ShowCalendar />}
@@ -73,6 +80,7 @@ const router = createBrowserRouter(
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
         <Route path="create-events" element={<CreateEvents />} />
+        <Route path="create-event-group" element={<CreateEventGroup />} />
         <Route
           path="review/:eventID"
           element={<ReviewEvent />}
@@ -84,7 +92,8 @@ const router = createBrowserRouter(
           loader={({ request }) => {
             const url = new URL(request.url);
             const events = url.searchParams.get("events");
-            return createInvoice(events);
+            const eventGroup = url.searchParams.get("eventGroup");
+            return createInvoice(events, eventGroup);
           }}
         />
         <Route

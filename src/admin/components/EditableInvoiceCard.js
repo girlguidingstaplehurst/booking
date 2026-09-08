@@ -47,7 +47,7 @@ function discountForDuration(duration, discountTable) {
   }, 0);
 }
 
-function populateInvoiceItems(events) {
+function populateInvoiceItems(events, eventGroup) {
   return events.reduce((acc, event) => {
     const duration = dayjs.duration(dayjs(event.to).diff(event.from)).asHours();
 
@@ -66,27 +66,30 @@ function populateInvoiceItems(events) {
       });
     }
 
-    acc.push({
-      eventID: event.id,
-      description: `${event.name} - Refundable Cleaning and Damage deposit`,
-      cost: 100, //TODO enable this to be configured
-    });
+    if (!eventGroup) {
+      acc.push({
+        eventID: event.id,
+        description: `${event.name} - Refundable Cleaning and Damage deposit`,
+        cost: 100, //TODO enable this to be configured
+      });
+    }
 
     return acc;
   }, []);
 }
 
-export function EditableInvoiceCard({ contact, events }) {
+export function EditableInvoiceCard({ contact, events, eventGroup }) {
   const [submitting, setSubmitting] = useState(false);
   const { token } = useAuth();
 
   const formik = useFormik({
     initialValues: {
       contact: contact,
-      items: populateInvoiceItems(events),
+      items: populateInvoiceItems(events, eventGroup),
+      ...(eventGroup ? { eventGroup } : {}),
     }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
-      setSubmitting(true);    
+      setSubmitting(true);
 
       const resp = await fetch("/api/v1/admin/send-invoice", {
         method: "POST",
@@ -116,7 +119,10 @@ export function EditableInvoiceCard({ contact, events }) {
             <Spacer />
             <Button
               onClick={() =>
-                formik.setFieldValue("items", populateInvoiceItems(events))
+                formik.setFieldValue(
+                  "items",
+                  populateInvoiceItems(events, eventGroup),
+                )
               }
             >
               Reset
@@ -192,7 +198,11 @@ export function EditableInvoiceCard({ contact, events }) {
         <CardFooter minWidth="max-content">
           <Spacer />
           <ButtonGroup flex="0">
-            <RoundedButton colorScheme="brand" isLoading={submitting} type="submit">
+            <RoundedButton
+              colorScheme="brand"
+              isLoading={submitting}
+              type="submit"
+            >
               Send Invoice
             </RoundedButton>
           </ButtonGroup>

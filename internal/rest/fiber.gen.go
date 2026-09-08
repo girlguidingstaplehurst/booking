@@ -24,6 +24,9 @@ type ServerInterface interface {
 	// AddEvent Add an event
 	// (POST /api/v1/add-event)
 	AddEvent(c *fiber.Ctx) error
+	// AdminAddEventGroup Add an event group
+	// (POST /api/v1/admin/add-event-group)
+	AdminAddEventGroup(c *fiber.Ctx) error
 	// AdminAddEvents Add events
 	// (POST /api/v1/admin/add-events)
 	AdminAddEvents(c *fiber.Ctx) error
@@ -82,6 +85,24 @@ func (siw *ServerInterfaceWrapper) AddEvent(c *fiber.Ctx) error {
 
 	handler := func(c *fiber.Ctx) error {
 		return siw.Handler.AddEvent(c)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
+// AdminAddEventGroup operation middleware
+func (siw *ServerInterfaceWrapper) AdminAddEventGroup(c *fiber.Ctx) error {
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminAddEventGroup(c)
 	}
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -382,11 +403,18 @@ func (siw *ServerInterfaceWrapper) AdminGetInvoicesForEvents(c *fiber.Ctx) error
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for query string: %w", err).Error())
 	}
 
-	// ------------- Required query parameter "events" -------------
+	// ------------- Optional query parameter "events" -------------
 
-	err = runtime.BindQueryParameterWithOptions("form", true, true, "events", query, &params.Events, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "events", query, &params.Events, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter events: %w", err).Error())
+	}
+
+	// ------------- Optional query parameter "eventGroup" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "eventGroup", query, &params.EventGroup, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventGroup: %w", err).Error())
 	}
 
 	handler := func(c *fiber.Ctx) error {
@@ -555,6 +583,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 
 	router.Post(options.BaseURL+"/api/v1/admin/add-events", wrapper.AdminAddEvents)
 
+	router.Post(options.BaseURL+"/api/v1/admin/add-event-group", wrapper.AdminAddEventGroup)
+
 }
 
 type AddEventRequestObject struct {
@@ -594,6 +624,49 @@ func (response AddEvent422JSONResponse) VisitAddEventResponse(ctx *fiber.Ctx) er
 type AddEvent500JSONResponse ErrorResponse
 
 func (response AddEvent500JSONResponse) VisitAddEventResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminAddEventGroupRequestObject struct {
+	Body *AdminAddEventGroupJSONRequestBody
+}
+
+type AdminAddEventGroupResponseObject interface {
+	VisitAdminAddEventGroupResponse(ctx *fiber.Ctx) error
+}
+
+type AdminAddEventGroup200Response struct {
+}
+
+func (response AdminAddEventGroup200Response) VisitAdminAddEventGroupResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminAddEventGroup409JSONResponse ErrorResponse
+
+func (response AdminAddEventGroup409JSONResponse) VisitAdminAddEventGroupResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(409)
+
+	return ctx.JSON(&response)
+}
+
+type AdminAddEventGroup422JSONResponse ErrorResponse
+
+func (response AdminAddEventGroup422JSONResponse) VisitAdminAddEventGroupResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminAddEventGroup500JSONResponse ErrorResponse
+
+func (response AdminAddEventGroup500JSONResponse) VisitAdminAddEventGroupResponse(ctx *fiber.Ctx) error {
 	ctx.Response().Header.Set("Content-Type", "application/json")
 	ctx.Status(500)
 
@@ -1098,6 +1171,9 @@ type StrictServerInterface interface {
 	// AddEvent Add an event
 	// (POST /api/v1/add-event)
 	AddEvent(ctx context.Context, request AddEventRequestObject) (AddEventResponseObject, error)
+	// AdminAddEventGroup Add an event group
+	// (POST /api/v1/admin/add-event-group)
+	AdminAddEventGroup(ctx context.Context, request AdminAddEventGroupRequestObject) (AdminAddEventGroupResponseObject, error)
 	// AdminAddEvents Add events
 	// (POST /api/v1/admin/add-events)
 	AdminAddEvents(ctx context.Context, request AdminAddEventsRequestObject) (AdminAddEventsResponseObject, error)
@@ -1177,6 +1253,37 @@ func (sh *strictHandler) AddEvent(ctx *fiber.Ctx) error {
 		return err
 	} else if validResponse, ok := response.(AddEventResponseObject); ok {
 		if err := validResponse.VisitAddEventResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminAddEventGroup operation middleware
+func (sh *strictHandler) AdminAddEventGroup(ctx *fiber.Ctx) error {
+	var request AdminAddEventGroupRequestObject
+
+	var body AdminAddEventGroupJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminAddEventGroup(ctx.UserContext(), request.(AdminAddEventGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminAddEventGroup")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminAddEventGroupResponseObject); ok {
+		if err := validResponse.VisitAdminAddEventGroupResponse(ctx); err != nil {
 			return err
 		}
 	} else if response != nil {
@@ -1584,44 +1691,46 @@ func (sh *strictHandler) GetEventsICS(ctx *fiber.Ctx) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"89BbA7IZkymd7b1PRBYtt7fb/w8A",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

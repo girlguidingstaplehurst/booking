@@ -10,8 +10,9 @@ import { AdminFetcher } from "../Fetcher";
 import dayjs from "dayjs";
 import { EditableInvoiceCard } from "./components/EditableInvoiceCard";
 
-export async function createInvoice(eventIDs) {
-  return AdminFetcher("/api/v1/admin/invoices/for-events?events=" + eventIDs, {
+export async function createInvoice(eventIDs, eventGroup) {
+  const query = eventGroup ? `eventGroup=${eventGroup}` : `events=${eventIDs}`;
+  return AdminFetcher(`/api/v1/admin/invoices/for-events?${query}`, {
     "even.t.booking@example.org": [
       {
         id: "aaabbbccc",
@@ -21,8 +22,8 @@ export async function createInvoice(eventIDs) {
         status: "provisional",
         rate: 25.0,
         discountTable: {
-          "5": { type: "flat", value: 25 },
-          "10": { type: "flat", value: 50 },
+          5: { type: "flat", value: 25 },
+          10: { type: "flat", value: 50 },
         },
       },
       {
@@ -33,7 +34,7 @@ export async function createInvoice(eventIDs) {
         status: "provisional",
         rate: 25.0,
         discountTable: {
-          "5": { type: "flat", value: 25 },
+          5: { type: "flat", value: 25 },
         },
       },
     ],
@@ -70,7 +71,14 @@ export function CreateInvoice() {
           </BreadcrumbItem>
         </Breadcrumb>
         {Object.entries(invoices).map(([contact, events]) => (
-          <EditableInvoiceCard key={contact} contact={contact} events={events} />
+          <EditableInvoiceCard
+            key={contact}
+            contact={contact}
+            events={events}
+            eventGroup={new URLSearchParams(window.location.search).get(
+              "eventGroup",
+            )}
+          />
         ))}
       </Stack>
     </Container>

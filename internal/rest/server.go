@@ -25,14 +25,16 @@ var _ StrictServerInterface = (*Server)(nil)
 type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
 	AddEvents(ctx context.Context, event AdminAddEventsRequestObject) error
+	AddEventGroup(ctx context.Context, event AdminAddEventGroupRequestObject) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids ...string) ([]DBInvoiceEvent, error)
+	GetInvoiceEventsForGroup(ctx context.Context, groupID string) ([]DBInvoiceEvent, error)
 	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
 	GetRates(ctx context.Context) ([]Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
-	AdminListEvents(ctx context.Context, from, to time.Time) ([]Event, error)
+	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
 	SetEventStatus(Ctx context.Context, eventID string, state string) error
@@ -211,9 +213,7 @@ func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminE
 		return GetApiV1AdminEvents500JSONResponse{ErrorMessage: err.Error()}, nil
 	}
 
-	return GetApiV1AdminEvents200JSONResponse{
-		Events: events,
-	}, nil
+	return GetApiV1AdminEvents200JSONResponse(events), nil
 }
 
 func (s *Server) GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error) {
@@ -278,9 +278,14 @@ type DBInvoiceEvent struct {
 }
 
 func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGetInvoicesForEventsRequestObject) (AdminGetInvoicesForEventsResponseObject, error) {
-	eventIDs := strings.Split(request.Params.Events[0], ",")
-
-	events, err := s.db.GetInvoiceEvents(ctx, eventIDs...)
+	var events []DBInvoiceEvent
+	var err error
+	if request.Params.EventGroup != nil {
+		events, err = s.db.GetInvoiceEventsForGroup(ctx, *request.Params.EventGroup)
+	} else {
+		eventIDs := strings.Split((*request.Params.Events)[0], ",")
+		events, err = s.db.GetInvoiceEvents(ctx, eventIDs...)
+	}
 	if err != nil {
 		return AdminGetInvoicesForEvents500JSONResponse{
 			ErrorMessage: err.Error(),
@@ -512,6 +517,17 @@ func (s *Server) AdminAddEvents(ctx context.Context, request AdminAddEventsReque
 	}
 
 	return AdminAddEvents200Response{}, nil
+}
+
+func (s *Server) AdminAddEventGroup(ctx context.Context, request AdminAddEventGroupRequestObject) (AdminAddEventGroupResponseObject, error) {
+	if err := s.db.AddEventGroup(ctx, request); err != nil {
+		if errors.Is(err, consts.ErrBookingExists) {
+			return AdminAddEventGroup409JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+		return AdminAddEventGroup500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+
+	return AdminAddEventGroup200Response{}, nil
 }
 
 func (s *Server) GetEventsICS(ctx context.Context, request GetEventsICSRequestObject) (GetEventsICSResponseObject, error) {
