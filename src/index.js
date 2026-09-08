@@ -77,6 +77,8 @@ const router = createBrowserRouter(
         <Route path="*" element={<NoMatch />} />
       </Route>
 
+      <Route path="login" element={<Login />} />
+      
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
         <Route path="create-events" element={<CreateEvents />} />
@@ -102,7 +104,6 @@ const router = createBrowserRouter(
           loader={({ params }) => manageInvoice(params.invoiceID)}
         />
       </Route>
-      <Route path="admin/login" element={<Login />} />
     </Route>,
   ),
 );
