@@ -1,10 +1,9 @@
-import { Box, Container, Heading, Stack } from "@chakra-ui/react";
+import { Box, Container, Flex, Heading, Image, Link, Spacer, Stack, Text } from "@chakra-ui/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 
 import useAuth from "./useAuth";
-import AdminHeader from "./components/AdminHeader";
 import Footer from "../components/Footer";
 
 function Login() {
@@ -23,7 +22,19 @@ function Login() {
 
   return (
     <>
-      <AdminHeader />
+      <Box bg="brand.900" color="white">
+        <Container maxW="4xl" padding={4}>
+          <Flex
+            spacing={4}
+            flex={1}
+            gap={4}
+            justifyContent="center"
+            alignContent="end"
+          >
+            <Image src="/logo192.png" />
+          </Flex>
+        </Container>
+      </Box>
       <Box bg="brand.300" position="sticky" top={0} zIndex={10}>
         <Container maxW="4xl" paddingY={3} textAlign="center" />
       </Box>
