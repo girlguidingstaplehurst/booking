@@ -161,7 +161,7 @@ export function ReviewEvent() {
     </Flex>
   );
 
-  const hasInvoices = event.invoices !== undefined && event.invoices.length > 0;
+  const hasInvoices = Array.isArray(event.invoices) && event.invoices.length > 0;
 
   return (
     <Container maxW="4xl">
