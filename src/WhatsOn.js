@@ -1,12 +1,7 @@
-import { Container, Stack } from "@chakra-ui/react";
-import { Calendar, dayjsLocalizer } from "react-big-calendar";
+import { Box, Container, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useLoaderData } from "react-router-dom";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 import ManagedContent from "./components/ManagedContent";
-import { views } from "react-big-calendar/lib/utils/constants";
-
-const localizer = dayjsLocalizer(dayjs);
 
 function WhatsOn() {
   const date = dayjs();
@@ -27,32 +22,51 @@ function WhatsOn() {
           to: date.add(76, "hours").toDate(),
           status: "approved",
         },
+        {
+          name: "Private event",
+          from: date.add(50, "hours").toDate(),
+          to: date.add(52, "hours").toDate(),
+          status: "private",
+        },
       ],
     };
   }
-
-  const events = eventsList.events.map((event) => ({
-    title: event.name,
-    start: dayjs(event.from).toDate(),
-    end: dayjs(event.to).toDate(),
-    allDay: false,
-    status: event.status,
-  }));
 
   return (
     <Container maxW="4xl" padding={4}>
       <Stack spacing={4}>
         <ManagedContent name="whats-on" showLastUpdated={false} />
-        <Calendar
-          localizer={localizer}
-          defaultView={views.AGENDA}
-          toolbar={false}
-          events={events}
-          date={date}
-          showMultiDayTimes={true}
-          views={[views.AGENDA]}
-          style={{ height: "80vh" }}
-        />
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          {eventsList.events
+            .filter((event) => event.status?.toLowerCase() !== "private")
+            .map((event) => {
+              const from = dayjs(event.from);
+              const to = dayjs(event.to);
+
+              return (
+                <Box
+                  key={`${event.name}-${event.from}`}
+                  borderRadius="md"
+                  overflow="hidden"
+                  boxShadow="md"
+                >
+                  <Box backgroundColor="brand.900" padding={5}>
+                    <Text color="white" fontSize="xl" fontWeight="bold">
+                      {event.name}
+                    </Text>
+                  </Box>
+                  <Box backgroundColor="white" padding={5}>
+                    <Text color="brand.900" fontSize="lg" fontWeight="semibold">
+                      {from.format("ddd MMM D")}
+                    </Text>
+                    <Text color="brand.300" fontSize="lg" marginTop={2}>
+                      {`${from.format("h:mm A")} - ${to.format("h:mm A")}`}
+                    </Text>
+                  </Box>
+                </Box>
+              );
+            })}
+        </SimpleGrid>
       </Stack>
     </Container>
   );
