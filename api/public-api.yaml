@@ -590,6 +590,7 @@ components:
         - from
         - to
         - status
+        - visible
       properties:
         id:
           type: string
@@ -603,6 +604,8 @@ components:
           format: datetime
         status:
           $ref: '#/components/schemas/EventStatus'
+        visible:
+          type: boolean
     AdminEventList:
       type: object
       required:

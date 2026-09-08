@@ -147,16 +147,13 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.ListEvent, error) {
-		var (
-			event   rest.ListEvent
-			visible bool
-		)
+		var event rest.ListEvent
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &visible, &event.Status); err != nil {
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status); err != nil {
 			return event, err
 		}
 
-		if !visible {
+		if !event.Visible {
 			event.Name = "Private Event"
 		}
 
@@ -177,16 +174,13 @@ func (db *Database) ListEventsForContact(ctx context.Context, contactID string, 
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.ListEvent, error) {
-		var (
-			event   rest.ListEvent
-			visible bool
-		)
+		var event rest.ListEvent
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &visible, &event.Status); err != nil {
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status); err != nil {
 			return event, err
 		}
 
-		if !visible {
+		if !event.Visible {
 			event.Name = "Private Event"
 		}
 
