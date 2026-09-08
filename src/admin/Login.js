@@ -1,6 +1,7 @@
 import { Box, Container, Heading, Stack } from "@chakra-ui/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 
 import useAuth from "./useAuth";
 import AdminHeader from "./components/AdminHeader";
@@ -10,10 +11,15 @@ function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSuccess = async (credentials) => {
-    await login(credentials);
-    navigate("/admin");
-  };
+  const handleSuccess = useCallback(
+    async (credentials) => {
+      await login(credentials);
+      navigate("/admin");
+    },
+    [login, navigate],
+  );
+
+  const handleError = useCallback(() => console.log("login failed"), []);
 
   return (
     <>
@@ -24,10 +30,7 @@ function Login() {
       <Container maxW="4xl" padding={4}>
         <Stack minH="100vh" spacing={4}>
           <Heading>Login</Heading>
-          <GoogleLogin
-            onSuccess={handleSuccess}
-            onError={() => console.log("login failed")}
-          />
+          <GoogleLogin onSuccess={handleSuccess} onError={handleError} />
         </Stack>
       </Container>
       <Footer />
