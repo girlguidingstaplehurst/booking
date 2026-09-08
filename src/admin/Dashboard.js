@@ -178,16 +178,18 @@ export function Dashboard() {
           </ButtonGroup>
         </Box>
         {sections.map((section) => (
-          <Box key={section.title}>
-            <Heading size="md" marginBottom={4}>
-              {section.title}
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              {sortedEvents(section.events).map((event) =>
-                eventCard(event, section.title),
-              )}
-            </SimpleGrid>
-          </Box>
+          section.events.length > 0 && (
+            <Box key={section.title}>
+              <Heading size="md" marginBottom={4}>
+                {section.title}
+              </Heading>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                {sortedEvents(section.events).map((event) =>
+                  eventCard(event, section.title),
+                )}
+              </SimpleGrid>
+            </Box>
+          )
         ))}
       </Stack>
     </Container>
