@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -52,6 +54,8 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	if err := dbmigrations.Migrate(); err != nil {
+		slog.Error("failed to migrate database", err)
+		time.Sleep(5 * time.Second)
 		return err
 	}
 
