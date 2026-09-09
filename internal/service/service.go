@@ -72,7 +72,7 @@ func (s *Service) Run(ctx context.Context) error {
 		return filesystem.SendFile(c, http.FS(booking.IndexHTML), "/build/index.html")
 	})
 
-	swagger, err := rest.GetSwagger()
+	swagger, err := rest.GetSpec()
 	if err != nil {
 		return err
 	}
