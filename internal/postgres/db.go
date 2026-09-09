@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -104,6 +105,10 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 		Reference: randstr.String(6, consts.ReferenceLetters),
 		Contact:   invoice.Contact,
 	}
+	var eventID *string
+	if invoice.Events != nil && len(*invoice.Events) == 1 {
+		eventID = &(*invoice.Events)[0]
+	}
 
 	err := pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
 		for _, item := range invoice.Items {
@@ -120,7 +125,7 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 			}
 		}
 
-		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact) values($1, $2, $3)`, inv.Id, inv.Reference, inv.Contact)
+		_, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact, event_id, event_group_id) values($1, $2, $3, $4, $5)`, inv.Id, inv.Reference, inv.Contact, eventID, invoice.EventGroup)
 		if err != nil {
 			return errors.Join(err, errors.New("failed to insert new invoice"))
 		}
@@ -134,9 +139,9 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 				EventID:     item.EventID,
 			}
 
-			_, err := tx.Exec(ctx, `insert into booking_invoice_items 
-    				(id, invoice_id, event_id, description, cost) 
-					values($1, $2, $3, $4, $5)`, i.Id, inv.Id, i.EventID, i.Description, i.Cost)
+			_, err := tx.Exec(ctx, `insert into booking_invoice_items
+    				(id, invoice_id, description, cost)
+					values($1, $2, $3, $4)`, i.Id, inv.Id, i.Description, i.Cost)
 			if err != nil {
 				return errors.Join(err, errors.New("failed to insert invoice item"))
 			}
@@ -203,13 +208,16 @@ func (db *Database) ListEventsForContact(ctx context.Context, contactID string, 
 }
 
 func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (rest.AdminEventList, error) {
-	rows, err := db.pool.Query(ctx, `select e.id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status, contact.name, contact.email, 
-	        	assignee, keyholder_in, keyholder_out, event_group_id
+	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $3), to_char(e.event_end, $3), e.event_name, e.visible, e.status, contact.name, contact.email,
+	        	 e.assignee, e.keyholder_in, e.keyholder_out, e.event_group_id,
+		coalesce(json_agg(json_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::json)
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email 
-		where (event_start >= $1 and event_start <= $2)
-		or event_end >= $1 and event_end <= $2
-		order by event_start, event_end, event_name`, from, to, dbDateTimeFormat)
+		left join booking_invoices bi on bi.event_id = e.id
+		where (e.event_start >= $1 and e.event_start <= $2)
+		or e.event_end >= $1 and e.event_end <= $2
+		group by e.id, e.event_start, e.event_end, e.event_name, e.visible, e.status, contact.name, contact.email, e.assignee, e.keyholder_in, e.keyholder_out, e.event_group_id
+		order by e.event_start, e.event_end, e.event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
 		return rest.AdminEventList{}, err
 	}
@@ -217,9 +225,15 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 	events, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
 		var event rest.Event
 
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.EventGroupID); err != nil {
+		var invoiceJSON []byte
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.EventGroupID, &invoiceJSON); err != nil {
 			return event, err
 		}
+		var invoices []rest.InvoiceRef
+		if err := json.Unmarshal(invoiceJSON, &invoices); err != nil {
+			return event, err
+		}
+		event.Invoices = &invoices
 
 		return event, nil
 	})
@@ -228,20 +242,26 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 	}
 
 	groupRows, err := db.pool.Query(ctx, `select g.id, g.event_name,
-		to_char(min(event_start), $3), to_char(max(event_end), $3)
+		to_char(min(e.event_start), $3), to_char(max(e.event_end), $3),
+		coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb)
 		from booking_event_groups g
 		join booking_events e on e.event_group_id = g.id
-		where (event_start >= $1 and event_start <= $2)
-		or event_end >= $1 and event_end <= $2
+		left join booking_invoices bi on bi.event_group_id = g.id
+		where (e.event_start >= $1 and e.event_start <= $2)
+		or e.event_end >= $1 and e.event_end <= $2
 		group by g.id, g.event_name
-		order by min(event_start), g.event_name`, from, to, dbDateTimeFormat)
+		order by min(e.event_start), g.event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
 		return rest.AdminEventList{}, err
 	}
 
 	eventGroups, err := pgx.CollectRows(groupRows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
 		var group rest.AdminEventGroup
-		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To); err != nil {
+		var invoiceJSON []byte
+		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON); err != nil {
+			return group, err
+		}
+		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {
 			return group, err
 		}
 		return group, nil
@@ -267,8 +287,7 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 
 	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.status, bi.sent, bi.paid	
 		from booking_invoices bi
-		right join public.booking_invoice_items bii on bi.id = bii.invoice_id
-		where bii.event_id = $1`, id)
+		where bi.event_id = $1`, id)
 	if err != nil {
 		return event, err
 	}
@@ -366,7 +385,7 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 		return invoice, err
 	}
 
-	rows, err := db.pool.Query(ctx, `select id, event_id, description, cost::numeric::decimal
+	rows, err := db.pool.Query(ctx, `select id, description, cost::numeric::decimal
 		from booking_invoice_items
 		where invoice_id = $1`, id)
 	if err != nil {
@@ -375,7 +394,7 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 
 	items, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.InvoiceItem, error) {
 		var item rest.InvoiceItem
-		if err := row.Scan(&item.Id, &item.EventID, &item.Description, &item.Cost); err != nil {
+		if err := row.Scan(&item.Id, &item.Description, &item.Cost); err != nil {
 			return item, err
 		}
 

@@ -111,6 +111,9 @@ export function Dashboard() {
       events: eventsList.events.filter((event) =>
         event.invoices?.some((invoice) => invoice.status !== "paid"),
       ),
+      eventGroups: (eventsList.eventGroups || []).filter((group) =>
+        group.invoices?.some((invoice) => invoice.status !== "paid"),
+      ),
     },
     {
       title: "Events to be invoiced",
@@ -119,7 +122,9 @@ export function Dashboard() {
           !event.eventGroupID &&
           (!event.invoices || event.invoices.length === 0),
       ),
-      eventGroups: eventsList.eventGroups || [],
+      eventGroups: (eventsList.eventGroups || []).filter(
+        (group) => !group.invoices || group.invoices.length === 0,
+      ),
     },
     {
       title: "Needing keyholders",
@@ -207,7 +212,7 @@ export function Dashboard() {
     );
   };
 
-  const eventGroupCard = (group) => (
+  const eventGroupCard = (group, sectionTitle) => (
     <Box key={group.id} borderRadius="md" overflow="hidden" boxShadow="md">
       <Box backgroundColor="brand.300" padding={5}>
         <Text color="brand.900" fontSize="xl" fontWeight="bold">
@@ -224,6 +229,31 @@ export function Dashboard() {
         <Text color="brand.300" fontSize="lg" marginTop={2}>
           {`${dayjs(group.from).format("h:mm A")} - ${dayjs(group.to).format("h:mm A")}`}
         </Text>
+        {sectionTitle === "Outstanding invoices" && (
+          <Box marginTop={4}>
+            <Heading size="s" marginBottom={2}>
+              Invoices
+            </Heading>
+            <Stack spacing={2}>
+              {group.invoices.map((invoice) => (
+                <Flex key={invoice.id} alignItems="center" gap={2}>
+                  <Button
+                    as={ReactRouterLink}
+                    to={`/admin/invoice/${invoice.id}`}
+                    colorScheme={getInvoiceColorScheme(invoice.status)}
+                    flex={1}
+                    justifyContent="flex-start"
+                  >
+                    {invoice.reference} - {invoice.status}
+                  </Button>
+                  {invoice.status !== "paid" && (
+                    <RoundedButton>Mark Paid</RoundedButton>
+                  )}
+                </Flex>
+              ))}
+            </Stack>
+          </Box>
+        )}
         <RoundedButton
           as={ReactRouterLink}
           to={`/admin/create-invoice?eventGroup=${group.id}`}
@@ -264,7 +294,9 @@ export function Dashboard() {
                   {sortedEvents(section.events).map((event) =>
                     eventCard(event, section.title),
                   )}
-                  {section.eventGroups?.map(eventGroupCard)}
+                  {section.eventGroups?.map((group) =>
+                    eventGroupCard(group, section.title),
+                  )}
                 </SimpleGrid>
               </Box>
             ),

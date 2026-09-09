@@ -678,6 +678,10 @@ components:
         to:
           type: string
           format: datetime
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceRef'
     Event:
       type: object
       required:
