@@ -75,20 +75,23 @@ function Footer() {
                 <Link href="https://staplehurstguiding.org.uk/">
                   <Heading size="sm">Girlguiding Staplehurst District</Heading>
                 </Link>
-                <Link href="https://staplehurstguiding.org.uk/about-us">
-                  About Us
+                <Link href="https://staplehurstguiding.org.uk/2nd-staplehurst-rainbows">
+                  2nd Staplehurst Rainbows
                 </Link>
-                <Link href="https://staplehurstguiding.org.uk/rainbows">
-                  Rainbows
+                <Link href="https://staplehurstguiding.org.uk/1st-staplehurst-brownies">
+                  1st Staplehurst Brownies
                 </Link>
-                <Link href="https://staplehurstguiding.org.uk/brownies">
-                  Brownies
+                <Link href="https://staplehurstguiding.org.uk/4th-staplehurst-brownies">
+                  4th Staplehurst Brownies
                 </Link>
-                <Link href="https://staplehurstguiding.org.uk/guides">
-                  Guides
+                <Link href="https://staplehurstguiding.org.uk/1st-marden-brownies">
+                  1st Marden Brownies
                 </Link>
-                <Link href="https://staplehurstguiding.org.uk/rangers">
-                  Rangers
+                <Link href="https://staplehurstguiding.org.uk/1st-staplehurst-guides">
+                  1st Staplehurst Guides
+                </Link>
+                <Link href="https://staplehurstguiding.org.uk/1st-staplehurst-rangers">
+                  1st Staplehurst Rangers
                 </Link>
               </Stack>
             </GridItem>
