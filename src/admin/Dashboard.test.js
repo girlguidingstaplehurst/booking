@@ -1,4 +1,5 @@
 import React from "react";
+import { act } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
@@ -60,7 +61,9 @@ describe("Dashboard invoice behavior", () => {
     const { loader } = renderDashboard(outstandingData);
 
     await screen.findByRole("heading", { name: "Dashboard" });
-    fireEvent.click(screen.getByRole("button", { name: "Mark Paid" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Mark Paid" }));
+    });
 
     await waitFor(() => expect(AdminPoster).toHaveBeenCalledWith(
       "/api/v1/admin/invoices/by-id/invoice-1/mark-as-paid",
@@ -77,7 +80,9 @@ describe("Dashboard invoice behavior", () => {
     renderDashboard(outstandingData);
 
     await screen.findByRole("heading", { name: "Dashboard" });
-    fireEvent.click(screen.getByRole("button", { name: "Mark Paid" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Mark Paid" }));
+    });
 
     expect(await screen.findByText("Payment failed")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mark Paid" })).toBeEnabled();
@@ -96,6 +101,8 @@ describe("Dashboard invoice behavior", () => {
     fireEvent.click(button);
 
     expect(AdminPoster).toHaveBeenCalledTimes(1);
-    resolvePayment({ ok: true });
+    await act(async () => {
+      resolvePayment({ ok: true });
+    });
   });
 });

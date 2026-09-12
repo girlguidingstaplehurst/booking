@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act } from "react";
 import { useLoaderData, useNavigate, useParams } from "react-router-dom";
 import {
   buildRateBody,
@@ -169,7 +170,9 @@ describe("RateEditor", () => {
   test("validates progressive fields without validating inactive hourly fields", async () => {
     render(<RateEditor />);
 
-    fireEvent.click(screen.getByLabelText("Progressive per-session pricing"));
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Progressive per-session pricing"));
+    });
     fireEvent.blur(screen.getByLabelText("Session count"));
 
     await waitFor(() => expect(screen.getAllByText("Required").length).toBeGreaterThan(0));
@@ -195,7 +198,9 @@ describe("RateEditor", () => {
 
     const save = screen.getByRole("button", { name: "Save rate" });
     await waitFor(() => expect(save).toBeEnabled());
-    fireEvent.click(save);
+    await act(async () => {
+      fireEvent.click(save);
+    });
 
     await waitFor(() => expect(screen.getByText("a rate with that identifier already exists")).toBeInTheDocument());
     expect(save).toBeEnabled();
@@ -211,12 +216,18 @@ describe("RateEditor", () => {
 
     const save = screen.getByRole("button", { name: "Save rate" });
     await waitFor(() => expect(save).toBeEnabled());
-    fireEvent.click(save);
+    await act(async () => {
+      fireEvent.click(save);
+    });
     await waitFor(() => expect(AdminPoster).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("button", { name: /Save rate/ }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Save rate/ }));
+    });
 
     expect(AdminPoster).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("button", { name: /Save rate/ })).toBeDisabled();
-    resolveRequest({ ok: true });
+    await act(async () => {
+      resolveRequest({ ok: true });
+    });
   });
 });

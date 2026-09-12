@@ -50,7 +50,7 @@ export function toCalendarEvents(events) {
 function ShowCalendar() {
   const minDate = useMemo(
     () => dayjs().add(14, "days").startOf("day"),
-    [dayjs.now],
+    [],
   );
   const [date, setDate] = useState(minDate);
 
@@ -76,8 +76,8 @@ function ShowCalendar() {
 
   const events = toCalendarEvents(eventsList.events);
 
-  const minTime = useMemo(() => dayjs("09:00", "HH:mm").toDate(), [minDate]);
-  const maxTime = useMemo(() => dayjs("22:00", "HH:mm").toDate(), [minDate]);
+  const minTime = useMemo(() => dayjs("09:00", "HH:mm").toDate(), []);
+  const maxTime = useMemo(() => dayjs("22:00", "HH:mm").toDate(), []);
 
   const navigate = useNavigate();
 

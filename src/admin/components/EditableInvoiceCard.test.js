@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
+import { act } from "react";
 import { EditableInvoiceCard } from "./EditableInvoiceCard";
 
 jest.mock("../useAuth", () => () => ({ token: "token" }));
@@ -38,10 +39,12 @@ test("shows event and contact context with deposit disabled", () => {
   expect(screen.queryByDisplayValue("Refundable Cleaning and Damage deposit")).not.toBeInTheDocument();
 });
 
-test("adds one deposit line when enabled", () => {
+test("adds one deposit line when enabled", async () => {
   renderCard();
 
-  fireEvent.click(screen.getByRole("checkbox"));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox"));
+  });
 
   expect(screen.getByRole("checkbox")).toBeChecked();
   expect(screen.getByDisplayValue("Refundable Cleaning and Damage deposit")).toBeInTheDocument();

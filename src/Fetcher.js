@@ -11,7 +11,6 @@ export async function Fetcher(url, dummyData, headers = {}) {
     }
     return response;
   } catch (error) {
-    console.log("errored, returning dummy data", error);
     return dummyData;
   }
 }

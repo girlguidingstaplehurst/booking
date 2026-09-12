@@ -1,4 +1,4 @@
-import { Box, Container, Flex, Heading, Image, Link, Spacer, Stack, Text } from "@chakra-ui/react";
+import { Box, Container, Flex, Heading, Image, Stack } from "@chakra-ui/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
