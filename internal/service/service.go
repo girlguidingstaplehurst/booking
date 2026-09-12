@@ -39,6 +39,9 @@ func (s *Service) Run(ctx context.Context) error {
 	if err := config.Load(svcCfg); err != nil {
 		return err
 	}
+	if err := svcCfg.Validate(); err != nil {
+		return err
+	}
 
 	//TODO set up config struct
 	if _, ok := os.LookupEnv("OTEL_SERVICE_NAME"); ok {
@@ -89,8 +92,14 @@ func (s *Service) Run(ctx context.Context) error {
 	ipExtractor := rest.NewIPExtractor()
 	app.Use(ipExtractor.Extract)
 
-	jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org", "staplehurstguiding.org.uk") //TODO externalize
-	app.Use("/api/v1/admin", jwtAuth.Validate)
+	var validateAuth fiber.Handler
+	if svcCfg.Auth.Mode == "e2e" {
+		validateAuth = rest.NewE2EAuthenticator(svcCfg.Auth.E2E.Token, svcCfg.Auth.E2E.Email).Validate
+	} else {
+		jwtAuth := rest.NewJWTAuthenticator(os.Getenv("GOOGLE_CLIENT_ID"), "kathielambcentre.org", "staplehurstguiding.org.uk") //TODO externalize
+		validateAuth = jwtAuth.Validate
+	}
+	app.Use("/api/v1/admin", validateAuth)
 
 	cfg, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
 	if err != nil {

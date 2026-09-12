@@ -27,6 +27,8 @@ go.work
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # misc
 .DS_Store

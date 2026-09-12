@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking
+spec:
+  template:
+    spec:
+      containers:
+        - name: booking
+          env:
+            - name: BOOKING_AUTH_MODE
+              value: e2e
+            - name: BOOKING_AUTH_E2E_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: booking-e2e-auth
+                  key: token
+            - name: BOOKING_AUTH_E2E_EMAIL
+              value: e2e-admin@kathielambcentre.org

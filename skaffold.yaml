@@ -36,3 +36,10 @@ portForward:
     resourceName: postgres
     port: 5432
     localPort: 5432
+
+profiles:
+  - name: e2e
+    manifests:
+      kustomize:
+        paths:
+          - deploy/k8s/e2e
