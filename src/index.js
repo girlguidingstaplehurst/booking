@@ -26,6 +26,7 @@ import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
 import { CreateEventGroup } from "./admin/CreateEventGroup";
+import { Rates, RateEditor, ratesLoader, rateLoader } from "./admin/Rates";
 import Location from "./Location";
 import WhatsOn from "./WhatsOn";
 
@@ -81,6 +82,9 @@ const router = createBrowserRouter(
       
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} loader={populateDashboard} />
+        <Route path="rates" element={<Rates />} loader={ratesLoader} />
+        <Route path="rates/new" element={<RateEditor />} loader={() => null} />
+        <Route path="rates/:rateID/edit" element={<RateEditor />} loader={rateLoader} />
         <Route path="create-events" element={<CreateEvents />} />
         <Route path="create-event-group" element={<CreateEventGroup />} />
         <Route

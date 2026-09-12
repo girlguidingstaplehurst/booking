@@ -18,6 +18,15 @@ function AdminLayout() {
           >
             Dashboard
           </Link>
+          <Link
+            as={ReactRouterLink}
+            to="/admin/rates"
+            marginLeft={6}
+            color="brand.900"
+            fontWeight="bold"
+          >
+            Rates
+          </Link>
         </Container>
       </Box>
       <Stack minH="100vh" spacing={4}>

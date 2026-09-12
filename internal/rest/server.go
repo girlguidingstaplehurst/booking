@@ -10,6 +10,7 @@ import (
 	"github.com/arran4/golang-ical"
 	"github.com/girlguidingstaplehurst/booking/internal/consts"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/codes"
@@ -32,6 +33,8 @@ type Database interface {
 	GetInvoiceEventsForGroup(ctx context.Context, groupID string) ([]DBInvoiceEvent, error)
 	GetInvoiceByID(ctx context.Context, id string) (Invoice, error)
 	GetRates(ctx context.Context) ([]Rate, error)
+	CreateRate(ctx context.Context, rate CreateRateBody) (Rate, error)
+	UpdateRate(ctx context.Context, id string, rate UpdateRateBody) (Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
@@ -333,6 +336,76 @@ func (s *Server) AdminGetRates(ctx context.Context, _ AdminGetRatesRequestObject
 	}
 
 	return AdminGetRates200JSONResponse(rates), nil
+}
+
+func validatePerSessionPricing(pricing PerSessionPricing) string {
+	if len(pricing) == 0 {
+		return ""
+	}
+	if len(pricing) != 2 || pricing[0].Count == nil || *pricing[0].Count < 1 {
+		return "per-session pricing must contain a first tier count and an additional-session price"
+	}
+	for _, tier := range pricing {
+		if tier.Price < 0 {
+			return "per-session prices cannot be negative"
+		}
+	}
+	if pricing[0].Count == nil {
+		return "per-session pricing requires a first tier count"
+	}
+	if pricing[1].Count != nil {
+		return "the additional-session tier cannot have a count"
+	}
+	return ""
+}
+
+func (s *Server) AdminCreateRate(ctx context.Context, request AdminCreateRateRequestObject) (AdminCreateRateResponseObject, error) {
+	if request.Body == nil {
+		return AdminCreateRate422JSONResponse{ErrorMessage: "rate definition is required"}, nil
+	}
+	if strings.TrimSpace(request.Body.Id) == "" || strings.TrimSpace(request.Body.Description) == "" {
+		return AdminCreateRate422JSONResponse{ErrorMessage: "rate identifier and description are required"}, nil
+	}
+	if request.Body.HourlyRate < 0 {
+		return AdminCreateRate422JSONResponse{ErrorMessage: "hourly rate cannot be negative"}, nil
+	}
+	if message := validatePerSessionPricing(request.Body.PerSession); message != "" {
+		return AdminCreateRate422JSONResponse{ErrorMessage: message}, nil
+	}
+
+	rate, err := s.db.CreateRate(ctx, *request.Body)
+	if err != nil {
+		var pgError interface{ SQLState() string }
+		if errors.As(err, &pgError) && pgError.SQLState() == "23505" {
+			return AdminCreateRate409JSONResponse{ErrorMessage: "a rate with that identifier already exists"}, nil
+		}
+		return AdminCreateRate500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminCreateRate200JSONResponse(rate), nil
+}
+
+func (s *Server) AdminUpdateRate(ctx context.Context, request AdminUpdateRateRequestObject) (AdminUpdateRateResponseObject, error) {
+	if request.Body == nil {
+		return AdminUpdateRate422JSONResponse{ErrorMessage: "rate definition is required"}, nil
+	}
+	if strings.TrimSpace(request.Body.Description) == "" {
+		return AdminUpdateRate422JSONResponse{ErrorMessage: "rate description is required"}, nil
+	}
+	if request.Body.HourlyRate < 0 {
+		return AdminUpdateRate422JSONResponse{ErrorMessage: "hourly rate cannot be negative"}, nil
+	}
+	if message := validatePerSessionPricing(request.Body.PerSession); message != "" {
+		return AdminUpdateRate422JSONResponse{ErrorMessage: message}, nil
+	}
+
+	rate, err := s.db.UpdateRate(ctx, request.RateID, *request.Body)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return AdminUpdateRate404JSONResponse{ErrorMessage: "no rate exists with that identifier"}, nil
+	}
+	if err != nil {
+		return AdminUpdateRate500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminUpdateRate200JSONResponse(rate), nil
 }
 
 func (s *Server) AdminEventSetRate(ctx context.Context, request AdminEventSetRateRequestObject) (AdminEventSetRateResponseObject, error) {

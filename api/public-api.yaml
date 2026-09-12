@@ -338,6 +338,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    post:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      operationId: adminCreateRate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRateBody'
+      responses:
+        '200':
+          description: Rate created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rate'
+        '409':
+          description: A rate with that identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Rate definition is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/rates/{rateID}:
+    put:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      operationId: adminUpdateRate
+      parameters:
+        - in: path
+          name: rateID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRateBody'
+      responses:
+        '200':
+          description: Rate updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rate'
+        '404':
+          description: No rate exists with that identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Rate definition is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/admin/events/{eventID}/set-rate:
     post:
@@ -899,7 +981,57 @@ components:
         discountTable:
           type: object
         perSession:
-          type: object
+          $ref: '#/components/schemas/PerSessionPricing'
+    PerSessionPricing:
+      type: array
+      maxItems: 2
+      items:
+        $ref: '#/components/schemas/PerSessionTier'
+    PerSessionTier:
+      type: object
+      required:
+        - price
+      properties:
+        count:
+          type: integer
+          minimum: 1
+        price:
+          type: number
+          minimum: 0
+    CreateRateBody:
+      type: object
+      required:
+        - id
+        - description
+        - hourlyRate
+        - perSession
+      properties:
+        id:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        hourlyRate:
+          type: number
+          minimum: 0
+        perSession:
+          $ref: '#/components/schemas/PerSessionPricing'
+    UpdateRateBody:
+      type: object
+      required:
+        - description
+        - hourlyRate
+        - perSession
+      properties:
+        description:
+          type: string
+          minLength: 1
+        hourlyRate:
+          type: number
+          minimum: 0
+        perSession:
+          $ref: '#/components/schemas/PerSessionPricing'
     SetRateBody:
       type: object
       required:

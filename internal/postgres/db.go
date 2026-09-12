@@ -433,6 +433,39 @@ func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
 	})
 }
 
+func (db *Database) CreateRate(ctx context.Context, input rest.CreateRateBody) (rest.Rate, error) {
+	perSession, err := json.Marshal(input.PerSession)
+	if err != nil {
+		return rest.Rate{}, err
+	}
+
+	var rate rest.Rate
+	err = db.pool.QueryRow(ctx, `
+		insert into booking_rates (id, description, hourly_rate, discount_table, per_session)
+		values ($1, $2, $3, '{}', $4)
+		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session`,
+		input.Id, input.Description, input.HourlyRate, perSession,
+	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession)
+	return rate, err
+}
+
+func (db *Database) UpdateRate(ctx context.Context, id string, input rest.UpdateRateBody) (rest.Rate, error) {
+	perSession, err := json.Marshal(input.PerSession)
+	if err != nil {
+		return rest.Rate{}, err
+	}
+
+	var rate rest.Rate
+	err = db.pool.QueryRow(ctx, `
+		update booking_rates
+		set description = $1, hourly_rate = $2, per_session = $3
+		where id = $4
+		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session`,
+		input.Description, input.HourlyRate, perSession, id,
+	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession)
+	return rate, err
+}
+
 func (db *Database) SetRate(ctx context.Context, eventID string, rate string) error {
 	_, err := db.pool.Exec(ctx, "update booking_events set rate_id = $1 where id = $2", rate, eventID)
 	if err != nil {

@@ -119,6 +119,14 @@ type Contact struct {
 	Name         string              `json:"name"`
 }
 
+// CreateRateBody defines model for CreateRateBody.
+type CreateRateBody struct {
+	Description string            `json:"description"`
+	HourlyRate  float32           `json:"hourlyRate"`
+	Id          string            `json:"id"`
+	PerSession  PerSessionPricing `json:"perSession"`
+}
+
 // DiscountTable defines model for DiscountTable.
 type DiscountTable map[string]DiscountTableRow
 
@@ -245,13 +253,22 @@ type NewEvent struct {
 	TermsOfHire       bool         `json:"termsOfHire"`
 }
 
+// PerSessionPricing defines model for PerSessionPricing.
+type PerSessionPricing = []PerSessionTier
+
+// PerSessionTier defines model for PerSessionTier.
+type PerSessionTier struct {
+	Count *int    `json:"count,omitempty"`
+	Price float32 `json:"price"`
+}
+
 // Rate defines model for Rate.
 type Rate struct {
 	Description   string                  `json:"description"`
 	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
 	HourlyRate    float32                 `json:"hourlyRate"`
 	Id            string                  `json:"id"`
-	PerSession    map[string]interface{}  `json:"perSession"`
+	PerSession    PerSessionPricing       `json:"perSession"`
 }
 
 // RatesList defines model for RatesList.
@@ -286,6 +303,13 @@ type SendInvoiceBodyItem struct {
 // SetRateBody defines model for SetRateBody.
 type SetRateBody struct {
 	Rate string `json:"rate"`
+}
+
+// UpdateRateBody defines model for UpdateRateBody.
+type UpdateRateBody struct {
+	Description string            `json:"description"`
+	HourlyRate  float32           `json:"hourlyRate"`
+	PerSession  PerSessionPricing `json:"perSession"`
 }
 
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
@@ -332,6 +356,12 @@ type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
+
+// AdminCreateRateJSONRequestBody defines body for AdminCreateRate for application/json ContentType.
+type AdminCreateRateJSONRequestBody = CreateRateBody
+
+// AdminUpdateRateJSONRequestBody defines body for AdminUpdateRate for application/json ContentType.
+type AdminUpdateRateJSONRequestBody = UpdateRateBody
 
 // AdminSendInvoiceJSONRequestBody defines body for AdminSendInvoice for application/json ContentType.
 type AdminSendInvoiceJSONRequestBody = SendInvoiceBody

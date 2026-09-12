@@ -37,6 +37,16 @@ import ManagedContent from "./components/ManagedContent";
 
 const localizer = dayjsLocalizer(dayjs);
 
+export function toCalendarEvents(events) {
+  return events.map((event) => ({
+    title: event.name,
+    start: dayjs(event.from).toDate(),
+    end: dayjs(event.to).toDate(),
+    allDay: false,
+    status: event.status,
+  }));
+}
+
 function ShowCalendar() {
   const minDate = useMemo(
     () => dayjs().add(14, "days").startOf("day"),
@@ -64,13 +74,7 @@ function ShowCalendar() {
     };
   }
 
-  const events = eventsList.events.map((event) => ({
-    title: event.name,
-    start: dayjs(event.from).toDate(),
-    end: dayjs(event.to).toDate(),
-    allDay: false,
-    status: event.status,
-  }));
+  const events = toCalendarEvents(eventsList.events);
 
   const minTime = useMemo(() => dayjs("09:00", "HH:mm").toDate(), [minDate]);
   const maxTime = useMemo(() => dayjs("22:00", "HH:mm").toDate(), [minDate]);

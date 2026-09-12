@@ -61,6 +61,12 @@ type ServerInterface interface {
 	// (GET /api/v1/admin/rates)
 	AdminGetRates(c *fiber.Ctx) error
 
+	// (POST /api/v1/admin/rates)
+	AdminCreateRate(c *fiber.Ctx) error
+
+	// (PUT /api/v1/admin/rates/{rateID})
+	AdminUpdateRate(c *fiber.Ctx, rateID string) error
+
 	// (POST /api/v1/admin/send-invoice)
 	AdminSendInvoice(c *fiber.Ctx) error
 
@@ -450,6 +456,53 @@ func (siw *ServerInterfaceWrapper) AdminGetRates(c *fiber.Ctx) error {
 	return handler(c)
 }
 
+// AdminCreateRate operation middleware
+func (siw *ServerInterfaceWrapper) AdminCreateRate(c *fiber.Ctx) error {
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminCreateRate(c)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
+// AdminUpdateRate operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateRate(c *fiber.Ctx) error {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "rateID" -------------
+	var rateID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rateID", c.Params("rateID"), &rateID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter rateID: %w", err).Error())
+	}
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminUpdateRate(c, rateID)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
 // AdminSendInvoice operation middleware
 func (siw *ServerInterfaceWrapper) AdminSendInvoice(c *fiber.Ctx) error {
 
@@ -572,6 +625,10 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	router.Post(options.BaseURL+"/api/v1/admin/invoices/by-id/:invoiceID/mark-as-paid", wrapper.AdminMarkInvoicePaid)
 
 	router.Get(options.BaseURL+"/api/v1/admin/rates", wrapper.AdminGetRates)
+
+	router.Post(options.BaseURL+"/api/v1/admin/rates", wrapper.AdminCreateRate)
+
+	router.Put(options.BaseURL+"/api/v1/admin/rates/:rateID", wrapper.AdminUpdateRate)
 
 	router.Post(options.BaseURL+"/api/v1/admin/events/:eventID/set-rate", wrapper.AdminEventSetRate)
 
@@ -1053,6 +1110,95 @@ func (response AdminGetRates500JSONResponse) VisitAdminGetRatesResponse(ctx *fib
 	return ctx.JSON(&response)
 }
 
+type AdminCreateRateRequestObject struct {
+	Body *AdminCreateRateJSONRequestBody
+}
+
+type AdminCreateRateResponseObject interface {
+	VisitAdminCreateRateResponse(ctx *fiber.Ctx) error
+}
+
+type AdminCreateRate200JSONResponse Rate
+
+func (response AdminCreateRate200JSONResponse) VisitAdminCreateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateRate409JSONResponse ErrorResponse
+
+func (response AdminCreateRate409JSONResponse) VisitAdminCreateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(409)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateRate422JSONResponse ErrorResponse
+
+func (response AdminCreateRate422JSONResponse) VisitAdminCreateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateRate500JSONResponse ErrorResponse
+
+func (response AdminCreateRate500JSONResponse) VisitAdminCreateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateRateRequestObject struct {
+	RateID string `json:"rateID"`
+	Body   *AdminUpdateRateJSONRequestBody
+}
+
+type AdminUpdateRateResponseObject interface {
+	VisitAdminUpdateRateResponse(ctx *fiber.Ctx) error
+}
+
+type AdminUpdateRate200JSONResponse Rate
+
+func (response AdminUpdateRate200JSONResponse) VisitAdminUpdateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateRate404JSONResponse ErrorResponse
+
+func (response AdminUpdateRate404JSONResponse) VisitAdminUpdateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateRate422JSONResponse ErrorResponse
+
+func (response AdminUpdateRate422JSONResponse) VisitAdminUpdateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateRate500JSONResponse ErrorResponse
+
+func (response AdminUpdateRate500JSONResponse) VisitAdminUpdateRateResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 type AdminSendInvoiceRequestObject struct {
 	Body *AdminSendInvoiceJSONRequestBody
 }
@@ -1207,6 +1353,12 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/admin/rates)
 	AdminGetRates(ctx context.Context, request AdminGetRatesRequestObject) (AdminGetRatesResponseObject, error)
+
+	// (POST /api/v1/admin/rates)
+	AdminCreateRate(ctx context.Context, request AdminCreateRateRequestObject) (AdminCreateRateResponseObject, error)
+
+	// (PUT /api/v1/admin/rates/{rateID})
+	AdminUpdateRate(ctx context.Context, request AdminUpdateRateRequestObject) (AdminUpdateRateResponseObject, error)
 
 	// (POST /api/v1/admin/send-invoice)
 	AdminSendInvoice(ctx context.Context, request AdminSendInvoiceRequestObject) (AdminSendInvoiceResponseObject, error)
@@ -1603,6 +1755,70 @@ func (sh *strictHandler) AdminGetRates(ctx *fiber.Ctx) error {
 	return nil
 }
 
+// AdminCreateRate operation middleware
+func (sh *strictHandler) AdminCreateRate(ctx *fiber.Ctx) error {
+	var request AdminCreateRateRequestObject
+
+	var body AdminCreateRateJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminCreateRate(ctx.UserContext(), request.(AdminCreateRateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminCreateRate")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminCreateRateResponseObject); ok {
+		if err := validResponse.VisitAdminCreateRateResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminUpdateRate operation middleware
+func (sh *strictHandler) AdminUpdateRate(ctx *fiber.Ctx, rateID string) error {
+	var request AdminUpdateRateRequestObject
+
+	request.RateID = rateID
+
+	var body AdminUpdateRateJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminUpdateRate(ctx.UserContext(), request.(AdminUpdateRateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminUpdateRate")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminUpdateRateResponseObject); ok {
+		if err := validResponse.VisitAdminUpdateRateResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // AdminSendInvoice operation middleware
 func (sh *strictHandler) AdminSendInvoice(ctx *fiber.Ctx) error {
 	var request AdminSendInvoiceRequestObject
@@ -1691,46 +1907,50 @@ func (sh *strictHandler) GetEventsICS(ctx *fiber.Ctx) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"7Ftbbxu7Ef4rBFugL7r4JOlD9aYT+6Qq0tiw0hRoYBjUciTxeJfckFw7gqH/XpDLvXNXa8WSc9GTLS13",
-	"Zjj85k494kBEseDAtcKTR6yCNUTE/julEeMX98D1OymS2HwVSxGD1AzsgqUUkf0rZEQ0nmBKNGgWAR5g",
-	"vYkBT7DSkvEV3g4wo2Zp82t+L1iQ0mMaIvvPXyUs8QT/ZVzINnaCjWfpC9ewNK87ekRKsjGfOYnAy0eL",
-	"npJuB1jCl4RJoHjy2YjtqA7S/VpSN/lrYvEnBNpwKNT1nind1Bbkmuy/2foReHZsyfanaIk16dR27YgO",
-	"KkK3bvoDPHTBJBBck8CnkYiw8JZQKkGpyvHYJz4UtZxvTXx3XlX6PvEpaMJC1YJMpQl/CjStEmbuNd9Z",
-	"3cFmLUIK8ps2O8AxyFsFSjHBbyXRLYuSRciCcHN7zxRbhOVFCyFCINysMsJSImkbHb9mM72VteThWCfv",
-	"kbyslEEOlZ1QUz8UzKwVNQU7Mvra4eRBCoUlSUKNJ1omMPAApxV3ShOdqINAydB1nJtq9rmwHZB6+/1C",
-	"5pypQCRcfyTuQAilTDPBSXhVEbULEhUi1+IBb3dxMosa2khfecTAk8hsYhmSsj4LHdyTMCkrgSfRAmRD",
-	"CfZpttq3+QsphbwGFQuuwHM65vFtBEqRVQ+dV5d7+fntkyjFVhygHwBK/qfxrMvSU4K9WBTReHbupfUd",
-	"ZmS5e5/xfpvMX7hM9DfGSeMpWjRVeKmdPnWeLn1KEjnAHUG3I8MsnGGRa5Y8X+EMM7ANcq24vbbC+7yA",
-	"YP8o9CQ8PW982Tdh79RkQ5JWdeWB9Nuqnn130V1q7Koy+tuuIfKkkqBVnHluUFmYiKUwajYhCw8weSBM",
-	"M75CVARJ5MoLEptFYCwgMNoOQ6DeyOJ8TGfWt9tRtHm8TFNPcXczDZHP38WE0Yo0XfCQsAQJDmaNp8pF",
-	"pV6k+jk0J3zm0nyuqJCp5HkKf5PqyAcDR7slmNJ6QtM7cXmuwNYZJjxZy6GDRK9OQz3vHdQUuesgVFfu",
-	"+BS8t3iJdvbWQDz2qrRX1xRUIFlsxPSnSdYr+4O598Br6rWMq2w6dGeSmYbsLbj6GS2+QzVNRy8JU9aH",
-	"W03scuVFyDlIQ7HVyr/PjK8zz/OdQtYB8ZQrdA2K3YPyiWBOJdbBmnwUd+C3sIDIKyLvzCc/AfMP46sp",
-	"p+ckqpZe5WVFRO5SdFZ7l9sjOw8mS2KN1Ul2T4LNlQhZsPFLokFG6nL5Tyb7nEq9YVDTWJ1jlbxPOxWN",
-	"DkrH4zvWaxeD6rl5t1NsBNUG3bVIZLi5botwbS4N5Dzt0nmI+tBcFrTCtEKrbeMqy2V7BSRL1xOIruFL",
-	"AkqfZ/nl74JuvAFovZ6vAXSLndCFemuWL1lQ1VppzVIIOidL0C3IS+uM94wsWMjaFkmm7qZKgVKRw/8O",
-	"hNapVuRo0BtUttrYl+8s5sCp8/JtyntCtg2VmYD/cRPlNj4gsUTW4NHsXCG9JhrpNVPI9SYQieOQgUJa",
-	"jHApf2/wqEPkaZl+TR3+jL+RZuxOlH10j5Eo7ZcRzUEbi/MDot/UoL1jqyBIJNObuVF5FsYixm9Jotfm",
-	"0wKIBPlHBrZ//fcjHqRDSmsp9mkBvrXWMd4awowvRRNbHy/PL/EAhywA11lM0wX87sN/0HS5BCnQu6v3",
-	"6PXoDA9wIkNHU03G44eHh9GKJyMhV2NHQI3JKg6Hr0dnI+CjtY5Ciw+mjTPGvwthXD+ab5SGCE2vZia0",
-	"g0zdKv5tdDY6M+tFDJzEDE+wIfTa5lF6bXUxJjEb3/82JpQOiyGCQ0Z1a1NKEUEcHpBdiLRAeg0oICGY",
-	"CQy2fCQxq2c0XX/hIp5MHWd2wgbCjpW1s8C+NP5TpYBLrWOX7eRpij2NqqgXmYALQIRSoLgMF9MQsvhJ",
-	"279WD6/Ozpo7nidBAEotkzDcODrbAX5z9o9n20S1D+3ZyZQLvQbpVA5fmdIKCZ46K+ri1JtXr44n0ScS",
-	"MmopI/gaQPr1doD/fnZ2PCHmIgK9Nth/MHp5kMI5BZVEEZGbDK4cZUmXJitVhDh8YxYX4I8YL0xguMrH",
-	"zM4Q6sCOGM/QnYafw0DcM/vebrc/KpQvOSAhUSQkoEDwZcgCrVJIn0BcBbGLWXjyuRqtPt9sb9owjlYO",
-	"IK24Vt2+PffsqodrL1mAOgb6VaubVz+Fnz8Zx0GMAzLs1I2iMIgVeFz8O9DTmH36rbgeZe8MEEki0CCV",
-	"ZV7L/NZgA7KBo1hownhmTa4Dw8yqLwnITdacmWTNmUJnlUaQr6Pbn60WLUy1+DaWl3Ha6kVLFmqQhnO2",
-	"UyERQSqGwBSByJUqI/TJDOIRU6lXSb/9m0K2sBu1SFnUOYWoddFu/Nb9fO6nmIN5IPo/k8xnRus0UFjs",
-	"MY3FNSZQAVBEJJhi1pjyD2O7WY5mn/hStFTJ40dXgW6fYr8X6Tt9zHh2btoDBqt5pSNBSwb3kIHVFFAF",
-	"ViGn/TJY3VEIpWVDiso3x4PBB1EtWx6YXqetltn5z4vJsRs5N8tpTw5lz2eavrAnMkn+9vMC0wekaTZN",
-	"P0HpKFBK51z9kfTWrt8TSEH28uFx9Daf352AdBQgufpsWFyN6YGm+rhj79CZJic5b5MmfiPMnr/a9M52",
-	"PGeWL3Blp5Nl39KzIFcQOtnEUWxCgR5m04VdpuBGFHtagAJtvzDckODfHfbLAxhfdeHKywWYneyH89Tv",
-	"JzElJ4QfCuHZverxYjNkdPzoPnfVSRbh70Bnw8LNUwsk9+LuEikX5sWKJCeq70iyXSxFwl8EndnY+RfF",
-	"5zgi8m5I1DC76dbhj/9N5J07ryvC6N5wNSwRUchdKXtuyPoBZpgCzdgiVWo8n2B3aNgthRzu6PvW/KH6",
-	"Q8h+3d8pCkQUkaECs0wDRaG7ZVKMVFbADS/I1F5JhGvdz/z3sYV2+15CaTZsp5URUUUUwnMQ7BAmG3S+",
-	"qPNunwVlFqbMPl/arn6BZMOgZ7cd2bt3+IC4KC73tSSuyhriz6N3BZwOWenHKu2RsnQLDB+qcKhe5+uw",
-	"S1sG8T2r5JNxHwtkPeeiv/hI9OCznNPI8blMoeveV6rAEQs6AZ9iffZ2vjuOafiqx/mtmcnj6QAPcYDF",
-	"l3XLv7Jr0PXF/KO5DasKA3dvN53FlfnNhQZkIyZTOj17H4nUW25vtv8fAA==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

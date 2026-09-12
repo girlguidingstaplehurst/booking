@@ -1,4 +1,4 @@
-export async function Poster(url, body, headers = {}) {
+export async function Poster(url, body, headers = {}, method = "POST") {
   try {
     const jsonBody = JSON.stringify(body);
     headers["Content-Type"] = "application/json";
@@ -6,7 +6,7 @@ export async function Poster(url, body, headers = {}) {
     const response = await fetch(url, {
       headers: headers,
       body: jsonBody,
-      method: 'POST'
+      method: method,
     });
     if (response.status === 401) {
       sessionStorage.removeItem("token");
@@ -23,4 +23,9 @@ export async function Poster(url, body, headers = {}) {
 export async function AdminPoster(url, body) {
   const token = JSON.parse(sessionStorage.getItem("token"));
   return Poster(url, body, {Authorization: "Bearer " + token})
+}
+
+export async function AdminPutter(url, body) {
+  const token = JSON.parse(sessionStorage.getItem("token"));
+  return Poster(url, body, { Authorization: "Bearer " + token }, "PUT");
 }

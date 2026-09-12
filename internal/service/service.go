@@ -54,7 +54,7 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	if err := dbmigrations.Migrate(); err != nil {
-		slog.Error("failed to migrate database", err)
+		slog.Error("failed to migrate database", "err", err)
 		time.Sleep(5 * time.Second)
 		return err
 	}

@@ -129,6 +129,14 @@ type Contact struct {
 	Name         string              `json:"name"`
 }
 
+// CreateRateBody defines model for CreateRateBody.
+type CreateRateBody struct {
+	Description string            `json:"description"`
+	HourlyRate  float32           `json:"hourlyRate"`
+	Id          string            `json:"id"`
+	PerSession  PerSessionPricing `json:"perSession"`
+}
+
 // DiscountTable defines model for DiscountTable.
 type DiscountTable map[string]DiscountTableRow
 
@@ -255,13 +263,22 @@ type NewEvent struct {
 	TermsOfHire       bool         `json:"termsOfHire"`
 }
 
+// PerSessionPricing defines model for PerSessionPricing.
+type PerSessionPricing = []PerSessionTier
+
+// PerSessionTier defines model for PerSessionTier.
+type PerSessionTier struct {
+	Count *int    `json:"count,omitempty"`
+	Price float32 `json:"price"`
+}
+
 // Rate defines model for Rate.
 type Rate struct {
 	Description   string                  `json:"description"`
 	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
 	HourlyRate    float32                 `json:"hourlyRate"`
 	Id            string                  `json:"id"`
-	PerSession    map[string]interface{}  `json:"perSession"`
+	PerSession    PerSessionPricing       `json:"perSession"`
 }
 
 // RatesList defines model for RatesList.
@@ -296,6 +313,13 @@ type SendInvoiceBodyItem struct {
 // SetRateBody defines model for SetRateBody.
 type SetRateBody struct {
 	Rate string `json:"rate"`
+}
+
+// UpdateRateBody defines model for UpdateRateBody.
+type UpdateRateBody struct {
+	Description string            `json:"description"`
+	HourlyRate  float32           `json:"hourlyRate"`
+	PerSession  PerSessionPricing `json:"perSession"`
 }
 
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
@@ -342,6 +366,12 @@ type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
+
+// AdminCreateRateJSONRequestBody defines body for AdminCreateRate for application/json ContentType.
+type AdminCreateRateJSONRequestBody = CreateRateBody
+
+// AdminUpdateRateJSONRequestBody defines body for AdminUpdateRate for application/json ContentType.
+type AdminUpdateRateJSONRequestBody = UpdateRateBody
 
 // AdminSendInvoiceJSONRequestBody defines body for AdminSendInvoice for application/json ContentType.
 type AdminSendInvoiceJSONRequestBody = SendInvoiceBody
@@ -509,6 +539,22 @@ type ClientInterface interface {
 
 	// AdminGetRates performs a GET /api/v1/admin/rates (the `AdminGetRates` operationId) request.
 	AdminGetRates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateRateWithBody performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request,
+	// with any type of body and a specified content type.
+	AdminCreateRateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateRate performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	AdminCreateRate(ctx context.Context, body AdminCreateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateRateWithBody performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request,
+	// with any type of body and a specified content type.
+	AdminUpdateRateWithBody(ctx context.Context, rateID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateRate performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	AdminUpdateRate(ctx context.Context, rateID string, body AdminUpdateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminSendInvoiceWithBody performs a POST /api/v1/admin/send-invoice (the `AdminSendInvoice` operationId) request,
 	// with any type of body and a specified content type.
@@ -785,6 +831,62 @@ func (c *Client) AdminGetInvoicesForEvents(ctx context.Context, params *AdminGet
 // AdminGetRates performs a GET /api/v1/admin/rates (the `AdminGetRates` operationId) request.
 func (c *Client) AdminGetRates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminGetRatesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateRateWithBody performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) AdminCreateRateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateRateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateRate performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) AdminCreateRate(ctx context.Context, body AdminCreateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateRateRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateRateWithBody performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) AdminUpdateRateWithBody(ctx context.Context, rateID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateRateRequestWithBody(c.Server, rateID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateRate performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) AdminUpdateRate(ctx context.Context, rateID string, body AdminUpdateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateRateRequest(c.Server, rateID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1404,6 +1506,93 @@ func NewAdminGetRatesRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewAdminCreateRateRequest calls the generic AdminCreateRate builder with application/json body
+func NewAdminCreateRateRequest(server string, body AdminCreateRateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminCreateRateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAdminCreateRateRequestWithBody constructs an http.Request for the AdminCreateRate method, with any body, and a specified content type
+func NewAdminCreateRateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/rates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminUpdateRateRequest calls the generic AdminUpdateRate builder with application/json body
+func NewAdminUpdateRateRequest(server string, rateID string, body AdminUpdateRateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminUpdateRateRequestWithBody(server, rateID, "application/json", bodyReader)
+}
+
+// NewAdminUpdateRateRequestWithBody constructs an http.Request for the AdminUpdateRate method, with any body, and a specified content type
+func NewAdminUpdateRateRequestWithBody(server string, rateID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "rateID", rateID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/rates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAdminSendInvoiceRequest calls the generic AdminSendInvoice builder with application/json body
 func NewAdminSendInvoiceRequest(server string, body AdminSendInvoiceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1690,6 +1879,26 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	AdminGetRatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*AdminGetRatesResponse, error)
+
+	// AdminCreateRateWithBodyWithResponse performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AdminCreateRateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateRateResponse, error)
+
+	// AdminCreateRateWithResponse performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	AdminCreateRateWithResponse(ctx context.Context, body AdminCreateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateRateResponse, error)
+
+	// AdminUpdateRateWithBodyWithResponse performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AdminUpdateRateWithBodyWithResponse(ctx context.Context, rateID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateRateResponse, error)
+
+	// AdminUpdateRateWithResponse performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	AdminUpdateRateWithResponse(ctx context.Context, rateID string, body AdminUpdateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateRateResponse, error)
 
 	// AdminSendInvoiceWithBodyWithResponse performs a POST /api/v1/admin/send-invoice (the `AdminSendInvoice` operationId) request,
 	// with any type of body and a specified content type.
@@ -2385,6 +2594,130 @@ func (r AdminGetRatesResponse) ContentType() string {
 	return ""
 }
 
+type AdminCreateRateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Rate
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminCreateRateResponse) GetJSON200() *Rate {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminCreateRateResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminCreateRateResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminCreateRateResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminCreateRateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminCreateRateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminCreateRateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminCreateRateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminUpdateRateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Rate
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminUpdateRateResponse) GetJSON200() *Rate {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminUpdateRateResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminUpdateRateResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminUpdateRateResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminUpdateRateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminUpdateRateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminUpdateRateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminUpdateRateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AdminSendInvoiceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2752,6 +3085,50 @@ func (c *ClientWithResponses) AdminGetRatesWithResponse(ctx context.Context, req
 		return nil, err
 	}
 	return ParseAdminGetRatesResponse(rsp)
+}
+
+// AdminCreateRateWithBodyWithResponse performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminCreateRateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateRateResponse, error) {
+	rsp, err := c.AdminCreateRateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateRateResponse(rsp)
+}
+
+// AdminCreateRateWithResponse performs a POST /api/v1/admin/rates (the `AdminCreateRate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminCreateRateWithResponse(ctx context.Context, body AdminCreateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateRateResponse, error) {
+	rsp, err := c.AdminCreateRate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateRateResponse(rsp)
+}
+
+// AdminUpdateRateWithBodyWithResponse performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminUpdateRateWithBodyWithResponse(ctx context.Context, rateID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateRateResponse, error) {
+	rsp, err := c.AdminUpdateRateWithBody(ctx, rateID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateRateResponse(rsp)
+}
+
+// AdminUpdateRateWithResponse performs a PUT /api/v1/admin/rates/{rateID} (the `AdminUpdateRate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminUpdateRateWithResponse(ctx context.Context, rateID string, body AdminUpdateRateJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateRateResponse, error) {
+	rsp, err := c.AdminUpdateRate(ctx, rateID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateRateResponse(rsp)
 }
 
 // AdminSendInvoiceWithBodyWithResponse performs a POST /api/v1/admin/send-invoice (the `AdminSendInvoice` operationId) request,
@@ -3287,6 +3664,100 @@ func ParseAdminGetRatesResponse(rsp *http.Response) (*AdminGetRatesResponse, err
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminCreateRateResponse parses an HTTP response from a AdminCreateRateWithResponse call
+func ParseAdminCreateRateResponse(rsp *http.Response) (*AdminCreateRateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminCreateRateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Rate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminUpdateRateResponse parses an HTTP response from a AdminUpdateRateWithResponse call
+func ParseAdminUpdateRateResponse(rsp *http.Response) (*AdminUpdateRateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminUpdateRateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Rate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
