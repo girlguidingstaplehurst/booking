@@ -1,10 +1,4 @@
-# admin-screen-alignment Specification
-
-## Purpose
-
-Provide administrators with a consistent, responsive workflow for managing events, event groups, invoices, and the Dashboard actions that connect those screens.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Dashboard-linked admin screens use a consistent presentation
 
