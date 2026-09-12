@@ -1,4 +1,4 @@
-import { FormControl, FormLabel, Select } from "@chakra-ui/react";
+import { FormControl, FormErrorMessage, FormLabel, Select } from "@chakra-ui/react";
 import React from "react";
 import { AdminFetcher } from "../../Fetcher";
 
@@ -15,6 +15,7 @@ export function KeyholderSelect({
   name,
   value,
   onChange,
+  errValue,
   currentName,
   currentID,
 }) {
@@ -38,7 +39,7 @@ export function KeyholderSelect({
   const hasCurrentOption = currentID && options.some(({ id }) => id === currentID);
 
   return (
-    <FormControl>
+    <FormControl isInvalid={Boolean(errValue)}>
       <FormLabel htmlFor={name}>{label}</FormLabel>
       <Select id={name} name={name} value={value || ""} onChange={onChange}>
         <option value="">Unassigned</option>
@@ -51,6 +52,7 @@ export function KeyholderSelect({
           </option>
         ))}
       </Select>
+      {errValue && <FormErrorMessage>{errValue}</FormErrorMessage>}
     </FormControl>
   );
 }

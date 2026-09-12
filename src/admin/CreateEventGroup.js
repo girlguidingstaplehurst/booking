@@ -74,12 +74,14 @@ export function CreateEventGroup() {
             label="Event Title"
             name="name"
             value={formik.values.name}
+            errValue={formik.errors.name}
             onChange={formik.handleChange}
           />
           <FormFieldAndLabel
             label="Event Details"
             name="details"
             value={formik.values.details}
+            errValue={formik.errors.details}
             onChange={formik.handleChange}
             fieldAs={Textarea}
             fieldProps={{ rows: 8 }}
@@ -92,8 +94,8 @@ export function CreateEventGroup() {
             fieldAs={Select}
             fieldProps={{
               children: [
-                <option value="show">Show event information</option>,
-                <option value="hide">Hide event information</option>,
+                <option key="show" value="show">Show event information</option>,
+                <option key="hide" value="hide">Hide event information</option>,
               ],
             }}
           />
@@ -115,12 +117,14 @@ export function CreateEventGroup() {
             label="Name"
             name="contactName"
             value={formik.values.contactName}
+            errValue={formik.errors.contactName}
             onChange={formik.handleChange}
           />
           <FormFieldAndLabel
             label="Email"
             name="email"
             value={formik.values.email}
+            errValue={formik.errors.email}
             onChange={formik.handleChange}
           />
           <KeyholderSelect
@@ -131,7 +135,9 @@ export function CreateEventGroup() {
             onChange={formik.handleChange}
           />
           <Text color="red">{error}</Text>
-          <RoundedButton type="submit">Create Event Group</RoundedButton>
+          <RoundedButton type="submit" isLoading={formik.isSubmitting}>
+            Create Event Group
+          </RoundedButton>
         </Stack>
       </form>
     </Container>

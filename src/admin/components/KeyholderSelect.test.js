@@ -18,6 +18,7 @@ describe("KeyholderSelect", () => {
     render(<KeyholderSelect label="Keyholder" name="keyholder" value="" onChange={() => {}} />);
 
     await waitFor(() => expect(screen.getByRole("option", { name: "Alice Smith" })).toBeInTheDocument());
+    expect(screen.getByRole("option", { name: "Unassigned" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Bob Jones" })).not.toBeInTheDocument();
     expect(screen.queryByText(/12|27/)).not.toBeInTheDocument();
   });
