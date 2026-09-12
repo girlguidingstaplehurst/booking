@@ -18,6 +18,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AdminFetcher } from "../Fetcher";
 import { AdminPoster, AdminPutter } from "../Poster";
+import FormFieldAndLabel from "../components/FormFieldAndLabel";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
 
@@ -93,7 +94,7 @@ export function Rates() {
   );
 }
 
-const schema = Yup.object({
+export const rateSchema = Yup.object({
   id: Yup.string().trim().required("Required"),
   description: Yup.string().trim().required("Required"),
   pricingMode: Yup.string().oneOf(["hourly", "perSession"]).required("Required"),
@@ -131,8 +132,8 @@ export function rateFormValues(rate) {
 
 export function buildRateBody(values, editing) {
   return {
-    ...(editing ? {} : { id: values.id }),
-    description: values.description,
+    ...(editing ? {} : { id: values.id.trim() }),
+    description: values.description.trim(),
     hourlyRate: values.pricingMode === "hourly" ? Number(values.hourlyRate) : 0,
     perSession: values.pricingMode === "perSession"
       ? [{ count: Number(values.sessionCount), price: Number(values.sessionPrice) }, { price: Number(values.extraSessionPrice) }]
@@ -150,7 +151,8 @@ export function RateEditor() {
   const formik = useFormik({
     initialValues: rateFormValues(rate),
     enableReinitialize: true,
-    validationSchema: schema,
+    validateOnMount: true,
+    validationSchema: rateSchema,
     onSubmit: async (values, { setSubmitting }) => {
       setSubmitError("");
       const body = buildRateBody(values, editing);
@@ -161,8 +163,12 @@ export function RateEditor() {
       if (response?.ok) {
         navigate("/admin/rates");
       } else if (response) {
-        const error = await response.json();
-        setSubmitError(error.error_message || "Unable to save rate.");
+        try {
+          const error = await response.json();
+          setSubmitError(error.error_message || "Unable to save rate.");
+        } catch (error) {
+          setSubmitError("Unable to save rate.");
+        }
       } else {
         setSubmitError("Unable to save rate.");
       }
@@ -175,8 +181,22 @@ export function RateEditor() {
         <PageHeader title={editing ? "Edit rate" : "Add rate"} />
         <form onSubmit={formik.handleSubmit}>
           <Stack spacing={4}>
-            {editing ? <Text>ID: {formik.values.id}</Text> : <label>ID<Input name="id" value={formik.values.id} onChange={formik.handleChange} /></label>}
-            <label>Description<Input name="description" value={formik.values.description} onChange={formik.handleChange} /></label>
+            {editing ? <Text>ID: {formik.values.id}</Text> : <FormFieldAndLabel
+              label="ID"
+              name="id"
+              value={formik.values.id}
+              errValue={formik.touched.id && formik.errors.id}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+            />}
+            <FormFieldAndLabel
+              label="Description"
+              name="description"
+              value={formik.values.description}
+              errValue={formik.touched.description && formik.errors.description}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+            />
             <FormControl>
               <FormLabel>Pricing type</FormLabel>
               <RadioGroup value={formik.values.pricingMode} onChange={(value) => formik.setFieldValue("pricingMode", value)}>
@@ -186,15 +206,53 @@ export function RateEditor() {
                 </Stack>
               </RadioGroup>
             </FormControl>
-            {formik.values.pricingMode === "hourly" && <label>Hourly rate<Input name="hourlyRate" type="number" min="0" step="0.01" value={formik.values.hourlyRate} onChange={formik.handleChange} /></label>}
+            {formik.values.pricingMode === "hourly" && <FormFieldAndLabel
+              label="Hourly rate"
+              name="hourlyRate"
+              value={formik.values.hourlyRate}
+              errValue={formik.touched.hourlyRate && formik.errors.hourlyRate}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              fieldProps={{ type: "number", min: "0", step: "0.01" }}
+            />}
             {formik.values.pricingMode === "perSession" && <Stack padding={4} borderWidth="1px" borderRadius="md">
               <Text fontWeight="bold">Up to the included session count</Text>
-              <label>Session count<Input name="sessionCount" type="number" min="1" step="1" value={formik.values.sessionCount} onChange={formik.handleChange} /></label>
-              <label>Fixed price<Input name="sessionPrice" type="number" min="0" step="0.01" value={formik.values.sessionPrice} onChange={formik.handleChange} /></label>
-              <label>Price per additional session<Input name="extraSessionPrice" type="number" min="0" step="0.01" value={formik.values.extraSessionPrice} onChange={formik.handleChange} /></label>
+              <FormFieldAndLabel
+                label="Session count"
+                name="sessionCount"
+                value={formik.values.sessionCount}
+                errValue={formik.touched.sessionCount && formik.errors.sessionCount}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                fieldProps={{ type: "number", min: "1", step: "1" }}
+              />
+              <FormFieldAndLabel
+                label="Fixed price"
+                name="sessionPrice"
+                value={formik.values.sessionPrice}
+                errValue={formik.touched.sessionPrice && formik.errors.sessionPrice}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                fieldProps={{ type: "number", min: "0", step: "0.01" }}
+              />
+              <FormFieldAndLabel
+                label="Price per additional session"
+                name="extraSessionPrice"
+                value={formik.values.extraSessionPrice}
+                errValue={formik.touched.extraSessionPrice && formik.errors.extraSessionPrice}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                fieldProps={{ type: "number", min: "0", step: "0.01" }}
+              />
             </Stack>}
             {submitError && <Text color="red.500">{submitError}</Text>}
-            <RoundedButton type="submit" isLoading={formik.isSubmitting}>Save rate</RoundedButton>
+            <RoundedButton
+              type="submit"
+              isLoading={formik.isSubmitting}
+              isDisabled={!formik.isValid || formik.isSubmitting}
+            >
+              Save rate
+            </RoundedButton>
           </Stack>
         </form>
       </Stack>

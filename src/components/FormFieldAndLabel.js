@@ -6,6 +6,7 @@ function FormFieldAndLabel({
   value,
   errValue,
   onChange,
+  onBlur,
   fieldProps,
   fieldAs = Input,
 }) {
@@ -18,10 +19,12 @@ function FormFieldAndLabel({
         {errValue ? <Text>{errValue}</Text> : null}
       </Flex>
       <Field
+        id={name}
         name={name}
         isInvalid={errValue}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         {...fieldProps}
       />
     </Box>
