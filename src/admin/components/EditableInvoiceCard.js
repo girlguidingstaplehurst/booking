@@ -1,6 +1,8 @@
 import {
   Button,
   ButtonGroup,
+  Box,
+  Checkbox,
   Card,
   CardBody,
   CardFooter,
@@ -12,84 +14,46 @@ import {
   Spacer,
   Table,
   TableContainer,
+  Text,
   Tbody,
   Td,
   Th,
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import dayjs from "dayjs";
 import { useState } from "react";
-import duration from "dayjs/plugin/duration";
-import customParseFormat from "dayjs/plugin/customParseFormat";
-import relativeTime from "dayjs/plugin/relativeTime";
 import { TbTrash } from "react-icons/tb";
 import { useFormik } from "formik";
 import { NumericFormat } from "react-number-format";
 import useAuth from "../useAuth";
 import RoundedButton from "../../components/RoundedButton";
-
-dayjs.extend(duration);
-dayjs.extend(customParseFormat);
-dayjs.extend(relativeTime);
+import { populateInvoiceItems } from "./invoiceCalculations";
 
 const priceFormat = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
 });
 
-function discountForDuration(duration, discountTable) {
-  return Object.entries(discountTable).reduce((acc, [h, discount]) => {
-    if (duration >= h && discount.value > acc) {
-      return -discount.value;
-    }
-    return acc;
-  }, 0);
-}
-
-function populateInvoiceItems(events, eventGroup) {
-  return events.reduce((acc, event) => {
-    const duration = dayjs.duration(dayjs(event.to).diff(event.from)).asHours();
-
-    acc.push({
-      eventID: event.id,
-      description: `${event.name} - ${duration.toFixed(1)} hours`,
-      cost: duration * event.rate,
-    });
-
-    const discount = discountForDuration(duration, event.discountTable);
-    if (discount < 0) {
-      acc.push({
-        eventID: event.id,
-        description: `${event.name} - Discount`,
-        cost: discount,
-      });
-    }
-
-    if (!eventGroup) {
-      acc.push({
-        eventID: event.id,
-        description: `${event.name} - Refundable Cleaning and Damage deposit`,
-        cost: 100, //TODO enable this to be configured
-      });
-    }
-
-    return acc;
-  }, []);
-}
-
-export function EditableInvoiceCard({ contact, events, eventGroup }) {
+export function EditableInvoiceCard({ preparation }) {
   const [submitting, setSubmitting] = useState(false);
   const { token } = useAuth();
+  const isIndividual = preparation.mode === "individual";
+  const eventNames = preparation.events.map((event) => event.name).join(", ");
 
   const formik = useFormik({
     initialValues: {
-      contact: contact,
-      items: populateInvoiceItems(events, eventGroup),
-      ...(eventGroup ? { eventGroup } : {}),
+      contact: preparation.contact,
+      items: populateInvoiceItems(preparation),
+      ...(preparation.eventGroup ? { eventGroup: preparation.eventGroup } : {}),
+      ...(!preparation.eventGroup
+        ? { events: preparation.events.map((event) => event.id) }
+        : {}),
+      cleaningDeposit: false,
     }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
       setSubmitting(true);
+      const invoice = { ...values };
+      delete invoice.cleaningDeposit;
 
       const resp = await fetch("/api/v1/admin/send-invoice", {
         method: "POST",
@@ -97,7 +61,7 @@ export function EditableInvoiceCard({ contact, events, eventGroup }) {
           "content-type": "application/json",
           Authorization: "Bearer " + token,
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(invoice),
       });
 
       setSubmitting(false);
@@ -115,14 +79,19 @@ export function EditableInvoiceCard({ contact, events, eventGroup }) {
       <Card>
         <CardHeader>
           <Flex>
-            <Heading size="m">{contact}</Heading>
+            <Box>
+              <Heading size="m">{preparation.name || eventNames}</Heading>
+              <Heading size="s">{preparation.contactName}</Heading>
+              <Text>{preparation.contact}</Text>
+              {isIndividual && <Text>{eventNames}</Text>}
+            </Box>
             <Spacer />
             <Button
               onClick={() =>
-                formik.setFieldValue(
-                  "items",
-                  populateInvoiceItems(events, eventGroup),
-                )
+                formik.setValues({
+                  ...formik.initialValues,
+                  items: populateInvoiceItems(preparation),
+                })
               }
             >
               Reset
@@ -194,6 +163,21 @@ export function EditableInvoiceCard({ contact, events, eventGroup }) {
               </Tbody>
             </Table>
           </TableContainer>
+          {isIndividual && (
+            <Checkbox
+              isChecked={formik.values.cleaningDeposit}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                formik.setValues({
+                  ...formik.values,
+                  cleaningDeposit: enabled,
+                  items: populateInvoiceItems(preparation, enabled),
+                });
+              }}
+            >
+              Add cleaning and damage deposit
+            </Checkbox>
+          )}
         </CardBody>
         <CardFooter minWidth="max-content">
           <Spacer />

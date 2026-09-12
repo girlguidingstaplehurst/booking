@@ -212,7 +212,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InvoiceEvents'
+                $ref: '#/components/schemas/InvoicePreparations'
         '404':
           description: "No event exists with that ID"
           content:
@@ -848,6 +848,45 @@ components:
           type: number
         eventID:
           type: string
+    InvoicePreparations:
+      type: object
+      required:
+        - preparations
+      properties:
+        preparations:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoicePreparation'
+    InvoicePreparation:
+      type: object
+      required:
+        - mode
+        - contact
+        - contactName
+        - name
+        - events
+      properties:
+        mode:
+          type: string
+          enum:
+            - individual
+            - group
+        contact:
+          type: string
+          format: email
+        contactName:
+          type: string
+        name:
+          type: string
+          description: Event name for individual preparation or event-group name for group preparation.
+        eventGroup:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceEvent'
+        rate:
+          $ref: '#/components/schemas/Rate'
     InvoiceEvents:
       type: object
       additionalProperties:
@@ -1107,8 +1146,7 @@ components:
         - details
         - instances
         - publicly_visible
-        - standard_rate
-        - per_session_rate
+        - rate
         - keyholder
         - contact
       properties:
@@ -1118,9 +1156,7 @@ components:
           type: string
         publicly_visible:
           type: boolean
-        standard_rate:
-          type: string
-        per_session_rate:
+        rate:
           type: string
         keyholder:
           type: string

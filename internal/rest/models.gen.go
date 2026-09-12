@@ -46,6 +46,24 @@ func (e EventStatus) Valid() bool {
 	}
 }
 
+// Defines values for InvoicePreparationMode.
+const (
+	Group      InvoicePreparationMode = "group"
+	Individual InvoicePreparationMode = "individual"
+)
+
+// Valid indicates whether the value is a known member of the InvoicePreparationMode enum.
+func (e InvoicePreparationMode) Valid() bool {
+	switch e {
+	case Group:
+		return true
+	case Individual:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InvoiceStatus.
 const (
 	InvoiceStatusCancelled InvoiceStatus = "cancelled"
@@ -92,9 +110,8 @@ type AdminNewEventGroup struct {
 	Instances       []EventInstance     `json:"instances"`
 	Keyholder       openapi_types.Email `json:"keyholder"`
 	Name            string              `json:"name"`
-	PerSessionRate  string              `json:"per_session_rate"`
 	PubliclyVisible bool                `json:"publicly_visible"`
-	StandardRate    string              `json:"standard_rate"`
+	Rate            string              `json:"rate"`
 }
 
 // AdminNewEvents defines model for AdminNewEvents.
@@ -208,15 +225,33 @@ type InvoiceEvent struct {
 	To            string        `json:"to"`
 }
 
-// InvoiceEvents defines model for InvoiceEvents.
-type InvoiceEvents map[string][]InvoiceEvent
-
 // InvoiceItem defines model for InvoiceItem.
 type InvoiceItem struct {
 	Cost        float32 `json:"cost"`
 	Description string  `json:"description"`
 	EventID     *string `json:"eventID,omitempty"`
 	Id          *string `json:"id,omitempty"`
+}
+
+// InvoicePreparation defines model for InvoicePreparation.
+type InvoicePreparation struct {
+	Contact     openapi_types.Email    `json:"contact"`
+	ContactName string                 `json:"contactName"`
+	EventGroup  *string                `json:"eventGroup,omitempty"`
+	Events      []InvoiceEvent         `json:"events"`
+	Mode        InvoicePreparationMode `json:"mode"`
+
+	// Name Event name for individual preparation or event-group name for group preparation.
+	Name string `json:"name"`
+	Rate *Rate  `json:"rate,omitempty"`
+}
+
+// InvoicePreparationMode defines model for InvoicePreparation.Mode.
+type InvoicePreparationMode string
+
+// InvoicePreparations defines model for InvoicePreparations.
+type InvoicePreparations struct {
+	Preparations []InvoicePreparation `json:"preparations"`
 }
 
 // InvoiceRef defines model for InvoiceRef.

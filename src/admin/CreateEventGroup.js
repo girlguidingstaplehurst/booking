@@ -34,7 +34,7 @@ export function CreateEventGroup() {
       name: "",
       details: "",
       visibility: "show",
-      standardRate: "default",
+      rate: "default",
       contactName: "",
       email: "",
       keyholder: "",
@@ -46,8 +46,7 @@ export function CreateEventGroup() {
         name: values.name,
         details: values.details,
         publicly_visible: values.visibility === "show",
-        standard_rate: values.standardRate,
-        per_session_rate: values.standardRate,
+        rate: values.rate,
         keyholder: values.keyholder,
         instances,
         contact: { name: values.contactName, email_address: values.email },
@@ -99,11 +98,11 @@ export function CreateEventGroup() {
             name="instances"
             label="Event Dates"
           />
-          <Text fontWeight="bold">Standard Rate</Text>
+          <Text fontWeight="bold">Event Group Rate</Text>
           <RateSelect
-            rateID={formik.values.standardRate}
+            rateID={formik.values.rate}
             onChange={(event) =>
-              formik.setFieldValue("standardRate", event.target.value)
+              formik.setFieldValue("rate", event.target.value)
             }
           />
           <Text fontWeight="bold">Contact</Text>

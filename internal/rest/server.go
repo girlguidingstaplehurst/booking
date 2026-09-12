@@ -277,7 +277,11 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 
 type DBInvoiceEvent struct {
 	InvoiceEvent
-	Email string
+	Email          string
+	ContactName    string
+	EventGroup     *string
+	GroupName      string
+	RateDefinition *Rate
 }
 
 func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGetInvoicesForEventsRequestObject) (AdminGetInvoicesForEventsResponseObject, error) {
@@ -295,16 +299,54 @@ func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGet
 		}, nil
 	}
 
-	eventsByEmail := make(AdminGetInvoicesForEvents200JSONResponse)
-	for _, event := range events {
-		if eventsByEmail[event.Email] == nil {
-			eventsByEmail[event.Email] = make([]InvoiceEvent, 0)
+	preparations := make([]InvoicePreparation, 0)
+	if request.Params.EventGroup != nil {
+		if len(events) == 0 {
+			return AdminGetInvoicesForEvents200JSONResponse{}, nil
 		}
 
-		eventsByEmail[event.Email] = append(eventsByEmail[event.Email], event.InvoiceEvent)
+		first := events[0]
+		preparation := InvoicePreparation{
+			Mode:        Group,
+			Contact:     openapi_types.Email(first.Email),
+			ContactName: first.ContactName,
+			EventGroup:  first.EventGroup,
+			Name:        first.GroupName,
+			Rate:        first.RateDefinition,
+			Events:      make([]InvoiceEvent, 0, len(events)),
+		}
+		for _, event := range events {
+			preparation.Events = append(preparation.Events, event.InvoiceEvent)
+		}
+		preparations = append(preparations, preparation)
+		return AdminGetInvoicesForEvents200JSONResponse{Preparations: preparations}, nil
 	}
 
-	return eventsByEmail, nil
+	preparationByEmail := make(map[string]int)
+	for _, event := range events {
+		index, ok := preparationByEmail[event.Email]
+		if !ok {
+			index = len(preparations)
+			preparationByEmail[event.Email] = index
+			preparations = append(preparations, InvoicePreparation{
+				Mode:        Individual,
+				Contact:     openapi_types.Email(event.Email),
+				ContactName: event.ContactName,
+				Events:      make([]InvoiceEvent, 0),
+			})
+		}
+		preparations[index].Events = append(preparations[index].Events, event.InvoiceEvent)
+	}
+
+	for i := range preparations {
+		names := make([]string, 0, len(preparations[i].Events))
+		for _, event := range preparations[i].Events {
+			names = append(names, event.Name)
+		}
+		preparations[i].Name = strings.Join(names, ", ")
+	}
+
+	return AdminGetInvoicesForEvents200JSONResponse{Preparations: preparations}, nil
 }
 
 func (s *Server) AdminGetInvoiceByID(ctx context.Context, request AdminGetInvoiceByIDRequestObject) (AdminGetInvoiceByIDResponseObject, error) {
