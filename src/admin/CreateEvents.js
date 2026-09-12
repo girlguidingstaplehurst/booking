@@ -77,6 +77,10 @@ export function CreateEvents() {
     validationSchema: EventSchema,
     onSubmit: async (values) => {
       setSubmitErrors("");
+      if (eventDates.length === 0) {
+        setSubmitErrors("Add at least one valid event date.");
+        return;
+      }
       setSubmitting(true);
 
       const resp = await AdminPoster("/api/v1/admin/add-events", {
@@ -201,7 +205,15 @@ export function CreateEvents() {
             onChange={formik.handleChange}
           />
 
-          <Heading size="s">Keyholders</Heading>
+          <FormFieldAndLabel
+            label="Email"
+            name="email"
+            value={formik.values.email}
+            errValue={formik.errors.email}
+            onChange={formik.handleChange}
+          />
+
+          <Heading>Keyholders</Heading>
           <KeyholderSelect
             label="Keyholder in"
             name="keyholderIn"
@@ -212,14 +224,6 @@ export function CreateEvents() {
             label="Keyholder out"
             name="keyholderOut"
             value={formik.values.keyholderOut}
-            onChange={formik.handleChange}
-          />
-
-          <FormFieldAndLabel
-            label="Email"
-            name="email"
-            value={formik.values.email}
-            errValue={formik.errors.email}
             onChange={formik.handleChange}
           />
 

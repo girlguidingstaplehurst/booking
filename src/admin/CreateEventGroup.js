@@ -43,6 +43,10 @@ export function CreateEventGroup() {
     validationSchema: schema,
     onSubmit: async (values) => {
       setError("");
+      if (instances.length === 0) {
+        setError("Add at least one valid event date.");
+        return;
+      }
       const response = await AdminPoster("/api/v1/admin/add-event-group", {
         name: values.name,
         details: values.details,
