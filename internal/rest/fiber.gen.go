@@ -17,6 +17,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ServerInterface represents all server handlers.
@@ -42,6 +43,9 @@ type ServerInterface interface {
 
 	// (POST /api/v1/admin/events/{eventID}/cancel-event)
 	AdminEventCancel(c *fiber.Ctx, eventID string) error
+	// AdminSetEventKeyholders Set event keyholders
+	// (PUT /api/v1/admin/events/{eventID}/keyholders)
+	AdminSetEventKeyholders(c *fiber.Ctx, eventID string) error
 
 	// (POST /api/v1/admin/events/{eventID}/request-documents)
 	AdminEventRequestDocuments(c *fiber.Ctx, eventID string) error
@@ -57,6 +61,15 @@ type ServerInterface interface {
 
 	// (GET /api/v1/admin/invoices/for-events)
 	AdminGetInvoicesForEvents(c *fiber.Ctx, params AdminGetInvoicesForEventsParams) error
+	// AdminListKeyholders List keyholders
+	// (GET /api/v1/admin/keyholders)
+	AdminListKeyholders(c *fiber.Ctx) error
+	// AdminCreateKeyholder Create a keyholder
+	// (POST /api/v1/admin/keyholders)
+	AdminCreateKeyholder(c *fiber.Ctx) error
+	// AdminUpdateKeyholder Update a keyholder
+	// (PUT /api/v1/admin/keyholders/{keyholderID})
+	AdminUpdateKeyholder(c *fiber.Ctx, keyholderID openapi_types.UUID) error
 
 	// (GET /api/v1/admin/rates)
 	AdminGetRates(c *fiber.Ctx) error
@@ -278,6 +291,35 @@ func (siw *ServerInterfaceWrapper) AdminEventCancel(c *fiber.Ctx) error {
 	return handler(c)
 }
 
+// AdminSetEventKeyholders operation middleware
+func (siw *ServerInterfaceWrapper) AdminSetEventKeyholders(c *fiber.Ctx) error {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "eventID" -------------
+	var eventID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventID", c.Params("eventID"), &eventID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter eventID: %w", err).Error())
+	}
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminSetEventKeyholders(c, eventID)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
 // AdminEventRequestDocuments operation middleware
 func (siw *ServerInterfaceWrapper) AdminEventRequestDocuments(c *fiber.Ctx) error {
 
@@ -425,6 +467,71 @@ func (siw *ServerInterfaceWrapper) AdminGetInvoicesForEvents(c *fiber.Ctx) error
 
 	handler := func(c *fiber.Ctx) error {
 		return siw.Handler.AdminGetInvoicesForEvents(c, params)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
+// AdminListKeyholders operation middleware
+func (siw *ServerInterfaceWrapper) AdminListKeyholders(c *fiber.Ctx) error {
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminListKeyholders(c)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
+// AdminCreateKeyholder operation middleware
+func (siw *ServerInterfaceWrapper) AdminCreateKeyholder(c *fiber.Ctx) error {
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminCreateKeyholder(c)
+	}
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		m := siw.HandlerMiddlewares[i]
+		next := handler
+		handler = func(c *fiber.Ctx) error {
+			return m(c, next)
+		}
+	}
+
+	return handler(c)
+}
+
+// AdminUpdateKeyholder operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateKeyholder(c *fiber.Ctx) error {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "keyholderID" -------------
+	var keyholderID openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "keyholderID", c.Params("keyholderID"), &keyholderID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter keyholderID: %w", err).Error())
+	}
+
+	handler := func(c *fiber.Ctx) error {
+		return siw.Handler.AdminUpdateKeyholder(c, keyholderID)
 	}
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -616,6 +723,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 
 	router.Get(options.BaseURL+"/api/v1/admin/events/:eventID", wrapper.GetApiV1AdminEventsEventID)
 
+	router.Put(options.BaseURL+"/api/v1/admin/events/:eventID/keyholders", wrapper.AdminSetEventKeyholders)
+
 	router.Get(options.BaseURL+"/api/v1/admin/invoices/for-events", wrapper.AdminGetInvoicesForEvents)
 
 	router.Get(options.BaseURL+"/api/v1/admin/invoices/by-id/:invoiceID", wrapper.AdminGetInvoiceByID)
@@ -641,6 +750,12 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	router.Post(options.BaseURL+"/api/v1/admin/add-events", wrapper.AdminAddEvents)
 
 	router.Post(options.BaseURL+"/api/v1/admin/add-event-group", wrapper.AdminAddEventGroup)
+
+	router.Get(options.BaseURL+"/api/v1/admin/keyholders", wrapper.AdminListKeyholders)
+
+	router.Post(options.BaseURL+"/api/v1/admin/keyholders", wrapper.AdminCreateKeyholder)
+
+	router.Put(options.BaseURL+"/api/v1/admin/keyholders/:keyholderID", wrapper.AdminUpdateKeyholder)
 
 }
 
@@ -911,6 +1026,50 @@ func (response AdminEventCancel500JSONResponse) VisitAdminEventCancelResponse(ct
 	return ctx.JSON(&response)
 }
 
+type AdminSetEventKeyholdersRequestObject struct {
+	EventID string `json:"eventID"`
+	Body    *AdminSetEventKeyholdersJSONRequestBody
+}
+
+type AdminSetEventKeyholdersResponseObject interface {
+	VisitAdminSetEventKeyholdersResponse(ctx *fiber.Ctx) error
+}
+
+type AdminSetEventKeyholders200Response struct {
+}
+
+func (response AdminSetEventKeyholders200Response) VisitAdminSetEventKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Status(200)
+	return nil
+}
+
+type AdminSetEventKeyholders404JSONResponse ErrorResponse
+
+func (response AdminSetEventKeyholders404JSONResponse) VisitAdminSetEventKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminSetEventKeyholders422JSONResponse ErrorResponse
+
+func (response AdminSetEventKeyholders422JSONResponse) VisitAdminSetEventKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminSetEventKeyholders500JSONResponse ErrorResponse
+
+func (response AdminSetEventKeyholders500JSONResponse) VisitAdminSetEventKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 type AdminEventRequestDocumentsRequestObject struct {
 	EventID string `json:"eventID,omitempty"`
 	Body    *AdminEventRequestDocumentsJSONRequestBody
@@ -1079,6 +1238,129 @@ func (response AdminGetInvoicesForEvents404JSONResponse) VisitAdminGetInvoicesFo
 type AdminGetInvoicesForEvents500JSONResponse ErrorResponse
 
 func (response AdminGetInvoicesForEvents500JSONResponse) VisitAdminGetInvoicesForEventsResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminListKeyholdersRequestObject struct {
+}
+
+type AdminListKeyholdersResponseObject interface {
+	VisitAdminListKeyholdersResponse(ctx *fiber.Ctx) error
+}
+
+type AdminListKeyholders200JSONResponse KeyholderList
+
+func (response AdminListKeyholders200JSONResponse) VisitAdminListKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type AdminListKeyholders500JSONResponse ErrorResponse
+
+func (response AdminListKeyholders500JSONResponse) VisitAdminListKeyholdersResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateKeyholderRequestObject struct {
+	Body *AdminCreateKeyholderJSONRequestBody
+}
+
+type AdminCreateKeyholderResponseObject interface {
+	VisitAdminCreateKeyholderResponse(ctx *fiber.Ctx) error
+}
+
+type AdminCreateKeyholder200JSONResponse Keyholder
+
+func (response AdminCreateKeyholder200JSONResponse) VisitAdminCreateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateKeyholder409JSONResponse ErrorResponse
+
+func (response AdminCreateKeyholder409JSONResponse) VisitAdminCreateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(409)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateKeyholder422JSONResponse ErrorResponse
+
+func (response AdminCreateKeyholder422JSONResponse) VisitAdminCreateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminCreateKeyholder500JSONResponse ErrorResponse
+
+func (response AdminCreateKeyholder500JSONResponse) VisitAdminCreateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateKeyholderRequestObject struct {
+	KeyholderID openapi_types.UUID `json:"keyholderID"`
+	Body        *AdminUpdateKeyholderJSONRequestBody
+}
+
+type AdminUpdateKeyholderResponseObject interface {
+	VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error
+}
+
+type AdminUpdateKeyholder200JSONResponse Keyholder
+
+func (response AdminUpdateKeyholder200JSONResponse) VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateKeyholder404JSONResponse ErrorResponse
+
+func (response AdminUpdateKeyholder404JSONResponse) VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateKeyholder409JSONResponse ErrorResponse
+
+func (response AdminUpdateKeyholder409JSONResponse) VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(409)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateKeyholder422JSONResponse ErrorResponse
+
+func (response AdminUpdateKeyholder422JSONResponse) VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(422)
+
+	return ctx.JSON(&response)
+}
+
+type AdminUpdateKeyholder500JSONResponse ErrorResponse
+
+func (response AdminUpdateKeyholder500JSONResponse) VisitAdminUpdateKeyholderResponse(ctx *fiber.Ctx) error {
 	ctx.Response().Header.Set("Content-Type", "application/json")
 	ctx.Status(500)
 
@@ -1335,6 +1617,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/admin/events/{eventID}/cancel-event)
 	AdminEventCancel(ctx context.Context, request AdminEventCancelRequestObject) (AdminEventCancelResponseObject, error)
+	// AdminSetEventKeyholders Set event keyholders
+	// (PUT /api/v1/admin/events/{eventID}/keyholders)
+	AdminSetEventKeyholders(ctx context.Context, request AdminSetEventKeyholdersRequestObject) (AdminSetEventKeyholdersResponseObject, error)
 
 	// (POST /api/v1/admin/events/{eventID}/request-documents)
 	AdminEventRequestDocuments(ctx context.Context, request AdminEventRequestDocumentsRequestObject) (AdminEventRequestDocumentsResponseObject, error)
@@ -1350,6 +1635,15 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/admin/invoices/for-events)
 	AdminGetInvoicesForEvents(ctx context.Context, request AdminGetInvoicesForEventsRequestObject) (AdminGetInvoicesForEventsResponseObject, error)
+	// AdminListKeyholders List keyholders
+	// (GET /api/v1/admin/keyholders)
+	AdminListKeyholders(ctx context.Context, request AdminListKeyholdersRequestObject) (AdminListKeyholdersResponseObject, error)
+	// AdminCreateKeyholder Create a keyholder
+	// (POST /api/v1/admin/keyholders)
+	AdminCreateKeyholder(ctx context.Context, request AdminCreateKeyholderRequestObject) (AdminCreateKeyholderResponseObject, error)
+	// AdminUpdateKeyholder Update a keyholder
+	// (PUT /api/v1/admin/keyholders/{keyholderID})
+	AdminUpdateKeyholder(ctx context.Context, request AdminUpdateKeyholderRequestObject) (AdminUpdateKeyholderResponseObject, error)
 
 	// (GET /api/v1/admin/rates)
 	AdminGetRates(ctx context.Context, request AdminGetRatesRequestObject) (AdminGetRatesResponseObject, error)
@@ -1583,6 +1877,39 @@ func (sh *strictHandler) AdminEventCancel(ctx *fiber.Ctx, eventID string) error 
 	return nil
 }
 
+// AdminSetEventKeyholders operation middleware
+func (sh *strictHandler) AdminSetEventKeyholders(ctx *fiber.Ctx, eventID string) error {
+	var request AdminSetEventKeyholdersRequestObject
+
+	request.EventID = eventID
+
+	var body AdminSetEventKeyholdersJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminSetEventKeyholders(ctx.UserContext(), request.(AdminSetEventKeyholdersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminSetEventKeyholders")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminSetEventKeyholdersResponseObject); ok {
+		if err := validResponse.VisitAdminSetEventKeyholdersResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // AdminEventRequestDocuments operation middleware
 func (sh *strictHandler) AdminEventRequestDocuments(ctx *fiber.Ctx, eventID string) error {
 	var request AdminEventRequestDocumentsRequestObject
@@ -1722,6 +2049,95 @@ func (sh *strictHandler) AdminGetInvoicesForEvents(ctx *fiber.Ctx, params AdminG
 		return err
 	} else if validResponse, ok := response.(AdminGetInvoicesForEventsResponseObject); ok {
 		if err := validResponse.VisitAdminGetInvoicesForEventsResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminListKeyholders operation middleware
+func (sh *strictHandler) AdminListKeyholders(ctx *fiber.Ctx) error {
+	var request AdminListKeyholdersRequestObject
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminListKeyholders(ctx.UserContext(), request.(AdminListKeyholdersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminListKeyholders")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminListKeyholdersResponseObject); ok {
+		if err := validResponse.VisitAdminListKeyholdersResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminCreateKeyholder operation middleware
+func (sh *strictHandler) AdminCreateKeyholder(ctx *fiber.Ctx) error {
+	var request AdminCreateKeyholderRequestObject
+
+	var body AdminCreateKeyholderJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminCreateKeyholder(ctx.UserContext(), request.(AdminCreateKeyholderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminCreateKeyholder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminCreateKeyholderResponseObject); ok {
+		if err := validResponse.VisitAdminCreateKeyholderResponse(ctx); err != nil {
+			return err
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// AdminUpdateKeyholder operation middleware
+func (sh *strictHandler) AdminUpdateKeyholder(ctx *fiber.Ctx, keyholderID openapi_types.UUID) error {
+	var request AdminUpdateKeyholderRequestObject
+
+	request.KeyholderID = keyholderID
+
+	var body AdminUpdateKeyholderJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminUpdateKeyholder(ctx.UserContext(), request.(AdminUpdateKeyholderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminUpdateKeyholder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(AdminUpdateKeyholderResponseObject); ok {
+		if err := validResponse.VisitAdminUpdateKeyholderResponse(ctx); err != nil {
 			return err
 		}
 	} else if response != nil {
@@ -1907,52 +2323,57 @@ func (sh *strictHandler) GetEventsICS(ctx *fiber.Ctx) error {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"CestNzeb/w0A",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

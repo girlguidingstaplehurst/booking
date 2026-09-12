@@ -184,6 +184,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/events/{eventID}/keyholders:
+    put:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Set event keyholders
+      operationId: adminSetEventKeyholders
+      parameters:
+        - in: path
+          name: eventID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetEventKeyholdersBody'
+      responses:
+        '200':
+          description: Keyholders updated
+        '404':
+          description: No event exists with that ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/invoices/for-events:
     get:
       security:
@@ -622,6 +664,119 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/keyholders:
+    get:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: List keyholders
+      operationId: adminListKeyholders
+      responses:
+        '200':
+          description: Keyholders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyholderList'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Create a keyholder
+      operationId: adminCreateKeyholder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeyholderBody'
+      responses:
+        '200':
+          description: Keyholder created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyholder'
+        '409':
+          description: Key number is already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/keyholders/{keyholderID}:
+    put:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Update a keyholder
+      operationId: adminUpdateKeyholder
+      parameters:
+        - in: path
+          name: keyholderID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKeyholderBody'
+      responses:
+        '200':
+          description: Keyholder updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Keyholder'
+        '404':
+          description: No keyholder exists with that ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Key number is already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -803,11 +958,9 @@ components:
           type: string
           format: email
         keyholderIn:
-          type: string
-          format: email
+          $ref: '#/components/schemas/KeyholderAssignment'
         keyholderOut:
-          type: string
-          format: email
+          $ref: '#/components/schemas/KeyholderAssignment'
         invoices:
           type: array
           items:
@@ -1128,6 +1281,14 @@ components:
               type: string
             rate:
               type: string
+            keyholderIn:
+              type: string
+              format: uuid
+              nullable: true
+            keyholderOut:
+              type: string
+              format: uuid
+              nullable: true
         contact:
           type: object
           required:
@@ -1160,7 +1321,7 @@ components:
           type: string
         keyholder:
           type: string
-          format: email
+          format: uuid
         instances:
           type: array
           items:
@@ -1188,6 +1349,87 @@ components:
         to:
           type: string
           format: datetime
+
+    Keyholder:
+      type: object
+      required:
+        - id
+        - name
+        - keyNumber
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        keyNumber:
+          type: integer
+          minimum: 1
+        active:
+          type: boolean
+
+    KeyholderAssignment:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    KeyholderList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Keyholder'
+
+    CreateKeyholderBody:
+      type: object
+      required:
+        - name
+        - keyNumber
+      properties:
+        name:
+          type: string
+          minLength: 1
+        keyNumber:
+          type: integer
+          minimum: 1
+
+    UpdateKeyholderBody:
+      type: object
+      required:
+        - name
+        - keyNumber
+        - active
+      properties:
+        name:
+          type: string
+          minLength: 1
+        keyNumber:
+          type: integer
+          minimum: 1
+        active:
+          type: boolean
+
+    SetEventKeyholdersBody:
+      type: object
+      required:
+        - keyholderIn
+        - keyholderOut
+      properties:
+        keyholderIn:
+          type: string
+          format: uuid
+          nullable: true
+        keyholderOut:
+          type: string
+          format: uuid
+          nullable: true
   securitySchemes:
     admin_auth:
       type: http

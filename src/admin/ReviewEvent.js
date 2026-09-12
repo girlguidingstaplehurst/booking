@@ -13,16 +13,17 @@ import {
   StackDivider,
   Text,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
+import { Link as ReactRouterLink, useLoaderData, useRevalidator } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
 import { RateUpdater } from "./components/RateSelect";
-import { AdminPoster } from "../Poster";
+import { AdminPoster, AdminPutter } from "../Poster";
 import TriggerModal from "./components/TriggerModal";
 import React from "react";
 import RequestDocumentsModalContents from "./components/RequestDocumentsModalContents";
 import ActionButton from "./components/ActionButton";
 import PageHeader from "./components/PageHeader";
+import { KeyholderSelect } from "./components/KeyholderSelect";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -36,8 +37,8 @@ export async function reviewEvent(eventID) {
     contact: "Evan T Booking",
     email: "evan.t.booking@example.org",
     assignee: "bookings@kathielambcentre.org",
-    keyholderIn: "bookings@kathielambcentre.org",
-    keyholderOut: "bookings@kathielambcentre.org",
+    keyholderIn: { id: "11111111-1111-1111-1111-111111111111", name: "Booking Team" },
+    keyholderOut: { id: "11111111-1111-1111-1111-111111111111", name: "Booking Team" },
     invoices: [
       {
         reference: "ABCDEF",
@@ -138,6 +139,13 @@ async function approveEvent(eventID) {
 
 export function ReviewEvent() {
   const event = useLoaderData();
+  const revalidator = useRevalidator();
+  const [assignments, setAssignments] = React.useState({
+    keyholderIn: event.keyholderIn?.id || "",
+    keyholderOut: event.keyholderOut?.id || "",
+  });
+  const [assignmentError, setAssignmentError] = React.useState("");
+  const [savingAssignments, setSavingAssignments] = React.useState(false);
   const eventDates = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
   const visibility = event.visible ? (
     <Flex>
@@ -160,6 +168,21 @@ export function ReviewEvent() {
   );
 
   const hasInvoices = Array.isArray(event.invoices) && event.invoices.length > 0;
+
+  const saveAssignments = async () => {
+    setSavingAssignments(true);
+    setAssignmentError("");
+    const response = await AdminPutter(`/api/v1/admin/events/${event.id}/keyholders`, {
+      keyholderIn: assignments.keyholderIn || null,
+      keyholderOut: assignments.keyholderOut || null,
+    });
+    setSavingAssignments(false);
+    if (response?.ok) {
+      revalidator.revalidate();
+    } else {
+      setAssignmentError("Unable to update keyholders.");
+    }
+  };
 
   return (
     <Container maxW="4xl">
@@ -254,13 +277,36 @@ export function ReviewEvent() {
               <Flex>
                 <Box>
                   <Heading size="s">Keyholders</Heading>
-                  <Text>In: {event.keyholderIn}</Text>
-                  <Text>Out: {event.keyholderOut}</Text>
+                  <Text>In: {event.keyholderIn?.name || "Unassigned"}</Text>
+                  <Text>Out: {event.keyholderOut?.name || "Unassigned"}</Text>
                 </Box>
                 <Spacer />
-                {/*<ButtonGroup>*/}
-                {/*  <RoundedButton colorScheme="brand">Update Keyholders</RoundedButton>*/}
-                {/*</ButtonGroup>*/}
+                <Stack spacing={2} minW={{ base: "100%", md: "sm" }}>
+                  <KeyholderSelect
+                    label="Keyholder in"
+                    name="keyholderIn"
+                    value={assignments.keyholderIn}
+                    currentID={event.keyholderIn?.id}
+                    currentName={event.keyholderIn?.name}
+                    onChange={(change) =>
+                      setAssignments((current) => ({ ...current, keyholderIn: change.target.value }))
+                    }
+                  />
+                  <KeyholderSelect
+                    label="Keyholder out"
+                    name="keyholderOut"
+                    value={assignments.keyholderOut}
+                    currentID={event.keyholderOut?.id}
+                    currentName={event.keyholderOut?.name}
+                    onChange={(change) =>
+                      setAssignments((current) => ({ ...current, keyholderOut: change.target.value }))
+                    }
+                  />
+                  <Text color="red">{assignmentError}</Text>
+                  <Button colorScheme="brand" onClick={saveAssignments} isLoading={savingAssignments}>
+                    Update Keyholders
+                  </Button>
+                </Stack>
               </Flex>
             </Stack>
           </CardBody>

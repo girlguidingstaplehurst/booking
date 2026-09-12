@@ -106,12 +106,12 @@ type AdminNewEventGroup struct {
 		EmailAddress openapi_types.Email `json:"email_address"`
 		Name         string              `json:"name"`
 	} `json:"contact"`
-	Details         string              `json:"details"`
-	Instances       []EventInstance     `json:"instances"`
-	Keyholder       openapi_types.Email `json:"keyholder"`
-	Name            string              `json:"name"`
-	PubliclyVisible bool                `json:"publicly_visible"`
-	Rate            string              `json:"rate"`
+	Details         string             `json:"details"`
+	Instances       []EventInstance    `json:"instances"`
+	Keyholder       openapi_types.UUID `json:"keyholder"`
+	Name            string             `json:"name"`
+	PubliclyVisible bool               `json:"publicly_visible"`
+	Rate            string             `json:"rate"`
 }
 
 // AdminNewEvents defines model for AdminNewEvents.
@@ -121,12 +121,14 @@ type AdminNewEvents struct {
 		Name         string              `json:"name"`
 	} `json:"contact"`
 	Event struct {
-		Details         string          `json:"details"`
-		Instances       []EventInstance `json:"instances"`
-		Name            string          `json:"name"`
-		PubliclyVisible bool            `json:"publicly_visible"`
-		Rate            string          `json:"rate"`
-		Status          string          `json:"status"`
+		Details         string              `json:"details"`
+		Instances       []EventInstance     `json:"instances"`
+		KeyholderIn     *openapi_types.UUID `json:"keyholderIn,omitempty"`
+		KeyholderOut    *openapi_types.UUID `json:"keyholderOut,omitempty"`
+		Name            string              `json:"name"`
+		PubliclyVisible bool                `json:"publicly_visible"`
+		Rate            string              `json:"rate"`
+		Status          string              `json:"status"`
 	} `json:"event"`
 }
 
@@ -134,6 +136,12 @@ type AdminNewEvents struct {
 type Contact struct {
 	EmailAddress openapi_types.Email `json:"email_address"`
 	Name         string              `json:"name"`
+}
+
+// CreateKeyholderBody defines model for CreateKeyholderBody.
+type CreateKeyholderBody struct {
+	KeyNumber int    `json:"keyNumber"`
+	Name      string `json:"name"`
 }
 
 // CreateRateBody defines model for CreateRateBody.
@@ -171,8 +179,8 @@ type Event struct {
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
 	Invoices     *[]InvoiceRef        `json:"invoices,omitempty"`
-	KeyholderIn  *openapi_types.Email `json:"keyholderIn,omitempty"`
-	KeyholderOut *openapi_types.Email `json:"keyholderOut,omitempty"`
+	KeyholderIn  *KeyholderAssignment `json:"keyholderIn,omitempty"`
+	KeyholderOut *KeyholderAssignment `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
 	RateID       string               `json:"rateID"`
 	Status       EventStatus          `json:"status"`
@@ -266,6 +274,23 @@ type InvoiceRef struct {
 // InvoiceStatus defines model for InvoiceStatus.
 type InvoiceStatus string
 
+// Keyholder defines model for Keyholder.
+type Keyholder struct {
+	Active    bool               `json:"active"`
+	Id        openapi_types.UUID `json:"id"`
+	KeyNumber int                `json:"keyNumber"`
+	Name      string             `json:"name"`
+}
+
+// KeyholderAssignment defines model for KeyholderAssignment.
+type KeyholderAssignment struct {
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
+// KeyholderList defines model for KeyholderList.
+type KeyholderList = []Keyholder
+
 // ListEvent defines model for ListEvent.
 type ListEvent struct {
 	From    string      `json:"from"`
@@ -335,9 +360,22 @@ type SendInvoiceBodyItem struct {
 	EventID     *string `json:"eventID,omitempty"`
 }
 
+// SetEventKeyholdersBody defines model for SetEventKeyholdersBody.
+type SetEventKeyholdersBody struct {
+	KeyholderIn  *openapi_types.UUID `json:"keyholderIn"`
+	KeyholderOut *openapi_types.UUID `json:"keyholderOut"`
+}
+
 // SetRateBody defines model for SetRateBody.
 type SetRateBody struct {
 	Rate string `json:"rate"`
+}
+
+// UpdateKeyholderBody defines model for UpdateKeyholderBody.
+type UpdateKeyholderBody struct {
+	Active    bool   `json:"active"`
+	KeyNumber int    `json:"keyNumber"`
+	Name      string `json:"name"`
 }
 
 // UpdateRateBody defines model for UpdateRateBody.
@@ -386,11 +424,20 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
 
+// AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
+type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
+
 // AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
 type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
+
+// AdminCreateKeyholderJSONRequestBody defines body for AdminCreateKeyholder for application/json ContentType.
+type AdminCreateKeyholderJSONRequestBody = CreateKeyholderBody
+
+// AdminUpdateKeyholderJSONRequestBody defines body for AdminUpdateKeyholder for application/json ContentType.
+type AdminUpdateKeyholderJSONRequestBody = UpdateKeyholderBody
 
 // AdminCreateRateJSONRequestBody defines body for AdminCreateRate for application/json ContentType.
 type AdminCreateRateJSONRequestBody = CreateRateBody

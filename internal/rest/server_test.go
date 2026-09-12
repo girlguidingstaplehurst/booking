@@ -25,3 +25,23 @@ func TestValidatePerSessionPricing(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateKeyholder(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyNumber int
+		wantErr   bool
+	}{
+		{name: "Alice", keyNumber: 1},
+		{name: "  ", keyNumber: 1, wantErr: true},
+		{name: "Alice", keyNumber: 0, wantErr: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if gotErr := validateKeyholder(test.name, test.keyNumber) != ""; gotErr != test.wantErr {
+				t.Fatalf("validateKeyholder() error = %v, want error %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}

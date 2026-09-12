@@ -15,13 +15,14 @@ import { RateSelect } from "./components/RateSelect";
 import { AdminPoster } from "../Poster";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
+import { KeyholderSelect } from "./components/KeyholderSelect";
 
 const schema = Yup.object({
   name: Yup.string().required("Required"),
   details: Yup.string().required("Required"),
   contactName: Yup.string().required("Required"),
   email: Yup.string().email().required("Required"),
-  keyholder: Yup.string().email().required("Required"),
+  keyholder: Yup.string().required("Required"),
 });
 
 export function CreateEventGroup() {
@@ -118,8 +119,8 @@ export function CreateEventGroup() {
             value={formik.values.email}
             onChange={formik.handleChange}
           />
-          <FormFieldAndLabel
-            label="Keyholder Email"
+          <KeyholderSelect
+            label="Keyholder"
             name="keyholder"
             value={formik.values.keyholder}
             errValue={formik.errors.keyholder}

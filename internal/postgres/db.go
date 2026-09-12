@@ -48,7 +48,7 @@ func (db *Database) AddEvent(ctx context.Context, event *rest.AddEventJSONReques
 			return err
 		}
 
-		err = db.insertEvent(ctx, tx, event, consts.EventStatusProvisional, consts.RateDefault)
+		err = db.insertEvent(ctx, tx, event, consts.EventStatusProvisional, consts.RateDefault, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -69,10 +69,10 @@ func (db *Database) ensureContactExists(ctx context.Context, email, name string)
 	return nil
 }
 
-func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status, rate string) error {
+func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddEventJSONRequestBody, status, rate string, keyholderIn, keyholderOut *openapi_types.UUID) error {
 	_, err := tx.Exec(ctx, `insert into booking_events
-			(id, event_start, event_end, event_name, visible, email, status, rate_id, details) 
-			values($1, $2, $3, $4, $5, $6, $7, $8, $9)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.EmailAddress, status, rate, event.Event.Details)
+			(id, event_start, event_end, event_name, visible, email, status, rate_id, details, keyholder_in_id, keyholder_out_id)
+			values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, uuid.New(), event.Event.From, event.Event.To, event.Event.Name, event.Event.PubliclyVisible, event.Contact.EmailAddress, status, rate, event.Event.Details, keyholderIn, keyholderOut)
 	if err != nil {
 		return errors.Join(err, errors.New("failed to insert new booking"))
 	}
@@ -212,15 +212,17 @@ func (db *Database) ListEventsForContact(ctx context.Context, contactID string, 
 
 func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (rest.AdminEventList, error) {
 	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $3), to_char(e.event_end, $3), e.event_name, e.visible, e.status, contact.name, contact.email,
-	        	 e.assignee, e.keyholder_in, e.keyholder_out, e.event_group_id,
+		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.event_group_id,
 		coalesce(json_agg(json_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::json)
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email 
+		left join booking_keyholders kin on kin.id = e.keyholder_in_id
+		left join booking_keyholders kout on kout.id = e.keyholder_out_id
 		left join booking_invoice_events bie on bie.event_id = e.id
 		left join booking_invoices bi on bi.id = bie.invoice_id
 		where (e.event_start >= $1 and e.event_start <= $2)
 		or e.event_end >= $1 and e.event_end <= $2
-		group by e.id, e.event_start, e.event_end, e.event_name, e.visible, e.status, contact.name, contact.email, e.assignee, e.keyholder_in, e.keyholder_out, e.event_group_id
+		group by e.id, e.event_start, e.event_end, e.event_name, e.visible, e.status, contact.name, contact.email, e.assignee, kin.id, kin.name, kout.id, kout.name, e.event_group_id
 		order by e.event_start, e.event_end, e.event_name`, from, to, dbDateTimeFormat)
 	if err != nil {
 		return rest.AdminEventList{}, err
@@ -230,8 +232,16 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 		var event rest.Event
 
 		var invoiceJSON []byte
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.EventGroupID, &invoiceJSON); err != nil {
+		var keyholderInID, keyholderOutID *openapi_types.UUID
+		var keyholderInName, keyholderOutName *string
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.EventGroupID, &invoiceJSON); err != nil {
 			return event, err
+		}
+		if keyholderInID != nil {
+			event.KeyholderIn = &rest.KeyholderAssignment{Id: *keyholderInID, Name: *keyholderInName}
+		}
+		if keyholderOutID != nil {
+			event.KeyholderOut = &rest.KeyholderAssignment{Id: *keyholderOutID, Name: *keyholderOutName}
 		}
 		var invoices []rest.InvoiceRef
 		if err := json.Unmarshal(invoiceJSON, &invoices); err != nil {
@@ -278,15 +288,25 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 }
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
-	row := db.pool.QueryRow(ctx, `select id, to_char(event_start, $2), to_char(event_end, $2), event_name, visible, status, contact.name, contact.email, 
-       		assignee, keyholder_in, keyholder_out, rate_id, details
+	row := db.pool.QueryRow(ctx, `select e.id, to_char(e.event_start, $2), to_char(e.event_end, $2), e.event_name, e.visible, e.status, contact.name, contact.email,
+		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.rate_id, e.details
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email
-		where id = $1`, id, dbDateTimeFormat)
+		left join booking_keyholders kin on kin.id = e.keyholder_in_id
+		left join booking_keyholders kout on kout.id = e.keyholder_out_id
+		where e.id = $1`, id, dbDateTimeFormat)
 
 	var event rest.Event
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &event.KeyholderIn, &event.KeyholderOut, &event.RateID, &event.Details); err != nil {
+	var keyholderInID, keyholderOutID *openapi_types.UUID
+	var keyholderInName, keyholderOutName *string
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.RateID, &event.Details); err != nil {
 		return event, err
+	}
+	if keyholderInID != nil {
+		event.KeyholderIn = &rest.KeyholderAssignment{Id: *keyholderInID, Name: *keyholderInName}
+	}
+	if keyholderOutID != nil {
+		event.KeyholderOut = &rest.KeyholderAssignment{Id: *keyholderOutID, Name: *keyholderOutName}
 	}
 
 	rows, err := db.pool.Query(ctx, `select distinct(bi.id), bi.reference, bi.status, bi.sent, bi.paid	
@@ -472,6 +492,79 @@ func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
 	})
 }
 
+func (db *Database) ListKeyholders(ctx context.Context) (rest.KeyholderList, error) {
+	rows, err := db.pool.Query(ctx, `select id, name, key_number, active
+		from booking_keyholders
+		order by active desc, name, key_number`)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Keyholder, error) {
+		var keyholder rest.Keyholder
+		if err := row.Scan(&keyholder.Id, &keyholder.Name, &keyholder.KeyNumber, &keyholder.Active); err != nil {
+			return keyholder, err
+		}
+		return keyholder, nil
+	})
+}
+
+func (db *Database) CreateKeyholder(ctx context.Context, input rest.CreateKeyholderBody) (rest.Keyholder, error) {
+	var keyholder rest.Keyholder
+	err := db.pool.QueryRow(ctx, `insert into booking_keyholders (id, name, key_number, active)
+		values ($1, $2, $3, true)
+		returning id, name, key_number, active`, uuid.New(), strings.TrimSpace(input.Name), input.KeyNumber).
+		Scan(&keyholder.Id, &keyholder.Name, &keyholder.KeyNumber, &keyholder.Active)
+	return keyholder, err
+}
+
+func (db *Database) UpdateKeyholder(ctx context.Context, id openapi_types.UUID, input rest.UpdateKeyholderBody) (rest.Keyholder, error) {
+	var keyholder rest.Keyholder
+	err := db.pool.QueryRow(ctx, `update booking_keyholders
+		set name = $1, key_number = $2, active = $3
+		where id = $4
+		returning id, name, key_number, active`, strings.TrimSpace(input.Name), input.KeyNumber, input.Active, id).
+		Scan(&keyholder.Id, &keyholder.Name, &keyholder.KeyNumber, &keyholder.Active)
+	return keyholder, err
+}
+
+func (db *Database) SetEventKeyholders(ctx context.Context, eventID string, input rest.SetEventKeyholdersBody) error {
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		var id string
+		if err := tx.QueryRow(ctx, "select id from booking_events where id = $1 for update", eventID).Scan(&id); err != nil {
+			return err
+		}
+
+		for _, keyholderID := range []*openapi_types.UUID{input.KeyholderIn, input.KeyholderOut} {
+			if err := ensureActiveKeyholder(ctx, tx, keyholderID); err != nil {
+				return err
+			}
+		}
+
+		_, err := tx.Exec(ctx, `update booking_events
+			set keyholder_in_id = $1, keyholder_out_id = $2
+			where id = $3`, input.KeyholderIn, input.KeyholderOut, eventID)
+		return err
+	})
+}
+
+func ensureActiveKeyholder(ctx context.Context, tx pgx.Tx, keyholderID *openapi_types.UUID) error {
+	if keyholderID == nil {
+		return nil
+	}
+	var active bool
+	if err := tx.QueryRow(ctx, "select active from booking_keyholders where id = $1", *keyholderID).Scan(&active); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("keyholder does not exist")
+		}
+		return err
+	}
+	if !active {
+		return errors.New("inactive keyholders cannot be newly assigned")
+	}
+	return nil
+}
+
 func (db *Database) CreateRate(ctx context.Context, input rest.CreateRateBody) (rest.Rate, error) {
 	perSession, err := json.Marshal(input.PerSession)
 	if err != nil {
@@ -529,6 +622,12 @@ func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequ
 		if err != nil {
 			return errors.Join(err, errors.New("failed to lock table"))
 		}
+		if err := ensureActiveKeyholder(ctx, tx, event.Body.Event.KeyholderIn); err != nil {
+			return err
+		}
+		if err := ensureActiveKeyholder(ctx, tx, event.Body.Event.KeyholderOut); err != nil {
+			return err
+		}
 
 		for _, instance := range event.Body.Event.Instances {
 			evt := &rest.NewEvent{
@@ -569,7 +668,7 @@ func (db *Database) AddEvents(ctx context.Context, event rest.AdminAddEventsRequ
 				return err
 			}
 
-			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status, event.Body.Event.Rate)
+			err = db.insertEvent(ctx, tx, evt, event.Body.Event.Status, event.Body.Event.Rate, event.Body.Event.KeyholderIn, event.Body.Event.KeyholderOut)
 			if err != nil {
 				return err
 			}
@@ -586,6 +685,9 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 	}
 
 	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		if err := ensureActiveKeyholder(ctx, tx, &group.Keyholder); err != nil {
+			return err
+		}
 		groupID := uuid.New().String()
 		if _, err := tx.Exec(ctx, `insert into booking_event_groups
 			(id, event_name, details, visible, email, rate)
@@ -604,8 +706,8 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 				return err
 			}
 			if _, err := tx.Exec(ctx, `insert into booking_events
-				(id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in, keyholder_out)
-				values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $10)`, uuid.New(), instance.From, instance.To,
+				(id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in_id, keyholder_out_id)
+				values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $11, $11)`, uuid.New(), instance.From, instance.To,
 				group.Name, group.PubliclyVisible, group.Contact.EmailAddress, group.Rate, group.Details, groupID, group.Keyholder); err != nil {
 				return errors.Join(err, errors.New("failed to insert event group instance"))
 			}

@@ -116,12 +116,12 @@ type AdminNewEventGroup struct {
 		EmailAddress openapi_types.Email `json:"email_address"`
 		Name         string              `json:"name"`
 	} `json:"contact"`
-	Details         string              `json:"details"`
-	Instances       []EventInstance     `json:"instances"`
-	Keyholder       openapi_types.Email `json:"keyholder"`
-	Name            string              `json:"name"`
-	PubliclyVisible bool                `json:"publicly_visible"`
-	Rate            string              `json:"rate"`
+	Details         string             `json:"details"`
+	Instances       []EventInstance    `json:"instances"`
+	Keyholder       openapi_types.UUID `json:"keyholder"`
+	Name            string             `json:"name"`
+	PubliclyVisible bool               `json:"publicly_visible"`
+	Rate            string             `json:"rate"`
 }
 
 // AdminNewEvents defines model for AdminNewEvents.
@@ -131,12 +131,14 @@ type AdminNewEvents struct {
 		Name         string              `json:"name"`
 	} `json:"contact"`
 	Event struct {
-		Details         string          `json:"details"`
-		Instances       []EventInstance `json:"instances"`
-		Name            string          `json:"name"`
-		PubliclyVisible bool            `json:"publicly_visible"`
-		Rate            string          `json:"rate"`
-		Status          string          `json:"status"`
+		Details         string              `json:"details"`
+		Instances       []EventInstance     `json:"instances"`
+		KeyholderIn     *openapi_types.UUID `json:"keyholderIn,omitempty"`
+		KeyholderOut    *openapi_types.UUID `json:"keyholderOut,omitempty"`
+		Name            string              `json:"name"`
+		PubliclyVisible bool                `json:"publicly_visible"`
+		Rate            string              `json:"rate"`
+		Status          string              `json:"status"`
 	} `json:"event"`
 }
 
@@ -144,6 +146,12 @@ type AdminNewEvents struct {
 type Contact struct {
 	EmailAddress openapi_types.Email `json:"email_address"`
 	Name         string              `json:"name"`
+}
+
+// CreateKeyholderBody defines model for CreateKeyholderBody.
+type CreateKeyholderBody struct {
+	KeyNumber int    `json:"keyNumber"`
+	Name      string `json:"name"`
 }
 
 // CreateRateBody defines model for CreateRateBody.
@@ -181,8 +189,8 @@ type Event struct {
 	From         string               `json:"from"`
 	Id           string               `json:"id"`
 	Invoices     *[]InvoiceRef        `json:"invoices,omitempty"`
-	KeyholderIn  *openapi_types.Email `json:"keyholderIn,omitempty"`
-	KeyholderOut *openapi_types.Email `json:"keyholderOut,omitempty"`
+	KeyholderIn  *KeyholderAssignment `json:"keyholderIn,omitempty"`
+	KeyholderOut *KeyholderAssignment `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
 	RateID       string               `json:"rateID"`
 	Status       EventStatus          `json:"status"`
@@ -276,6 +284,23 @@ type InvoiceRef struct {
 // InvoiceStatus defines model for InvoiceStatus.
 type InvoiceStatus string
 
+// Keyholder defines model for Keyholder.
+type Keyholder struct {
+	Active    bool               `json:"active"`
+	Id        openapi_types.UUID `json:"id"`
+	KeyNumber int                `json:"keyNumber"`
+	Name      string             `json:"name"`
+}
+
+// KeyholderAssignment defines model for KeyholderAssignment.
+type KeyholderAssignment struct {
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
+// KeyholderList defines model for KeyholderList.
+type KeyholderList = []Keyholder
+
 // ListEvent defines model for ListEvent.
 type ListEvent struct {
 	From    string      `json:"from"`
@@ -345,9 +370,22 @@ type SendInvoiceBodyItem struct {
 	EventID     *string `json:"eventID,omitempty"`
 }
 
+// SetEventKeyholdersBody defines model for SetEventKeyholdersBody.
+type SetEventKeyholdersBody struct {
+	KeyholderIn  *openapi_types.UUID `json:"keyholderIn"`
+	KeyholderOut *openapi_types.UUID `json:"keyholderOut"`
+}
+
 // SetRateBody defines model for SetRateBody.
 type SetRateBody struct {
 	Rate string `json:"rate"`
+}
+
+// UpdateKeyholderBody defines model for UpdateKeyholderBody.
+type UpdateKeyholderBody struct {
+	Active    bool   `json:"active"`
+	KeyNumber int    `json:"keyNumber"`
+	Name      string `json:"name"`
 }
 
 // UpdateRateBody defines model for UpdateRateBody.
@@ -396,11 +434,20 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
 
+// AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
+type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
+
 // AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
 type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
+
+// AdminCreateKeyholderJSONRequestBody defines body for AdminCreateKeyholder for application/json ContentType.
+type AdminCreateKeyholderJSONRequestBody = CreateKeyholderBody
+
+// AdminUpdateKeyholderJSONRequestBody defines body for AdminUpdateKeyholder for application/json ContentType.
+type AdminUpdateKeyholderJSONRequestBody = UpdateKeyholderBody
 
 // AdminCreateRateJSONRequestBody defines body for AdminCreateRate for application/json ContentType.
 type AdminCreateRateJSONRequestBody = CreateRateBody
@@ -547,6 +594,20 @@ type ClientInterface interface {
 	// AdminEventCancel performs a POST /api/v1/admin/events/{eventID}/cancel-event (the `AdminEventCancel` operationId) request.
 	AdminEventCancel(ctx context.Context, eventID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AdminSetEventKeyholdersWithBody Set event keyholders
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+	AdminSetEventKeyholdersWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminSetEventKeyholders Set event keyholders
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+	AdminSetEventKeyholders(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AdminEventRequestDocumentsWithBody performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 	// with any type of body and a specified content type.
 	AdminEventRequestDocumentsWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -571,6 +632,39 @@ type ClientInterface interface {
 
 	// AdminGetInvoicesForEvents performs a GET /api/v1/admin/invoices/for-events (the `AdminGetInvoicesForEvents` operationId) request.
 	AdminGetInvoicesForEvents(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminListKeyholders List keyholders
+	//
+	// Corresponds with GET /api/v1/admin/keyholders (the `AdminListKeyholders` operationId).
+	AdminListKeyholders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateKeyholderWithBody Create a keyholder
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+	AdminCreateKeyholderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateKeyholder Create a keyholder
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+	AdminCreateKeyholder(ctx context.Context, body AdminCreateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateKeyholderWithBody Update a keyholder
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+	AdminUpdateKeyholderWithBody(ctx context.Context, keyholderID openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateKeyholder Update a keyholder
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+	AdminUpdateKeyholder(ctx context.Context, keyholderID openapi_types.UUID, body AdminUpdateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminGetRates performs a GET /api/v1/admin/rates (the `AdminGetRates` operationId) request.
 	AdminGetRates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -768,6 +862,40 @@ func (c *Client) AdminEventCancel(ctx context.Context, eventID string, reqEditor
 	return c.Client.Do(req)
 }
 
+// AdminSetEventKeyholdersWithBody Set event keyholders
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+func (c *Client) AdminSetEventKeyholdersWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminSetEventKeyholdersRequestWithBody(c.Server, eventID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminSetEventKeyholders Set event keyholders
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+func (c *Client) AdminSetEventKeyholders(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminSetEventKeyholdersRequest(c.Server, eventID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // AdminEventRequestDocumentsWithBody performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 // with any type of body and a specified content type.
 func (c *Client) AdminEventRequestDocumentsWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -853,6 +981,89 @@ func (c *Client) AdminMarkInvoicePaid(ctx context.Context, invoiceID string, req
 // AdminGetInvoicesForEvents performs a GET /api/v1/admin/invoices/for-events (the `AdminGetInvoicesForEvents` operationId) request.
 func (c *Client) AdminGetInvoicesForEvents(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminGetInvoicesForEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminListKeyholders List keyholders
+//
+// Corresponds with GET /api/v1/admin/keyholders (the `AdminListKeyholders` operationId).
+func (c *Client) AdminListKeyholders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminListKeyholdersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateKeyholderWithBody Create a keyholder
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+func (c *Client) AdminCreateKeyholderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateKeyholderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateKeyholder Create a keyholder
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+func (c *Client) AdminCreateKeyholder(ctx context.Context, body AdminCreateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateKeyholderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateKeyholderWithBody Update a keyholder
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+func (c *Client) AdminUpdateKeyholderWithBody(ctx context.Context, keyholderID openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateKeyholderRequestWithBody(c.Server, keyholderID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateKeyholder Update a keyholder
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+func (c *Client) AdminUpdateKeyholder(ctx context.Context, keyholderID openapi_types.UUID, body AdminUpdateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateKeyholderRequest(c.Server, keyholderID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1286,6 +1497,53 @@ func NewAdminEventCancelRequest(server string, eventID string) (*http.Request, e
 	return req, nil
 }
 
+// NewAdminSetEventKeyholdersRequest calls the generic AdminSetEventKeyholders builder with application/json body
+func NewAdminSetEventKeyholdersRequest(server string, eventID string, body AdminSetEventKeyholdersJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminSetEventKeyholdersRequestWithBody(server, eventID, "application/json", bodyReader)
+}
+
+// NewAdminSetEventKeyholdersRequestWithBody constructs an http.Request for the AdminSetEventKeyholders method, with any body, and a specified content type
+func NewAdminSetEventKeyholdersRequestWithBody(server string, eventID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "eventID", eventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/events/%s/keyholders", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAdminEventRequestDocumentsRequest calls the generic AdminEventRequestDocuments builder with application/json body
 func NewAdminEventRequestDocumentsRequest(server string, eventID string, body AdminEventRequestDocumentsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1510,6 +1768,120 @@ func NewAdminGetInvoicesForEventsRequest(server string, params *AdminGetInvoices
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewAdminListKeyholdersRequest constructs an http.Request for the AdminListKeyholders method
+func NewAdminListKeyholdersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/keyholders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAdminCreateKeyholderRequest calls the generic AdminCreateKeyholder builder with application/json body
+func NewAdminCreateKeyholderRequest(server string, body AdminCreateKeyholderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminCreateKeyholderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAdminCreateKeyholderRequestWithBody constructs an http.Request for the AdminCreateKeyholder method, with any body, and a specified content type
+func NewAdminCreateKeyholderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/keyholders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminUpdateKeyholderRequest calls the generic AdminUpdateKeyholder builder with application/json body
+func NewAdminUpdateKeyholderRequest(server string, keyholderID openapi_types.UUID, body AdminUpdateKeyholderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminUpdateKeyholderRequestWithBody(server, keyholderID, "application/json", bodyReader)
+}
+
+// NewAdminUpdateKeyholderRequestWithBody constructs an http.Request for the AdminUpdateKeyholder method, with any body, and a specified content type
+func NewAdminUpdateKeyholderRequestWithBody(server string, keyholderID openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "keyholderID", keyholderID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/keyholders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1875,6 +2247,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	AdminEventCancelWithResponse(ctx context.Context, eventID string, reqEditors ...RequestEditorFn) (*AdminEventCancelResponse, error)
 
+	// AdminSetEventKeyholdersWithBodyWithResponse Set event keyholders
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+	AdminSetEventKeyholdersWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminSetEventKeyholdersResponse, error)
+
+	// AdminSetEventKeyholdersWithResponse Set event keyholders
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+	AdminSetEventKeyholdersWithResponse(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminSetEventKeyholdersResponse, error)
+
 	// AdminEventRequestDocumentsWithBodyWithResponse performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -1909,6 +2295,41 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	AdminGetInvoicesForEventsWithResponse(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*AdminGetInvoicesForEventsResponse, error)
+
+	// AdminListKeyholdersWithResponse List keyholders
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/admin/keyholders (the `AdminListKeyholders` operationId).
+	AdminListKeyholdersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*AdminListKeyholdersResponse, error)
+
+	// AdminCreateKeyholderWithBodyWithResponse Create a keyholder
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+	AdminCreateKeyholderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateKeyholderResponse, error)
+
+	// AdminCreateKeyholderWithResponse Create a keyholder
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+	AdminCreateKeyholderWithResponse(ctx context.Context, body AdminCreateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateKeyholderResponse, error)
+
+	// AdminUpdateKeyholderWithBodyWithResponse Update a keyholder
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+	AdminUpdateKeyholderWithBodyWithResponse(ctx context.Context, keyholderID openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateKeyholderResponse, error)
+
+	// AdminUpdateKeyholderWithResponse Update a keyholder
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+	AdminUpdateKeyholderWithResponse(ctx context.Context, keyholderID openapi_types.UUID, body AdminUpdateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateKeyholderResponse, error)
 
 	// AdminGetRatesWithResponse performs a GET /api/v1/admin/rates (the `AdminGetRates` operationId) request.
 	//
@@ -2327,6 +2748,61 @@ func (r AdminEventCancelResponse) ContentType() string {
 	return ""
 }
 
+type AdminSetEventKeyholdersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminSetEventKeyholdersResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminSetEventKeyholdersResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminSetEventKeyholdersResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminSetEventKeyholdersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminSetEventKeyholdersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminSetEventKeyholdersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminSetEventKeyholdersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AdminEventRequestDocumentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2575,6 +3051,185 @@ func (r AdminGetInvoicesForEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AdminGetInvoicesForEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminListKeyholdersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *KeyholderList
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminListKeyholdersResponse) GetJSON200() *KeyholderList {
+	return r.JSON200
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminListKeyholdersResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminListKeyholdersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminListKeyholdersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminListKeyholdersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminListKeyholdersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminCreateKeyholderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Keyholder
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminCreateKeyholderResponse) GetJSON200() *Keyholder {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminCreateKeyholderResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminCreateKeyholderResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminCreateKeyholderResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminCreateKeyholderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminCreateKeyholderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminCreateKeyholderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminCreateKeyholderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminUpdateKeyholderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Keyholder
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminUpdateKeyholderResponse) GetJSON200() *Keyholder {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminUpdateKeyholderResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminUpdateKeyholderResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminUpdateKeyholderResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminUpdateKeyholderResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminUpdateKeyholderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminUpdateKeyholderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminUpdateKeyholderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminUpdateKeyholderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3034,6 +3689,32 @@ func (c *ClientWithResponses) AdminEventCancelWithResponse(ctx context.Context, 
 	return ParseAdminEventCancelResponse(rsp)
 }
 
+// AdminSetEventKeyholdersWithBodyWithResponse Set event keyholders
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+func (c *ClientWithResponses) AdminSetEventKeyholdersWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminSetEventKeyholdersResponse, error) {
+	rsp, err := c.AdminSetEventKeyholdersWithBody(ctx, eventID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminSetEventKeyholdersResponse(rsp)
+}
+
+// AdminSetEventKeyholdersWithResponse Set event keyholders
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
+func (c *ClientWithResponses) AdminSetEventKeyholdersWithResponse(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminSetEventKeyholdersResponse, error) {
+	rsp, err := c.AdminSetEventKeyholders(ctx, eventID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminSetEventKeyholdersResponse(rsp)
+}
+
 // AdminEventRequestDocumentsWithBodyWithResponse performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -3109,6 +3790,71 @@ func (c *ClientWithResponses) AdminGetInvoicesForEventsWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseAdminGetInvoicesForEventsResponse(rsp)
+}
+
+// AdminListKeyholdersWithResponse List keyholders
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/admin/keyholders (the `AdminListKeyholders` operationId).
+func (c *ClientWithResponses) AdminListKeyholdersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*AdminListKeyholdersResponse, error) {
+	rsp, err := c.AdminListKeyholders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminListKeyholdersResponse(rsp)
+}
+
+// AdminCreateKeyholderWithBodyWithResponse Create a keyholder
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+func (c *ClientWithResponses) AdminCreateKeyholderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateKeyholderResponse, error) {
+	rsp, err := c.AdminCreateKeyholderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateKeyholderResponse(rsp)
+}
+
+// AdminCreateKeyholderWithResponse Create a keyholder
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/keyholders (the `AdminCreateKeyholder` operationId).
+func (c *ClientWithResponses) AdminCreateKeyholderWithResponse(ctx context.Context, body AdminCreateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateKeyholderResponse, error) {
+	rsp, err := c.AdminCreateKeyholder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateKeyholderResponse(rsp)
+}
+
+// AdminUpdateKeyholderWithBodyWithResponse Update a keyholder
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+func (c *ClientWithResponses) AdminUpdateKeyholderWithBodyWithResponse(ctx context.Context, keyholderID openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateKeyholderResponse, error) {
+	rsp, err := c.AdminUpdateKeyholderWithBody(ctx, keyholderID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateKeyholderResponse(rsp)
+}
+
+// AdminUpdateKeyholderWithResponse Update a keyholder
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/keyholders/{keyholderID} (the `AdminUpdateKeyholder` operationId).
+func (c *ClientWithResponses) AdminUpdateKeyholderWithResponse(ctx context.Context, keyholderID openapi_types.UUID, body AdminUpdateKeyholderJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateKeyholderResponse, error) {
+	rsp, err := c.AdminUpdateKeyholder(ctx, keyholderID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateKeyholderResponse(rsp)
 }
 
 // AdminGetRatesWithResponse performs a GET /api/v1/admin/rates (the `AdminGetRates` operationId) request.
@@ -3491,6 +4237,49 @@ func ParseAdminEventCancelResponse(rsp *http.Response) (*AdminEventCancelRespons
 	return response, nil
 }
 
+// ParseAdminSetEventKeyholdersResponse parses an HTTP response from a AdminSetEventKeyholdersWithResponse call
+func ParseAdminSetEventKeyholdersResponse(rsp *http.Response) (*AdminSetEventKeyholdersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminSetEventKeyholdersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAdminEventRequestDocumentsResponse parses an HTTP response from a AdminEventRequestDocumentsWithResponse call
 func ParseAdminEventRequestDocumentsResponse(rsp *http.Response) (*AdminEventRequestDocumentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3666,6 +4455,140 @@ func ParseAdminGetInvoicesForEventsResponse(rsp *http.Response) (*AdminGetInvoic
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminListKeyholdersResponse parses an HTTP response from a AdminListKeyholdersWithResponse call
+func ParseAdminListKeyholdersResponse(rsp *http.Response) (*AdminListKeyholdersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminListKeyholdersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KeyholderList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminCreateKeyholderResponse parses an HTTP response from a AdminCreateKeyholderWithResponse call
+func ParseAdminCreateKeyholderResponse(rsp *http.Response) (*AdminCreateKeyholderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminCreateKeyholderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Keyholder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminUpdateKeyholderResponse parses an HTTP response from a AdminUpdateKeyholderWithResponse call
+func ParseAdminUpdateKeyholderResponse(rsp *http.Response) (*AdminUpdateKeyholderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminUpdateKeyholderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Keyholder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

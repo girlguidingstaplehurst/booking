@@ -21,6 +21,7 @@ import DateTimeRangeAccumulator from "./components/DateTimeRangeAccumulator";
 import { AdminPoster } from "../Poster";
 import { RateSelect } from "./components/RateSelect";
 import PageHeader from "./components/PageHeader";
+import { KeyholderSelect } from "./components/KeyholderSelect";
 
 const EventSchema = Yup.object().shape({
   eventName: Yup.string()
@@ -70,6 +71,8 @@ export function CreateEvents() {
       email: "",
       status: "approved",
       rate: "default",
+      keyholderIn: "",
+      keyholderOut: "",
     },
     validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -82,8 +85,10 @@ export function CreateEvents() {
           details: values.details,
           instances: eventDates,
           publicly_visible: values.visibility === "show",
-          status: values.status,
-          rate: values.rate,
+           status: values.status,
+           rate: values.rate,
+           keyholderIn: values.keyholderIn || null,
+           keyholderOut: values.keyholderOut || null,
         },
         contact: {
           name: values.name,
@@ -193,6 +198,20 @@ export function CreateEvents() {
             name="name"
             value={formik.values.name}
             errValue={formik.errors.name}
+            onChange={formik.handleChange}
+          />
+
+          <Heading size="s">Keyholders</Heading>
+          <KeyholderSelect
+            label="Keyholder in"
+            name="keyholderIn"
+            value={formik.values.keyholderIn}
+            onChange={formik.handleChange}
+          />
+          <KeyholderSelect
+            label="Keyholder out"
+            name="keyholderOut"
+            value={formik.values.keyholderOut}
             onChange={formik.handleChange}
           />
 

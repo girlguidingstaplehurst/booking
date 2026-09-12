@@ -27,6 +27,8 @@ import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
 import { CreateEventGroup } from "./admin/CreateEventGroup";
 import { Rates, RateEditor, ratesLoader, rateLoader } from "./admin/Rates";
+import { KeyholderEditor, Keyholders, keyholderEditorLoader } from "./admin/Keyholders";
+import { keyholdersLoader } from "./admin/components/KeyholderSelect";
 import Location from "./Location";
 import WhatsOn from "./WhatsOn";
 
@@ -85,6 +87,13 @@ const router = createBrowserRouter(
         <Route path="rates" element={<Rates />} loader={ratesLoader} />
         <Route path="rates/new" element={<RateEditor />} loader={() => null} />
         <Route path="rates/:rateID/edit" element={<RateEditor />} loader={rateLoader} />
+        <Route path="keyholders" element={<Keyholders />} loader={keyholdersLoader} />
+        <Route path="keyholders/new" element={<KeyholderEditor />} loader={() => null} />
+        <Route
+          path="keyholders/:keyholderID/edit"
+          element={<KeyholderEditor />}
+          loader={keyholderEditorLoader}
+        />
         <Route path="create-events" element={<CreateEvents />} />
         <Route path="create-event-group" element={<CreateEventGroup />} />
         <Route

@@ -36,6 +36,7 @@ function renderAdmin(initialEntry = "/admin") {
       children: [
         { index: true, element: <div>Dashboard content</div> },
         { path: "rates", element: <div>Rates content</div> },
+        { path: "keyholders", element: <div>Keyholders content</div> },
       ],
     },
   ], { initialEntries: [initialEntry] });
@@ -68,21 +69,23 @@ describe("AdminLayout navigation", () => {
 
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/admin");
     expect(screen.getByRole("link", { name: "Rates" })).toHaveAttribute("href", "/admin/rates");
+    expect(screen.getByRole("link", { name: "Keyholders" })).toHaveAttribute("href", "/admin/keyholders");
     expect(screen.getByRole("link", { name: "Rates" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current");
     expect(screen.queryByRole("button", { name: "Open Admin Navigation Menu" })).not.toBeInTheDocument();
   });
 
-  test("renders only Dashboard and Rates in the narrow-viewport drawer", () => {
+  test("renders Dashboard, Rates, and Keyholders in the narrow-viewport drawer", () => {
     useBreakpoint.mockReturnValue("base");
     renderAdmin();
 
     fireEvent.click(screen.getByRole("button", { name: "Open Admin Navigation Menu" }));
     const drawer = screen.getByRole("dialog");
 
-    expect(within(drawer).getAllByRole("link")).toHaveLength(2);
+    expect(within(drawer).getAllByRole("link")).toHaveLength(3);
     expect(within(drawer).getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(within(drawer).getByRole("link", { name: "Rates" })).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: "Keyholders" })).toBeInTheDocument();
     expect(within(drawer).queryByRole("link", { name: /invoice|event/i })).not.toBeInTheDocument();
   });
 

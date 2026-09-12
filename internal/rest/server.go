@@ -38,6 +38,10 @@ type Database interface {
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
+	ListKeyholders(ctx context.Context) (KeyholderList, error)
+	CreateKeyholder(ctx context.Context, input CreateKeyholderBody) (Keyholder, error)
+	UpdateKeyholder(ctx context.Context, id openapi_types.UUID, input UpdateKeyholderBody) (Keyholder, error)
+	SetEventKeyholders(ctx context.Context, eventID string, input SetEventKeyholdersBody) error
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
 	SetEventStatus(Ctx context.Context, eventID string, state string) error
@@ -380,6 +384,77 @@ func (s *Server) AdminGetRates(ctx context.Context, _ AdminGetRatesRequestObject
 	return AdminGetRates200JSONResponse(rates), nil
 }
 
+func validateKeyholder(name string, keyNumber int) string {
+	if strings.TrimSpace(name) == "" {
+		return "keyholder name is required"
+	}
+	if keyNumber < 1 {
+		return "key number must be at least 1"
+	}
+	return ""
+}
+
+func (s *Server) AdminListKeyholders(ctx context.Context, _ AdminListKeyholdersRequestObject) (AdminListKeyholdersResponseObject, error) {
+	keyholders, err := s.db.ListKeyholders(ctx)
+	if err != nil {
+		return AdminListKeyholders500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminListKeyholders200JSONResponse(keyholders), nil
+}
+
+func (s *Server) AdminCreateKeyholder(ctx context.Context, request AdminCreateKeyholderRequestObject) (AdminCreateKeyholderResponseObject, error) {
+	if request.Body == nil {
+		return AdminCreateKeyholder422JSONResponse{ErrorMessage: "keyholder definition is required"}, nil
+	}
+	if message := validateKeyholder(request.Body.Name, request.Body.KeyNumber); message != "" {
+		return AdminCreateKeyholder422JSONResponse{ErrorMessage: message}, nil
+	}
+
+	keyholder, err := s.db.CreateKeyholder(ctx, *request.Body)
+	if err != nil {
+		var pgError interface{ SQLState() string }
+		if errors.As(err, &pgError) && pgError.SQLState() == "23505" {
+			return AdminCreateKeyholder409JSONResponse{ErrorMessage: "a keyholder already uses that key number"}, nil
+		}
+		return AdminCreateKeyholder500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminCreateKeyholder200JSONResponse(keyholder), nil
+}
+
+func (s *Server) AdminUpdateKeyholder(ctx context.Context, request AdminUpdateKeyholderRequestObject) (AdminUpdateKeyholderResponseObject, error) {
+	if request.Body == nil {
+		return AdminUpdateKeyholder422JSONResponse{ErrorMessage: "keyholder definition is required"}, nil
+	}
+	if message := validateKeyholder(request.Body.Name, request.Body.KeyNumber); message != "" {
+		return AdminUpdateKeyholder422JSONResponse{ErrorMessage: message}, nil
+	}
+
+	keyholder, err := s.db.UpdateKeyholder(ctx, request.KeyholderID, *request.Body)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return AdminUpdateKeyholder404JSONResponse{ErrorMessage: "no keyholder exists with that identifier"}, nil
+	}
+	if err != nil {
+		var pgError interface{ SQLState() string }
+		if errors.As(err, &pgError) && pgError.SQLState() == "23505" {
+			return AdminUpdateKeyholder409JSONResponse{ErrorMessage: "a keyholder already uses that key number"}, nil
+		}
+		return AdminUpdateKeyholder500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminUpdateKeyholder200JSONResponse(keyholder), nil
+}
+
+func (s *Server) AdminSetEventKeyholders(ctx context.Context, request AdminSetEventKeyholdersRequestObject) (AdminSetEventKeyholdersResponseObject, error) {
+	if request.Body == nil {
+		return AdminSetEventKeyholders422JSONResponse{ErrorMessage: "keyholder assignments are required"}, nil
+	}
+	if err := s.db.SetEventKeyholders(ctx, request.EventID, *request.Body); errors.Is(err, pgx.ErrNoRows) {
+		return AdminSetEventKeyholders404JSONResponse{ErrorMessage: "no event exists with that identifier"}, nil
+	} else if err != nil {
+		return AdminSetEventKeyholders422JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminSetEventKeyholders200Response{}, nil
+}
+
 func validatePerSessionPricing(pricing PerSessionPricing) string {
 	if len(pricing) == 0 {
 		return ""
@@ -626,6 +701,9 @@ func (s *Server) AdminAddEvents(ctx context.Context, request AdminAddEventsReque
 	//TODO validation
 	err := s.db.AddEvents(ctx, request)
 	if err != nil {
+		if strings.Contains(err.Error(), "keyholder") {
+			return AdminAddEvents422JSONResponse{ErrorMessage: err.Error()}, nil
+		}
 		return AdminAddEvents500JSONResponse{
 			ErrorMessage: err.Error(),
 		}, nil
@@ -638,6 +716,9 @@ func (s *Server) AdminAddEventGroup(ctx context.Context, request AdminAddEventGr
 	if err := s.db.AddEventGroup(ctx, request); err != nil {
 		if errors.Is(err, consts.ErrBookingExists) {
 			return AdminAddEventGroup409JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+		if strings.Contains(err.Error(), "keyholder") {
+			return AdminAddEventGroup422JSONResponse{ErrorMessage: err.Error()}, nil
 		}
 		return AdminAddEventGroup500JSONResponse{ErrorMessage: err.Error()}, nil
 	}

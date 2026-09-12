@@ -16,6 +16,7 @@ import (
 	time "time"
 
 	rest "github.com/girlguidingstaplehurst/booking/internal/rest"
+	types "github.com/oapi-codegen/runtime/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -113,6 +114,21 @@ func (m *MockDatabase) AdminListEvents(ctx context.Context, from, to time.Time) 
 func (mr *MockDatabaseMockRecorder) AdminListEvents(ctx, from, to any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminListEvents", reflect.TypeOf((*MockDatabase)(nil).AdminListEvents), ctx, from, to)
+}
+
+// CreateKeyholder mocks base method.
+func (m *MockDatabase) CreateKeyholder(ctx context.Context, input rest.CreateKeyholderBody) (rest.Keyholder, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateKeyholder", ctx, input)
+	ret0, _ := ret[0].(rest.Keyholder)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateKeyholder indicates an expected call of CreateKeyholder.
+func (mr *MockDatabaseMockRecorder) CreateKeyholder(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateKeyholder", reflect.TypeOf((*MockDatabase)(nil).CreateKeyholder), ctx, input)
 }
 
 // CreateRate mocks base method.
@@ -240,6 +256,21 @@ func (mr *MockDatabaseMockRecorder) ListEventsForContact(ctx, contactID, from, t
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventsForContact", reflect.TypeOf((*MockDatabase)(nil).ListEventsForContact), ctx, contactID, from, to)
 }
 
+// ListKeyholders mocks base method.
+func (m *MockDatabase) ListKeyholders(ctx context.Context) (rest.KeyholderList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListKeyholders", ctx)
+	ret0, _ := ret[0].(rest.KeyholderList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListKeyholders indicates an expected call of ListKeyholders.
+func (mr *MockDatabaseMockRecorder) ListKeyholders(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKeyholders", reflect.TypeOf((*MockDatabase)(nil).ListKeyholders), ctx)
+}
+
 // MarkInvoicePaid mocks base method.
 func (m *MockDatabase) MarkInvoicePaid(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
@@ -268,6 +299,20 @@ func (mr *MockDatabaseMockRecorder) MarkInvoiceSent(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoiceSent", reflect.TypeOf((*MockDatabase)(nil).MarkInvoiceSent), ctx, id)
 }
 
+// SetEventKeyholders mocks base method.
+func (m *MockDatabase) SetEventKeyholders(ctx context.Context, eventID string, input rest.SetEventKeyholdersBody) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEventKeyholders", ctx, eventID, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEventKeyholders indicates an expected call of SetEventKeyholders.
+func (mr *MockDatabaseMockRecorder) SetEventKeyholders(ctx, eventID, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEventKeyholders", reflect.TypeOf((*MockDatabase)(nil).SetEventKeyholders), ctx, eventID, input)
+}
+
 // SetEventStatus mocks base method.
 func (m *MockDatabase) SetEventStatus(Ctx context.Context, eventID, state string) error {
 	m.ctrl.T.Helper()
@@ -294,6 +339,21 @@ func (m *MockDatabase) SetRate(ctx context.Context, eventID, rate string) error 
 func (mr *MockDatabaseMockRecorder) SetRate(ctx, eventID, rate any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRate", reflect.TypeOf((*MockDatabase)(nil).SetRate), ctx, eventID, rate)
+}
+
+// UpdateKeyholder mocks base method.
+func (m *MockDatabase) UpdateKeyholder(ctx context.Context, id types.UUID, input rest.UpdateKeyholderBody) (rest.Keyholder, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateKeyholder", ctx, id, input)
+	ret0, _ := ret[0].(rest.Keyholder)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateKeyholder indicates an expected call of UpdateKeyholder.
+func (mr *MockDatabaseMockRecorder) UpdateKeyholder(ctx, id, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKeyholder", reflect.TypeOf((*MockDatabase)(nil).UpdateKeyholder), ctx, id, input)
 }
 
 // UpdateRate mocks base method.
