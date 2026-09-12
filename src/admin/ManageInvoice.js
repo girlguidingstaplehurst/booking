@@ -1,8 +1,5 @@
 import {
   Box,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   ButtonGroup,
   Card,
   CardBody,
@@ -16,7 +13,6 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
-  Link as ReactRouterLink,
   useLoaderData,
   useRevalidator,
 } from "react-router-dom";
@@ -49,16 +45,6 @@ export function ManageInvoice() {
   return (
     <Container maxW="4xl">
       <Stack spacing={4}>
-        <Breadcrumb display={{ base: "none", md: "flex" }}>
-          <BreadcrumbItem>
-            <BreadcrumbLink as={ReactRouterLink} to="/admin">
-              Dashboard
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>Invoice "{invoice.reference}"</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
         <PageHeader title={`Invoice ${invoice.reference}`} />
         <Card>
           <CardHeader>
