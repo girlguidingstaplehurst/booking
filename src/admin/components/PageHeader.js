@@ -10,10 +10,12 @@ function PageHeader({ title, children }) {
       padding={5}
       borderRadius="md"
       marginTop={4}
-      height="80px"
+      minHeight="80px"
+      gap={4}
+      flexWrap={{ base: "wrap", md: "nowrap" }}
     >
       <Heading size="lg" color="white">{title}</Heading>
-      {children}
+      {children && <Box display="flex" gap={2} flexWrap="wrap">{children}</Box>}
     </Box>
   );
 }

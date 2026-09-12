@@ -1,14 +1,9 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  Container,
-  Stack,
-} from "@chakra-ui/react";
-import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
+import { Container, Stack } from "@chakra-ui/react";
+import { useLoaderData } from "react-router-dom";
 import { AdminFetcher } from "../Fetcher";
 import dayjs from "dayjs";
 import { EditableInvoiceCard } from "./components/EditableInvoiceCard";
+import PageHeader from "./components/PageHeader";
 
 export async function createInvoice(eventIDs, eventGroup) {
   const query = eventGroup ? `eventGroup=${eventGroup}` : `events=${eventIDs}`;
@@ -60,16 +55,7 @@ export function CreateInvoice() {
   return (
     <Container maxW="4xl">
       <Stack spacing={4}>
-        <Breadcrumb>
-          <BreadcrumbItem>
-            <BreadcrumbLink as={ReactRouterLink} to="/admin">
-              Dashboard
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>Create Invoice</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
+        <PageHeader title="Create invoice" />
         {Object.entries(invoices).map(([contact, events]) => (
           <EditableInvoiceCard
             key={contact}

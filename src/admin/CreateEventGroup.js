@@ -1,14 +1,11 @@
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Container,
   Select,
   Stack,
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -17,6 +14,7 @@ import DateTimeRangeAccumulator from "./components/DateTimeRangeAccumulator";
 import { RateSelect } from "./components/RateSelect";
 import { AdminPoster } from "../Poster";
 import RoundedButton from "../components/RoundedButton";
+import PageHeader from "./components/PageHeader";
 
 const schema = Yup.object({
   name: Yup.string().required("Required"),
@@ -67,16 +65,7 @@ export function CreateEventGroup() {
     <Container maxW="4xl">
       <form onSubmit={formik.handleSubmit}>
         <Stack spacing={4}>
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <BreadcrumbLink as={ReactRouterLink} to="/admin">
-                Dashboard
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>
-              <BreadcrumbLink>Create Event Group</BreadcrumbLink>
-            </BreadcrumbItem>
-          </Breadcrumb>
+          <PageHeader title="Create event group" />
           <FormFieldAndLabel
             label="Event Title"
             name="name"

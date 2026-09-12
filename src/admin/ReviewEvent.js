@@ -1,8 +1,5 @@
 import {
   Box,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Button,
   ButtonGroup,
   Card,
@@ -25,6 +22,7 @@ import TriggerModal from "./components/TriggerModal";
 import React from "react";
 import RequestDocumentsModalContents from "./components/RequestDocumentsModalContents";
 import ActionButton from "./components/ActionButton";
+import PageHeader from "./components/PageHeader";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -166,16 +164,7 @@ export function ReviewEvent() {
   return (
     <Container maxW="4xl">
       <Stack spacing={4}>
-        <Breadcrumb>
-          <BreadcrumbItem>
-            <BreadcrumbLink as={ReactRouterLink} to="/admin">
-              Dashboard
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>Review "{event.name}"</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
+        <PageHeader title={`Review "${event.name}"`} />
         <Card>
           <CardHeader>
             <Heading size="m">{event.name}</Heading>

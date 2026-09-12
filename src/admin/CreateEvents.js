@@ -1,8 +1,5 @@
 import {
   Box,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Button,
   Container,
   Flex,
@@ -15,7 +12,7 @@ import {
   Tooltip,
   useToken,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import FormFieldAndLabel from "../components/FormFieldAndLabel";
 import React, { useState } from "react";
 import { useFormik } from "formik";
@@ -23,6 +20,7 @@ import * as Yup from "yup";
 import DateTimeRangeAccumulator from "./components/DateTimeRangeAccumulator";
 import { AdminPoster } from "../Poster";
 import { RateSelect } from "./components/RateSelect";
+import PageHeader from "./components/PageHeader";
 
 const EventSchema = Yup.object().shape({
   eventName: Yup.string()
@@ -114,17 +112,7 @@ export function CreateEvents() {
     <form onSubmit={formik.handleSubmit}>
       <Container maxW="4xl">
         <Stack spacing={4}>
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <BreadcrumbLink as={ReactRouterLink} to="/admin">
-                Dashboard
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>
-              <BreadcrumbLink>Create Events</BreadcrumbLink>
-            </BreadcrumbItem>
-          </Breadcrumb>
-          <Heading>Add Events</Heading>
+          <PageHeader title="Create events" />
 
           <FormFieldAndLabel
             label="Event Name"
@@ -216,7 +204,7 @@ export function CreateEvents() {
             onChange={formik.handleChange}
           />
 
-          <Flex marginBottom={10}>
+          <Flex marginBottom={10} flexWrap="wrap" gap={4}>
             <Text color="red">{submitErrors}</Text>
             <Spacer />
             <Tooltip

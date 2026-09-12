@@ -1,8 +1,5 @@
 import {
   Box,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Button,
   ButtonGroup,
   Container,
@@ -12,12 +9,15 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { Link as ReactRouterLink, useLoaderData } from "react-router-dom";
+import { Link as ReactRouterLink, useLoaderData, useRevalidator } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
+import { markInvoicePaid } from "./components/invoiceActions";
 import RoundedButton from "../components/RoundedButton";
+import PageHeader from "./components/PageHeader";
 import { Calendar, dayjsLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import React from "react";
 
 const localizer = dayjsLocalizer(dayjs);
 
@@ -78,6 +78,20 @@ export async function populateDashboard() {
   });
 }
 
+export function normalizeDashboardData(data) {
+  return {
+    ...data,
+    events: (data?.events || []).map((event) => ({
+      ...event,
+      invoices: event.invoices || [],
+    })),
+    eventGroups: (data?.eventGroups || []).map((group) => ({
+      ...group,
+      invoices: group.invoices || [],
+    })),
+  };
+}
+
 function getInvoiceColorScheme(status) {
   switch (status) {
     case "raised":
@@ -92,7 +106,10 @@ function getInvoiceColorScheme(status) {
 }
 
 export function Dashboard() {
-  const eventsList = useLoaderData();
+  const eventsList = normalizeDashboardData(useLoaderData());
+  const revalidator = useRevalidator();
+  const [payingInvoiceIDs, setPayingInvoiceIDs] = React.useState(() => new Set());
+  const [paymentError, setPaymentError] = React.useState("");
   const calendarEvents = eventsList.events.map((event) => ({
     title: event.name,
     start: dayjs(event.from).toDate(),
@@ -179,7 +196,13 @@ export function Dashboard() {
                       {invoice.reference} - {invoice.status}
                     </Button>
                     {invoice.status !== "paid" && (
-                      <RoundedButton>Mark Paid</RoundedButton>
+                      <RoundedButton
+                        isLoading={payingInvoiceIDs.has(invoice.id)}
+                        isDisabled={payingInvoiceIDs.has(invoice.id)}
+                        onClick={() => payInvoice(invoice.id)}
+                      >
+                        Mark Paid
+                      </RoundedButton>
                     )}
                   </Flex>
                 ))}
@@ -246,9 +269,15 @@ export function Dashboard() {
                   >
                     {invoice.reference} - {invoice.status}
                   </Button>
-                  {invoice.status !== "paid" && (
-                    <RoundedButton>Mark Paid</RoundedButton>
-                  )}
+                    {invoice.status !== "paid" && (
+                      <RoundedButton
+                        isLoading={payingInvoiceIDs.has(invoice.id)}
+                        isDisabled={payingInvoiceIDs.has(invoice.id)}
+                        onClick={() => payInvoice(invoice.id)}
+                      >
+                        Mark Paid
+                      </RoundedButton>
+                    )}
                 </Flex>
               ))}
             </Stack>
@@ -265,24 +294,45 @@ export function Dashboard() {
     </Box>
   );
 
+  const payInvoice = async (invoiceID) => {
+    if (payingInvoiceIDs.has(invoiceID)) return;
+    setPaymentError("");
+    setPayingInvoiceIDs((invoiceIDs) => new Set(invoiceIDs).add(invoiceID));
+    try {
+      const response = await markInvoicePaid(invoiceID);
+      if (!response?.ok) {
+        let message = "Unable to mark invoice as paid.";
+        if (response) {
+          const error = await response.json();
+          message = error.error_message || message;
+        }
+        setPaymentError(message);
+        return;
+      }
+      revalidator.revalidate();
+    } catch (error) {
+      setPaymentError("Unable to mark invoice as paid.");
+    } finally {
+      setPayingInvoiceIDs((invoiceIDs) => {
+        const nextInvoiceIDs = new Set(invoiceIDs);
+        nextInvoiceIDs.delete(invoiceID);
+        return nextInvoiceIDs;
+      });
+    }
+  };
+
   return (
     <Container maxW="4xl">
       <Stack spacing={6}>
-        <Breadcrumb>
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
-        <Box>
-          <ButtonGroup>
-            <RoundedButton as={ReactRouterLink} to={`/admin/create-events`}>
-              Create Events
-            </RoundedButton>
-            <RoundedButton as={ReactRouterLink} to="/admin/create-event-group">
-              Create Event Group
-            </RoundedButton>
-          </ButtonGroup>
-        </Box>
+        <PageHeader title="Dashboard">
+          <RoundedButton as={ReactRouterLink} to="/admin/create-events">
+            Create events
+          </RoundedButton>
+          <RoundedButton as={ReactRouterLink} to="/admin/create-event-group">
+            Create event group
+          </RoundedButton>
+        </PageHeader>
+        {paymentError && <Text color="red.500">{paymentError}</Text>}
         {sections.map(
           (section) =>
             (section.events.length > 0 || section.eventGroups?.length > 0) && (
@@ -290,7 +340,7 @@ export function Dashboard() {
                 <Heading size="md" marginBottom={4}>
                   {section.title}
                 </Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                   {sortedEvents(section.events).map((event) =>
                     eventCard(event, section.title),
                   )}
@@ -305,15 +355,17 @@ export function Dashboard() {
           <Heading size="md" marginBottom={4}>
             Event calendar
           </Heading>
-          <Calendar
-            localizer={localizer}
-            defaultView="month"
-            views={["month"]}
-            events={calendarEvents}
-            date={dayjs().toDate()}
-            showMultiDayTimes
-            style={{ height: "80vh" }}
-          />
+          <Box backgroundColor="white" borderRadius="md" boxShadow="md" padding={4} overflowX="auto">
+            <Calendar
+              localizer={localizer}
+              defaultView="month"
+              views={["month"]}
+              events={calendarEvents}
+              date={dayjs().toDate()}
+              showMultiDayTimes
+              style={{ height: "80vh", minWidth: "620px" }}
+            />
+          </Box>
         </Box>
       </Stack>
     </Container>

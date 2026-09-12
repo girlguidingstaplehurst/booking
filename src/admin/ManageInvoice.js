@@ -22,9 +22,10 @@ import {
 } from "react-router-dom";
 import dayjs from "dayjs";
 import { AdminFetcher } from "../Fetcher";
-import { AdminPoster } from "../Poster";
 import { useState } from "react";
 import RoundedButton from "../components/RoundedButton";
+import PageHeader from "./components/PageHeader";
+import { markInvoicePaid } from "./components/invoiceActions";
 
 export async function manageInvoice(invoiceID) {
   return AdminFetcher("/api/v1/admin/invoices/by-id/" + invoiceID, {
@@ -37,27 +38,18 @@ export async function manageInvoice(invoiceID) {
   });
 }
 
-async function markPaid(invoiceID) {
-  const response = await AdminPoster(
-    `/api/v1/admin/invoices/by-id/${invoiceID}/mark-as-paid`,
-    null,
-  );
-  if (response !== undefined) {
-    return response.json();
-  }
-}
-
 export function ManageInvoice() {
   const invoice = useLoaderData();
   const revalidator = useRevalidator();
   const [markingAsPaid, setMarkingAsPaid] = useState(false);
+  const [error, setError] = useState("");
 
   const isPaid = invoice.status === "paid";
 
   return (
     <Container maxW="4xl">
       <Stack spacing={4}>
-        <Breadcrumb>
+        <Breadcrumb display={{ base: "none", md: "flex" }}>
           <BreadcrumbItem>
             <BreadcrumbLink as={ReactRouterLink} to="/admin">
               Dashboard
@@ -67,6 +59,7 @@ export function ManageInvoice() {
             <BreadcrumbLink>Invoice "{invoice.reference}"</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
+        <PageHeader title={`Invoice ${invoice.reference}`} />
         <Card>
           <CardHeader>
             <Heading size="m">Invoice {invoice.reference}</Heading>
@@ -103,7 +96,13 @@ export function ManageInvoice() {
                       isLoading={markingAsPaid}
                       onClick={async () => {
                         setMarkingAsPaid(true);
-                        await markPaid(invoice.id);
+                        setError("");
+                        const response = await markInvoicePaid(invoice.id);
+                        if (!response?.ok) {
+                          setError("Unable to mark invoice as paid.");
+                          setMarkingAsPaid(false);
+                          return;
+                        }
                         revalidator.revalidate();
                         setMarkingAsPaid(false);
                       }}
@@ -113,6 +112,7 @@ export function ManageInvoice() {
                   </ButtonGroup>
                 )}
               </Flex>
+              {error && <Text color="red.500">{error}</Text>}
             </Stack>
           </CardBody>
         </Card>
