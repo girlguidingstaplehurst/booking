@@ -24,6 +24,7 @@ import RequestDocumentsModalContents from "./components/RequestDocumentsModalCon
 import ActionButton from "./components/ActionButton";
 import PageHeader from "./components/PageHeader";
 import { KeyholderSelect } from "./components/KeyholderSelect";
+import RoundedButton from "../components/RoundedButton";
 
 export async function reviewEvent(eventID) {
   return AdminFetcher("/api/v1/admin/events/" + eventID, {
@@ -274,14 +275,8 @@ export function ReviewEvent() {
                 <Spacer />
                 <EventStateButtons eventID={event.id} status={event.status} />
               </Flex>
-              <Flex>
-                <Box>
-                  <Heading size="s">Keyholders</Heading>
-                  <Text>In: {event.keyholderIn?.name || "Unassigned"}</Text>
-                  <Text>Out: {event.keyholderOut?.name || "Unassigned"}</Text>
-                </Box>
-                <Spacer />
-                <Stack spacing={2} minW={{ base: "100%", md: "sm" }}>
+              <Flex gap={4} flexWrap="wrap" justifyContent="flex-end">
+                <Stack flex="1" spacing={2} minW={{ base: "100%", md: "sm" }}>
                   <KeyholderSelect
                     label="Keyholder in"
                     name="keyholderIn"
@@ -303,10 +298,14 @@ export function ReviewEvent() {
                     }
                   />
                   <Text color="red">{assignmentError}</Text>
-                  <Button colorScheme="brand" onClick={saveAssignments} isLoading={savingAssignments}>
-                    Update Keyholders
-                  </Button>
                 </Stack>
+                <RoundedButton
+                  onClick={saveAssignments}
+                  isLoading={savingAssignments}
+                  alignSelf="flex-end"
+                >
+                  Update Keyholders
+                </RoundedButton>
               </Flex>
             </Stack>
           </CardBody>

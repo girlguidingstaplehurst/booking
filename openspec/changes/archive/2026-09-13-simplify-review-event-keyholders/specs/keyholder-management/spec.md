@@ -1,38 +1,4 @@
-# keyholder-management Specification
-
-## Purpose
-
-Provide administrators with a reusable, identity-based directory of keyholders and a consistent way to assign them to booking entry and exit responsibilities.
-
-## Requirements
-
-### Requirement: Administrators can manage keyholder records
-
-The system SHALL allow an authenticated administrator to view keyholders and create or edit records containing a name, a unique key number, and an active state. The system SHALL identify each record with a stable UUID and SHALL NOT provide an in-application delete operation.
-
-#### Scenario: Administrator creates a keyholder
-
-- **WHEN** an authenticated administrator submits a valid name and unused key number
-- **THEN** the system creates an active keyholder with a stable UUID
-- **AND** the keyholder appears in the keyholder directory with its name and key number
-
-#### Scenario: Administrator tries to reuse a key number
-
-- **WHEN** an authenticated administrator creates or edits a keyholder with a key number already assigned to another keyholder
-- **THEN** the system rejects the operation
-- **AND** the existing keyholder records remain unchanged
-
-#### Scenario: Administrator deactivates a keyholder
-
-- **WHEN** an authenticated administrator changes a keyholder from active to inactive
-- **THEN** the system persists the inactive state
-- **AND** the keyholder remains visible in the directory with its inactive state
-- **AND** the system does not delete the keyholder record
-
-#### Scenario: Administrator edits a keyholder identity or key number
-
-- **WHEN** an authenticated administrator edits a keyholder name or key number with valid values
-- **THEN** the system updates that keyholder record without changing its UUID
+## MODIFIED Requirements
 
 ### Requirement: Administrators can assign keyholders to events
 
@@ -63,6 +29,34 @@ The system SHALL allow an authenticated administrator to assign separate keyhold
 - **WHEN** an authenticated administrator opens the keyholder section on the Review Event screen
 - **THEN** the screen displays the editable entry and exit assignment controls without a separate read-only assignment summary column
 - **AND** the `Update Keyholders` action uses the shared rounded button presentation
+
+### Requirement: Administrators can manage keyholder records
+
+The system SHALL allow an authenticated administrator to view keyholders and create or edit records containing a name, a unique key number, and an active state. The system SHALL identify each record with a stable UUID and SHALL NOT provide an in-application delete operation.
+
+#### Scenario: Administrator creates a keyholder
+
+- **WHEN** an authenticated administrator submits a valid name and unused key number
+- **THEN** the system creates an active keyholder with a stable UUID
+- **AND** the keyholder appears in the keyholder directory with its name and key number
+
+#### Scenario: Administrator tries to reuse a key number
+
+- **WHEN** an authenticated administrator creates or edits a keyholder with a key number already assigned to another keyholder
+- **THEN** the system rejects the operation
+- **AND** the existing keyholder records remain unchanged
+
+#### Scenario: Administrator deactivates a keyholder
+
+- **WHEN** an authenticated administrator changes a keyholder from active to inactive
+- **THEN** the system persists the inactive state
+- **AND** the keyholder remains visible in the directory with its inactive state
+- **AND** the system does not delete the keyholder record
+
+#### Scenario: Administrator edits a keyholder identity or key number
+
+- **WHEN** an authenticated administrator edits a keyholder name or key number with valid values
+- **THEN** the system updates that keyholder record without changing its UUID
 
 ### Requirement: Event groups use one keyholder for entry and exit
 
