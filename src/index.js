@@ -30,6 +30,7 @@ import { CreateEventGroup } from "./admin/CreateEventGroup";
 import { Rates, RateEditor, ratesLoader, rateLoader } from "./admin/Rates";
 import { KeyholderEditor, Keyholders, keyholderEditorLoader } from "./admin/Keyholders";
 import { keyholdersLoader } from "./admin/components/KeyholderSelect";
+import { authenticatedLoader, requireAdminAuth } from "./admin/auth";
 import Location from "./Location";
 import WhatsOn from "./WhatsOn";
 import ThankYou from "./ThankYou";
@@ -85,44 +86,44 @@ const router = createBrowserRouter(
 
       <Route path="login" element={<Login />} />
       
-      <Route path="admin" element={<AdminLayout />}>
-        <Route index element={<Dashboard />} loader={populateDashboard} />
-        <Route path="rates" element={<Rates />} loader={ratesLoader} />
-        <Route path="rates/new" element={<RateEditor />} loader={() => null} />
-        <Route path="rates/:rateID/edit" element={<RateEditor />} loader={rateLoader} />
-        <Route path="keyholders" element={<Keyholders />} loader={keyholdersLoader} />
-        <Route path="keyholders/new" element={<KeyholderEditor />} loader={() => null} />
+      <Route path="admin" element={<AdminLayout />} loader={requireAdminAuth}>
+        <Route index element={<Dashboard />} loader={authenticatedLoader(populateDashboard)} />
+        <Route path="rates" element={<Rates />} loader={authenticatedLoader(ratesLoader)} />
+        <Route path="rates/new" element={<RateEditor />} loader={authenticatedLoader(() => null)} />
+        <Route path="rates/:rateID/edit" element={<RateEditor />} loader={authenticatedLoader(rateLoader)} />
+        <Route path="keyholders" element={<Keyholders />} loader={authenticatedLoader(keyholdersLoader)} />
+        <Route path="keyholders/new" element={<KeyholderEditor />} loader={authenticatedLoader(() => null)} />
         <Route
           path="keyholders/:keyholderID/edit"
           element={<KeyholderEditor />}
-          loader={keyholderEditorLoader}
+          loader={authenticatedLoader(keyholderEditorLoader)}
         />
         <Route path="create-events" element={<CreateEvents />} />
         <Route path="create-event-group" element={<CreateEventGroup />} />
         <Route
           path="review/:eventID"
           element={<ReviewEvent />}
-          loader={({ params }) => reviewEvent(params.eventID)}
+          loader={authenticatedLoader(({ params }) => reviewEvent(params.eventID))}
         />
         <Route
           path="review-group/:groupID"
           element={<ReviewEventGroup />}
-          loader={({ params }) => reviewEventGroup(params.groupID)}
+          loader={authenticatedLoader(({ params }) => reviewEventGroup(params.groupID))}
         />
         <Route
           path="create-invoice"
           element={<CreateInvoice />}
-          loader={({ request }) => {
+          loader={authenticatedLoader(({ request }) => {
             const url = new URL(request.url);
             const events = url.searchParams.get("events");
             const eventGroup = url.searchParams.get("eventGroup");
             return createInvoice(events, eventGroup);
-          }}
+          })}
         />
         <Route
           path="invoice/:invoiceID"
           element={<ManageInvoice />}
-          loader={({ params }) => manageInvoice(params.invoiceID)}
+          loader={authenticatedLoader(({ params }) => manageInvoice(params.invoiceID))}
         />
       </Route>
     </Route>,

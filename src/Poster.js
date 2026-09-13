@@ -1,3 +1,5 @@
+import { getStoredToken, redirectToLogin } from "./admin/auth";
+
 export async function Poster(url, body, headers = {}, method = "POST") {
   try {
     const jsonBody = JSON.stringify(body);
@@ -9,8 +11,7 @@ export async function Poster(url, body, headers = {}, method = "POST") {
       method: method,
     });
     if (response.status === 401) {
-      sessionStorage.removeItem("token");
-      window.location.reload();
+      redirectToLogin();
       return;
     }
 
@@ -21,11 +22,11 @@ export async function Poster(url, body, headers = {}, method = "POST") {
 }
 
 export async function AdminPoster(url, body) {
-  const token = JSON.parse(sessionStorage.getItem("token"));
+  const token = getStoredToken();
   return Poster(url, body, {Authorization: "Bearer " + token})
 }
 
 export async function AdminPutter(url, body) {
-  const token = JSON.parse(sessionStorage.getItem("token"));
+  const token = getStoredToken();
   return Poster(url, body, { Authorization: "Bearer " + token }, "PUT");
 }
