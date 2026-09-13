@@ -13,6 +13,10 @@ import {
 } from "@chakra-ui/react";
 import { Link as ReactRouterLink } from "react-router-dom";
 
+export function getVersion() {
+  return process.env.REACT_APP_VERSION || "development";
+}
+
 function Footer() {
   const [brand500] = useToken("colors", ["brand.500"]);
   return (
@@ -100,6 +104,9 @@ function Footer() {
         <Text fontSize={12} align="center">
           &copy; {new Date().getFullYear()} Girlguiding Staplehurst District. Registered Charity
           801848
+        </Text>
+        <Text fontSize={12} align="center">
+          Version {getVersion()}
         </Text>
       </Container>
     </Box>
