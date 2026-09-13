@@ -1,7 +1,7 @@
 import React from "react";
 import { act } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import {
   createMemoryRouter,
   RouterProvider,
@@ -38,6 +38,42 @@ const outstandingData = {
     keyholderIn: "in@example.org",
     keyholderOut: "out@example.org",
   }],
+  eventGroups: [],
+};
+
+const approvalWorkflowData = {
+  events: [
+    {
+      id: "provisional-event",
+      name: "Provisional Event",
+      from: "2026-09-12T10:00:00Z",
+      to: "2026-09-12T11:00:00Z",
+      status: "provisional",
+      invoices: [],
+      keyholderIn: "",
+      keyholderOut: "",
+    },
+    {
+      id: "approved-event",
+      name: "Approved Event",
+      from: "2026-09-13T10:00:00Z",
+      to: "2026-09-13T11:00:00Z",
+      status: "approved",
+      invoices: [],
+      keyholderIn: "",
+      keyholderOut: "out@example.org",
+    },
+    {
+      id: "awaiting-documents-event",
+      name: "Awaiting Documents Event",
+      from: "2026-09-14T10:00:00Z",
+      to: "2026-09-14T11:00:00Z",
+      status: "awaiting documents",
+      invoices: [],
+      keyholderIn: "",
+      keyholderOut: "",
+    },
+  ],
   eventGroups: [],
 };
 
@@ -104,5 +140,33 @@ describe("Dashboard invoice behavior", () => {
     await act(async () => {
       resolvePayment({ ok: true });
     });
+  });
+
+  test("shows only approved individual events in invoice and keyholder workflows", async () => {
+    renderDashboard(approvalWorkflowData);
+
+    await screen.findByRole("heading", { name: "Dashboard" });
+
+    const approvalSection = screen.getByRole("heading", { name: "Events awaiting approval" }).parentElement;
+    const invoiceSection = screen.getByRole("heading", { name: "Events to be invoiced" }).parentElement;
+    const keyholderSection = screen.getByRole("heading", { name: "Needing keyholders" }).parentElement;
+
+    expect(within(approvalSection).getByText("Provisional Event")).toBeInTheDocument();
+    expect(within(approvalSection).getByText("Awaiting Documents Event")).toBeInTheDocument();
+    expect(within(invoiceSection).getByText("Approved Event")).toBeInTheDocument();
+    expect(within(keyholderSection).getByText("Approved Event")).toBeInTheDocument();
+    expect(within(invoiceSection).queryByText("Provisional Event")).not.toBeInTheDocument();
+    expect(within(invoiceSection).queryByText("Awaiting Documents Event")).not.toBeInTheDocument();
+    expect(within(keyholderSection).queryByText("Provisional Event")).not.toBeInTheDocument();
+    expect(within(keyholderSection).queryByText("Awaiting Documents Event")).not.toBeInTheDocument();
+  });
+
+  test("does not show an approval action on Dashboard event cards", async () => {
+    renderDashboard(approvalWorkflowData);
+
+    await screen.findByRole("heading", { name: "Dashboard" });
+
+    expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Review" })).toHaveLength(4);
   });
 });

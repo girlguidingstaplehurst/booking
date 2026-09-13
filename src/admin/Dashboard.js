@@ -136,6 +136,7 @@ export function Dashboard() {
       title: "Events to be invoiced",
       events: eventsList.events.filter(
         (event) =>
+          event.status === "approved" &&
           !event.eventGroupID &&
           (!event.invoices || event.invoices.length === 0),
       ),
@@ -146,7 +147,9 @@ export function Dashboard() {
     {
       title: "Needing keyholders",
       events: eventsList.events.filter(
-        (event) => !event.keyholderIn || !event.keyholderOut,
+        (event) =>
+          event.status === "approved" &&
+          (!event.keyholderIn || !event.keyholderOut),
       ),
     },
   ];
@@ -211,9 +214,6 @@ export function Dashboard() {
           )}
           <Flex alignItems="center" marginTop={4}>
             <ButtonGroup>
-              {sectionTitle === "Events awaiting approval" && (
-                <RoundedButton>Approve</RoundedButton>
-              )}
               {sectionTitle === "Events to be invoiced" && (
                 <RoundedButton
                   as={ReactRouterLink}
