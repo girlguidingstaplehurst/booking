@@ -8,19 +8,29 @@ Provide administrators with a consistent, responsive workflow for managing event
 
 ### Requirement: Dashboard-linked admin screens use a consistent presentation
 
-The system SHALL present the Dashboard, event creation, event-group creation, event review, invoice creation, invoice management, and keyholder management screens using a consistent admin page structure, responsive spacing, page heading treatment, content grouping, and action hierarchy aligned with the Rates screens. The shared admin navigation SHALL provide responsive desktop and narrow-viewport behavior while exposing Dashboard, Rates, and Keyholders as its only navigation items. Event creation and event-group creation forms SHALL use consistent full-width green primary submit actions while retaining their distinct action labels.
+The system SHALL present the Dashboard, event creation, event-group creation, event review, invoice creation, invoice management, and keyholder management screens using a consistent admin page structure, responsive spacing, page heading treatment, content grouping, and action hierarchy aligned with the Rates screens. The shared admin navigation SHALL provide responsive desktop and narrow-viewport behavior while exposing Dashboard, Rates, and Keyholders as its only navigation items. The admin header SHALL preserve its existing horizontal branded presentation on desktop viewports and SHALL present a centered, vertically ordered, overflow-safe branded presentation on narrow viewports. Event creation and event-group creation forms SHALL use consistent full-width green primary submit actions while retaining their distinct action labels.
 
 #### Scenario: Administrator opens a Dashboard-linked screen on desktop
 
 - **WHEN** an authenticated administrator opens any Dashboard-linked admin screen on a desktop viewport
 - **THEN** the screen presents a consistent branded page header and content layout with primary actions placed predictably and content grouped into readable cards or sections
+- **AND** the admin header retains the horizontal logo, account controls, and full `Booking Administration` heading presentation
 - **AND** the shared admin navigation displays Dashboard, Rates, and Keyholders as horizontal links with a clear current-route indication
 
 #### Scenario: Administrator opens a Dashboard-linked screen on a narrow viewport
 
 - **WHEN** an authenticated administrator opens any Dashboard-linked admin screen on a narrow viewport
 - **THEN** headings, forms, cards, buttons, invoice tables, calendar content, and keyholder content remain usable without requiring horizontal page scrolling
+- **AND** the admin header centers the logo and places a compact `Admin` heading below it
+- **AND** the administrator email and exit control appear below the heading in a readable vertical order
 - **AND** the shared admin navigation displays a menu control instead of requiring the horizontal links to fit
+
+#### Scenario: Administrator has a long email address on a narrow viewport
+
+- **WHEN** an authenticated administrator with an email address longer than the available narrow-viewport header width opens a Dashboard-linked admin screen
+- **THEN** the email text is reduced to a compact readable size
+- **AND** the email wraps within the header without widening the page or causing horizontal scrolling
+- **AND** the exit control remains available below or alongside the wrapped email without being clipped
 
 #### Scenario: Administrator opens the admin navigation drawer
 
