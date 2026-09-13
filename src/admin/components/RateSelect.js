@@ -37,6 +37,8 @@ export function RateUpdater({ eventID, rateID = "default" }) {
             rateID={rateID}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
+            hourlyOnly
+            preserveCurrentRate
           />
         </Box>
         <ButtonGroup>
@@ -54,7 +56,13 @@ export function RateUpdater({ eventID, rateID = "default" }) {
   );
 }
 
-export function RateSelect({ rateID = "default", onChange, onBlur }) {
+export function RateSelect({
+  rateID = "default",
+  onChange,
+  onBlur,
+  hourlyOnly = false,
+  preserveCurrentRate = false,
+}) {
   const [rates, setRates] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -85,14 +93,23 @@ export function RateSelect({ rateID = "default", onChange, onBlur }) {
     });
   }, []);
 
+  const currentRate = rates.find((rate) => rate.id === rateID);
+  const visibleRates = hourlyOnly
+    ? rates.filter(
+        (rate) =>
+          !rate.perSession?.length ||
+          (preserveCurrentRate && rate.id === currentRate?.id),
+      )
+    : rates;
+
   return (
     <Skeleton isLoaded={loaded}>
-      <Select name="rate" onChange={onChange} onBlur={onBlur}>
-        {rates.map((item) => (
+      <Select name="rate" value={rateID} onChange={onChange} onBlur={onBlur}>
+        {visibleRates.map((item) => (
           <option
             value={item.id}
             key={item.id}
-            selected={item.id === rateID}
+            disabled={hourlyOnly && item.id === currentRate?.id && !!item.perSession?.length}
           >
             {item.description} - £{item.hourlyRate}/hour
           </option>

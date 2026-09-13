@@ -37,6 +37,7 @@ test("shows event and contact context with deposit disabled", () => {
   expect(screen.getByText("Contact Person")).toBeInTheDocument();
   expect(screen.getByRole("checkbox")).not.toBeChecked();
   expect(screen.queryByDisplayValue("Refundable Cleaning and Damage deposit")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Send Invoice" })).toHaveStyle({ width: "100%" });
 });
 
 test("adds one deposit line when enabled", async () => {

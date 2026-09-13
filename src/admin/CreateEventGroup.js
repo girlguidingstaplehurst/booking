@@ -1,5 +1,6 @@
 import {
   Container,
+  Flex,
   Select,
   Stack,
   Text,
@@ -19,7 +20,7 @@ import { KeyholderSelect } from "./components/KeyholderSelect";
 
 const schema = Yup.object({
   name: Yup.string().required("Required"),
-  details: Yup.string().required("Required"),
+  details: Yup.string().max(50000, "too long").required("Required"),
   contactName: Yup.string().required("Required"),
   email: Yup.string().email().required("Required"),
   keyholder: Yup.string().required("Required"),
@@ -134,10 +135,17 @@ export function CreateEventGroup() {
             errValue={formik.errors.keyholder}
             onChange={formik.handleChange}
           />
-          <Text color="red">{error}</Text>
-          <RoundedButton type="submit" isLoading={formik.isSubmitting}>
-            Create Event Group
-          </RoundedButton>
+          <Flex marginBottom={10} flexDirection="column" gap={4}>
+            <Text color="red">{error}</Text>
+            <RoundedButton
+              type="submit"
+              colorScheme="green"
+              width="100%"
+              isLoading={formik.isSubmitting}
+            >
+              Create Event Group
+            </RoundedButton>
+          </Flex>
         </Stack>
       </form>
     </Container>

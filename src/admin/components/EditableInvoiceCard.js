@@ -179,11 +179,11 @@ export function EditableInvoiceCard({ preparation }) {
             </Checkbox>
           )}
         </CardBody>
-        <CardFooter minWidth="max-content">
-          <Spacer />
-          <ButtonGroup flex="0">
+        <CardFooter>
+          <ButtonGroup width="100%">
             <RoundedButton
-              colorScheme="brand"
+              colorScheme="green"
+              width="100%"
               isLoading={submitting}
               type="submit"
             >

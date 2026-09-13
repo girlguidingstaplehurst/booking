@@ -5,7 +5,6 @@ import {
   Flex,
   Heading,
   Select,
-  Spacer,
   Stack,
   Text,
   Textarea,
@@ -28,10 +27,7 @@ const EventSchema = Yup.object().shape({
     .min(2, "too short")
     .max(50, "too long")
     .required("Required"),
-  details: Yup.string()
-    .min(50, "too short")
-    .max(50000, "too long")
-    .required("Required"),
+  details: Yup.string().max(50000, "too long").required("Required"),
   name: Yup.string().required("Required"),
   email: Yup.string().email().required("Required"),
 });
@@ -53,6 +49,7 @@ export function CreateEvents() {
       type="submit"
       border={`2px solid ${brand500}`}
       borderRadius={100}
+      width="100%"
       _hover={{
         bg: white,
         color: brand500,
@@ -193,6 +190,7 @@ export function CreateEvents() {
               rateID={formik.values.rate}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
+              hourlyOnly
             />
           </Box>
 
@@ -227,14 +225,14 @@ export function CreateEvents() {
             onChange={formik.handleChange}
           />
 
-          <Flex marginBottom={10} flexWrap="wrap" gap={4}>
+          <Flex marginBottom={10} flexDirection="column" gap={4}>
             <Text color="red">{submitErrors}</Text>
-            <Spacer />
             <Tooltip
               label="One or more fields are invalid"
               isDisabled={formik.isValid}
+              width="100%"
             >
-              <BookButton>Submit</BookButton>
+              <BookButton>Create Events</BookButton>
             </Tooltip>
           </Flex>
         </Stack>

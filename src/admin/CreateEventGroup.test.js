@@ -8,7 +8,9 @@ jest.mock("../Poster", () => ({
 }));
 
 jest.mock("./components/RateSelect", () => ({
-  RateSelect: () => <select aria-label="Rate" />,
+  RateSelect: ({ hourlyOnly }) => (
+    <select aria-label="Rate" data-hourly-only={hourlyOnly ? "true" : "false"} />
+  ),
 }));
 
 describe("CreateEventGroup", () => {
@@ -62,6 +64,24 @@ describe("CreateEventGroup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create Event Group" }));
 
     expect(await screen.findByText("Required")).toBeInTheDocument();
+    expect(screen.queryByText("too short")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Rate")).toHaveAttribute("data-hourly-only", "false");
+    expect(screen.getByRole("button", { name: "Create Event Group" })).toHaveStyle({ width: "100%" });
     expect(AdminPoster).not.toHaveBeenCalled();
+  });
+
+  test("rejects event details longer than 50,000 characters", async () => {
+    render(
+      <MemoryRouter>
+        <CreateEventGroup />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText("Event Details"), {
+      target: { value: "x".repeat(50001) },
+    });
+    fireEvent.blur(screen.getByLabelText("Event Details"));
+
+    expect(await screen.findByText("too long")).toBeInTheDocument();
   });
 });
