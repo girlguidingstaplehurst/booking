@@ -17,3 +17,5 @@ spec:
                   key: token
             - name: BOOKING_AUTH_E2E_EMAIL
               value: e2e-admin@kathielambcentre.org
+            - name: BOOKING_EMAIL_MODE
+              value: stub

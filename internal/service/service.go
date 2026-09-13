@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -122,10 +123,23 @@ func (s *Service) Run(ctx context.Context) error {
 	db := postgres.NewDatabase(dbpool)
 	contentManager := content.NewManager("https://graphql.contentful.com/content/v1/spaces/o3u1j7dkyy42", "mnamX4N0qebOgpJN6KJVgakUGcSLFrFEvcHhdtcEO14")
 	pdfGen := pdf.NewGenerator(contentManager)
-	emailSender := email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD"))
+	emailSender, err := newEmailSender(svcCfg.Email.Mode)
+	if err != nil {
+		return err
+	}
 	captchaVerifier := captcha.NewVerifier(os.Getenv("GOOGLE_RECAPTCHA_SECRET"), captchaArmed)
 	rs := rest.NewServer(db, pdfGen, emailSender, captchaVerifier, contentManager)
 	rest.RegisterHandlers(app, rest.NewStrictHandler(rs, nil))
 
 	return app.Listen(":8080")
+}
+
+func newEmailSender(mode string) (rest.EmailSender, error) {
+	if mode == "" || mode == "smtp" {
+		return email.NewSender(os.Getenv("SMTP_SERVER"), os.Getenv("SMTP_USERNAME"), os.Getenv("SMTP_PASSWORD")), nil
+	}
+	if mode == "stub" {
+		return email.NewStubSender(), nil
+	}
+	return nil, fmt.Errorf("unsupported email mode %q", mode)
 }

@@ -23,6 +23,8 @@ func TestConfigValidate(t *testing.T) {
 		{name: "missing e2e token", config: Config{Auth: AuthConfig{Mode: "e2e", E2E: E2E{Email: "test@example.org"}}}, wantErr: true},
 		{name: "missing e2e email", config: Config{Auth: AuthConfig{Mode: "e2e", E2E: E2E{Token: "token"}}}, wantErr: true},
 		{name: "unknown mode", config: Config{Auth: AuthConfig{Mode: "unknown"}}, wantErr: true},
+		{name: "valid stub email", config: Config{Auth: AuthConfig{Mode: "google"}, Email: EmailConfig{Mode: "stub"}}},
+		{name: "unsupported email mode", config: Config{Auth: AuthConfig{Mode: "google"}, Email: EmailConfig{Mode: "mailhog"}}, wantErr: true},
 	}
 
 	for _, test := range tests {

@@ -3,7 +3,8 @@ package config
 import "fmt"
 
 type Config struct {
-	Auth AuthConfig
+	Auth  AuthConfig
+	Email EmailConfig
 }
 
 type AuthConfig struct {
@@ -16,10 +17,13 @@ type E2E struct {
 	Email string
 }
 
+type EmailConfig struct {
+	Mode string
+}
+
 func (c Config) Validate() error {
 	switch c.Auth.Mode {
 	case "google":
-		return nil
 	case "e2e":
 		if c.Auth.E2E.Token == "" {
 			return fmt.Errorf("auth e2e token is required when auth mode is e2e")
@@ -27,8 +31,13 @@ func (c Config) Validate() error {
 		if c.Auth.E2E.Email == "" {
 			return fmt.Errorf("auth e2e email is required when auth mode is e2e")
 		}
-		return nil
 	default:
 		return fmt.Errorf("unsupported auth mode %q", c.Auth.Mode)
 	}
+
+	if c.Email.Mode != "" && c.Email.Mode != "smtp" && c.Email.Mode != "stub" {
+		return fmt.Errorf("unsupported email mode %q", c.Email.Mode)
+	}
+
+	return nil
 }

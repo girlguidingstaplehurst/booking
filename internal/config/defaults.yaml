@@ -1,3 +1,5 @@
 auth:
   mode: google
   e2e_email: e2e-admin@kathielambcentre.org
+email:
+  mode: smtp
