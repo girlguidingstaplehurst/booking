@@ -176,6 +176,48 @@ describe("Dashboard invoice behavior", () => {
     expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Review" })).toHaveLength(4);
   });
+
+  test("hides invoice creation from remaining-session groups but keeps it for invoice preparation", async () => {
+    const groupData = {
+      events: [{
+        id: "group-session",
+        eventGroupID: "group-1",
+        from: dayjs().add(1, "day").toISOString(),
+        to: dayjs().add(1, "day").add(1, "hour").toISOString(),
+        status: "approved",
+        invoices: [],
+      }],
+      eventGroups: [{
+        id: "group-1",
+        name: "Weekly Group",
+        from: dayjs().toISOString(),
+        to: dayjs().add(1, "day").toISOString(),
+        invoices: [],
+      }],
+    };
+    renderDashboard(groupData);
+
+    await screen.findByRole("heading", { name: "Dashboard" });
+
+    const remainingSection = screen.getByRole("heading", {
+      name: "Event groups with remaining sessions",
+    }).parentElement;
+    const invoiceSection = screen.getByRole("heading", {
+      name: "Events to be invoiced",
+    }).parentElement;
+
+    expect(within(remainingSection).getByText("Weekly Group")).toBeInTheDocument();
+    expect(within(remainingSection).getByRole("link", { name: "Review" })).toHaveAttribute(
+      "href",
+      "/admin/review-group/group-1",
+    );
+    expect(within(remainingSection).queryByRole("link", { name: "Create Invoice" }))
+      .not.toBeInTheDocument();
+    expect(within(invoiceSection).getByRole("link", { name: "Create Invoice" })).toHaveAttribute(
+      "href",
+      "/admin/create-invoice?eventGroup=group-1",
+    );
+  });
 });
 
 describe("Dashboard booked event sections", () => {

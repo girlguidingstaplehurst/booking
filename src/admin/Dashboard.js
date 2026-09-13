@@ -331,12 +331,14 @@ export function Dashboard() {
               Review
             </RoundedButton>
           )}
-          <RoundedButton
-            as={ReactRouterLink}
-            to={`/admin/create-invoice?eventGroup=${group.id}`}
-          >
-            Create Invoice
-          </RoundedButton>
+          {sectionTitle !== "Event groups with remaining sessions" && (
+            <RoundedButton
+              as={ReactRouterLink}
+              to={`/admin/create-invoice?eventGroup=${group.id}`}
+            >
+              Create Invoice
+            </RoundedButton>
+          )}
         </ButtonGroup>
       </Box>
     </Box>

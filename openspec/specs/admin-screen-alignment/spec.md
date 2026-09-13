@@ -115,7 +115,11 @@ invoice creation, and invoice payment actions without failing when optional
 invoice collections are absent or incomplete. The Dashboard SHALL limit
 individual-event invoice and keyholder workflow lists to approved events, SHALL
 NOT display an approval action on Dashboard event cards, and SHALL replace the
-redundant event calendar with event-group and booked-event card sections.
+redundant event calendar with event-group and booked-event card sections. Event
+group cards in the `Event groups with remaining sessions` section SHALL provide
+the group review action without displaying a direct `Create Invoice` action;
+event groups in the `Events to be invoiced` section SHALL retain direct group
+invoice creation.
 
 #### Scenario: Dashboard receives an event without invoices
 
@@ -172,6 +176,21 @@ redundant event calendar with event-group and booked-event card sections.
   later date
 - **THEN** the Dashboard displays the group in a separate event-group section
 - **AND** the group uses its existing card header color
+
+#### Scenario: Remaining-session group cards provide review without invoice creation
+
+- **WHEN** an event group has at least one session whose end date is today or a
+  later date and is displayed in the `Event groups with remaining sessions`
+  section
+- **THEN** the Dashboard displays the group review action
+- **AND** the Dashboard does not display a `Create Invoice` action on that card
+
+#### Scenario: Invoice-eligible group cards retain direct invoice creation
+
+- **WHEN** an event group has no invoices and is displayed in the `Events to be
+  invoiced` section
+- **THEN** the Dashboard displays a `Create Invoice` action targeting the
+  existing event-group invoice preparation flow
 
 #### Scenario: Dashboard hides completed event groups
 
