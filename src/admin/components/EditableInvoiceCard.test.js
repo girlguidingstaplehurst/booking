@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { act } from "react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { EditableInvoiceCard } from "./EditableInvoiceCard";
 
 jest.mock("../useAuth", () => () => ({ token: "token" }));
@@ -23,11 +24,22 @@ const preparation = {
 };
 
 function renderCard() {
-  return render(
-    <ChakraProvider>
-      <EditableInvoiceCard preparation={preparation} />
-    </ChakraProvider>,
-  );
+  const router = createMemoryRouter([
+    {
+      path: "/admin/create-invoice",
+      element: <EditableInvoiceCard preparation={preparation} />,
+    },
+    { path: "/admin", element: <div>Dashboard</div> },
+  ], { initialEntries: ["/admin/create-invoice"] });
+
+  return {
+    ...render(
+      <ChakraProvider>
+        <RouterProvider router={router} />
+      </ChakraProvider>,
+    ),
+    router,
+  };
 }
 
 test("shows event and contact context with deposit disabled", () => {
@@ -65,5 +77,28 @@ test("submits edited lines with the selected event", async () => {
     contact: "contact@example.org",
     events: ["event-1"],
     items: [expect.objectContaining({ description: "Edited event hire" })],
+  });
+});
+
+test("returns to the dashboard after a successful send", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  const { router } = renderCard();
+
+  fireEvent.submit(screen.getByRole("button", { name: "Send Invoice" }).closest("form"));
+
+  await waitFor(() => expect(router.state.location.pathname).toBe("/admin"));
+});
+
+test("stays on the form after a failed send", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+  const { router } = renderCard();
+
+  fireEvent.submit(screen.getByRole("button", { name: "Send Invoice" }).closest("form"));
+
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  expect(router.state.location.pathname).toBe("/admin/create-invoice");
+  expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toMatchObject({
+    contact: "contact@example.org",
+    events: ["event-1"],
   });
 });

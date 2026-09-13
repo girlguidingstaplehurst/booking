@@ -22,6 +22,7 @@ import {
   Tr,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TbTrash } from "react-icons/tb";
 import { useFormik } from "formik";
 import { NumericFormat } from "react-number-format";
@@ -36,6 +37,7 @@ const priceFormat = new Intl.NumberFormat("en-GB", {
 
 export function EditableInvoiceCard({ preparation }) {
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
   const { token } = useAuth();
   const isIndividual = preparation.mode === "individual";
   const eventNames = preparation.events.map((event) => event.name).join(", ");
@@ -65,6 +67,9 @@ export function EditableInvoiceCard({ preparation }) {
       });
 
       setSubmitting(false);
+      if (resp?.ok) {
+        navigate("/admin");
+      }
       return resp;
     },
   });

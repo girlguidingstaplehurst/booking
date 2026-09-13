@@ -81,7 +81,7 @@ When the rate assigned to an event group has a configured two-tier per-session d
 
 ### Requirement: Administrators can edit and submit prepared invoice lines
 
-The system SHALL allow administrators to edit invoice line descriptions and costs before submission, while preserving the selected event or event-group association and contact information when the invoice is sent.
+The system SHALL allow administrators to edit invoice line descriptions and costs before submission, while preserving the selected event or event-group association and contact information when the invoice is sent. The system SHALL navigate an administrator to the admin dashboard after an invoice-send request receives a successful HTTP response and SHALL keep the administrator on the invoice preparation form when the request does not receive a successful HTTP response.
 
 #### Scenario: Submit a combined individual invoice
 
@@ -99,3 +99,15 @@ The system SHALL allow administrators to edit invoice line descriptions and cost
 - **WHEN** an administrator changes a line description or cost before submission
 - **THEN** the submitted invoice uses the edited value for that line
 - **AND** the system retains the source event association when the line represents an event or session
+
+#### Scenario: Successfully send an invoice
+
+- **WHEN** an administrator submits a prepared invoice
+- **AND** the invoice-send request returns a response where `ok` is true
+- **THEN** the system navigates the administrator to `/admin`
+
+#### Scenario: Invoice send fails
+
+- **WHEN** an administrator submits a prepared invoice
+- **AND** the invoice-send request returns a response where `ok` is false or no response
+- **THEN** the system keeps the administrator on the invoice preparation form
