@@ -42,6 +42,7 @@ type Database interface {
 	CreateKeyholder(ctx context.Context, input CreateKeyholderBody) (Keyholder, error)
 	UpdateKeyholder(ctx context.Context, id openapi_types.UUID, input UpdateKeyholderBody) (Keyholder, error)
 	SetEventKeyholders(ctx context.Context, eventID string, input SetEventKeyholdersBody) error
+	UpdateEventDates(ctx context.Context, eventID string, input UpdateEventDatesBody) error
 	MarkInvoiceSent(ctx context.Context, id string) error
 	MarkInvoicePaid(ctx context.Context, id string) error
 	SetEventStatus(Ctx context.Context, eventID string, state string) error
@@ -453,6 +454,26 @@ func (s *Server) AdminSetEventKeyholders(ctx context.Context, request AdminSetEv
 		return AdminSetEventKeyholders422JSONResponse{ErrorMessage: err.Error()}, nil
 	}
 	return AdminSetEventKeyholders200Response{}, nil
+}
+
+func (s *Server) AdminUpdateEventDates(ctx context.Context, request AdminUpdateEventDatesRequestObject) (AdminUpdateEventDatesResponseObject, error) {
+	if request.Body == nil {
+		return AdminUpdateEventDates422JSONResponse{ErrorMessage: "event dates are required"}, nil
+	}
+
+	err := s.db.UpdateEventDates(ctx, request.EventID, *request.Body)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return AdminUpdateEventDates404JSONResponse{ErrorMessage: "no event exists with that identifier"}, nil
+	case errors.Is(err, consts.ErrBookingExists):
+		return AdminUpdateEventDates409JSONResponse{ErrorMessage: err.Error()}, nil
+	case errors.Is(err, consts.ErrInvalidEventDates):
+		return AdminUpdateEventDates422JSONResponse{ErrorMessage: err.Error()}, nil
+	case err != nil:
+		return AdminUpdateEventDates500JSONResponse{ErrorMessage: err.Error()}, nil
+	default:
+		return AdminUpdateEventDates200Response{}, nil
+	}
 }
 
 func validatePerSessionPricing(pricing PerSessionPricing) string {

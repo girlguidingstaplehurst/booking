@@ -381,6 +381,12 @@ type SetRateBody struct {
 	Rate string `json:"rate"`
 }
 
+// UpdateEventDatesBody defines model for UpdateEventDatesBody.
+type UpdateEventDatesBody struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
 // UpdateKeyholderBody defines model for UpdateKeyholderBody.
 type UpdateKeyholderBody struct {
 	Active    bool   `json:"active"`
@@ -433,6 +439,9 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
+
+// AdminUpdateEventDatesJSONRequestBody defines body for AdminUpdateEventDates for application/json ContentType.
+type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody
 
 // AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
 type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
@@ -593,6 +602,20 @@ type ClientInterface interface {
 
 	// AdminEventCancel performs a POST /api/v1/admin/events/{eventID}/cancel-event (the `AdminEventCancel` operationId) request.
 	AdminEventCancel(ctx context.Context, eventID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateEventDatesWithBody Update event dates and times
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+	AdminUpdateEventDatesWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminUpdateEventDates Update event dates and times
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+	AdminUpdateEventDates(ctx context.Context, eventID string, body AdminUpdateEventDatesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminSetEventKeyholdersWithBody Set event keyholders
 	//
@@ -852,6 +875,40 @@ func (c *Client) AdminEventApprove(ctx context.Context, eventID string, reqEdito
 // AdminEventCancel performs a POST /api/v1/admin/events/{eventID}/cancel-event (the `AdminEventCancel` operationId) request.
 func (c *Client) AdminEventCancel(ctx context.Context, eventID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminEventCancelRequest(c.Server, eventID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateEventDatesWithBody Update event dates and times
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+func (c *Client) AdminUpdateEventDatesWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateEventDatesRequestWithBody(c.Server, eventID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminUpdateEventDates Update event dates and times
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+func (c *Client) AdminUpdateEventDates(ctx context.Context, eventID string, body AdminUpdateEventDatesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminUpdateEventDatesRequest(c.Server, eventID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1493,6 +1550,53 @@ func NewAdminEventCancelRequest(server string, eventID string) (*http.Request, e
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewAdminUpdateEventDatesRequest calls the generic AdminUpdateEventDates builder with application/json body
+func NewAdminUpdateEventDatesRequest(server string, eventID string, body AdminUpdateEventDatesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminUpdateEventDatesRequestWithBody(server, eventID, "application/json", bodyReader)
+}
+
+// NewAdminUpdateEventDatesRequestWithBody constructs an http.Request for the AdminUpdateEventDates method, with any body, and a specified content type
+func NewAdminUpdateEventDatesRequestWithBody(server string, eventID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "eventID", eventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/events/%s/dates", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2247,6 +2351,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	AdminEventCancelWithResponse(ctx context.Context, eventID string, reqEditors ...RequestEditorFn) (*AdminEventCancelResponse, error)
 
+	// AdminUpdateEventDatesWithBodyWithResponse Update event dates and times
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+	AdminUpdateEventDatesWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateEventDatesResponse, error)
+
+	// AdminUpdateEventDatesWithResponse Update event dates and times
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+	AdminUpdateEventDatesWithResponse(ctx context.Context, eventID string, body AdminUpdateEventDatesJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateEventDatesResponse, error)
+
 	// AdminSetEventKeyholdersWithBodyWithResponse Set event keyholders
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -2742,6 +2860,68 @@ func (r AdminEventCancelResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AdminEventCancelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminUpdateEventDatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminUpdateEventDatesResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminUpdateEventDatesResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminUpdateEventDatesResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminUpdateEventDatesResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminUpdateEventDatesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminUpdateEventDatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminUpdateEventDatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminUpdateEventDatesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3689,6 +3869,32 @@ func (c *ClientWithResponses) AdminEventCancelWithResponse(ctx context.Context, 
 	return ParseAdminEventCancelResponse(rsp)
 }
 
+// AdminUpdateEventDatesWithBodyWithResponse Update event dates and times
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+func (c *ClientWithResponses) AdminUpdateEventDatesWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminUpdateEventDatesResponse, error) {
+	rsp, err := c.AdminUpdateEventDatesWithBody(ctx, eventID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateEventDatesResponse(rsp)
+}
+
+// AdminUpdateEventDatesWithResponse Update event dates and times
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/admin/events/{eventID}/dates (the `AdminUpdateEventDates` operationId).
+func (c *ClientWithResponses) AdminUpdateEventDatesWithResponse(ctx context.Context, eventID string, body AdminUpdateEventDatesJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminUpdateEventDatesResponse, error) {
+	rsp, err := c.AdminUpdateEventDates(ctx, eventID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminUpdateEventDatesResponse(rsp)
+}
+
 // AdminSetEventKeyholdersWithBodyWithResponse Set event keyholders
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -4224,6 +4430,56 @@ func ParseAdminEventCancelResponse(rsp *http.Response) (*AdminEventCancelRespons
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminUpdateEventDatesResponse parses an HTTP response from a AdminUpdateEventDatesWithResponse call
+func ParseAdminUpdateEventDatesResponse(rsp *http.Response) (*AdminUpdateEventDatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminUpdateEventDatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

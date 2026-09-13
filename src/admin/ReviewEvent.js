@@ -7,7 +7,10 @@ import {
   CardHeader,
   Container,
   Flex,
+  FormLabel,
   Heading,
+  Input,
+  SimpleGrid,
   Spacer,
   Stack,
   StackDivider,
@@ -147,7 +150,15 @@ export function ReviewEvent() {
   });
   const [assignmentError, setAssignmentError] = React.useState("");
   const [savingAssignments, setSavingAssignments] = React.useState(false);
-  const eventDates = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
+  const [editableDates, setEditableDates] = React.useState({
+    from: dayjs(event.from).format("YYYY-MM-DD"),
+    to: dayjs(event.to).format("YYYY-MM-DD"),
+    fromTime: dayjs(event.from).format("HH:mm"),
+    toTime: dayjs(event.to).format("HH:mm"),
+  });
+  const [dateError, setDateError] = React.useState("");
+  const [savingDates, setSavingDates] = React.useState(false);
+  const eventDateSummary = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
   const visibility = event.visible ? (
     <Flex>
       <Box>
@@ -185,6 +196,37 @@ export function ReviewEvent() {
     }
   };
 
+  const saveDates = async () => {
+    const from = dayjs(`${editableDates.from}T${editableDates.fromTime}`);
+    const to = dayjs(`${editableDates.to}T${editableDates.toTime}`);
+    setDateError("");
+    if (!from.isValid() || !to.isValid() || !to.isAfter(from)) {
+      setDateError("The end date and time must be after the start date and time.");
+      return;
+    }
+
+    setSavingDates(true);
+    const response = await AdminPutter(`/api/v1/admin/events/${event.id}/dates`, {
+      from: from.toISOString(),
+      to: to.toISOString(),
+    });
+    setSavingDates(false);
+    if (response?.ok) {
+      revalidator.revalidate();
+    } else {
+      let message = "Unable to update event dates.";
+      if (response) {
+        try {
+          const error = await response.json();
+          message = error.error_message || message;
+        } catch (error) {
+          // Keep the generic message when the server does not return JSON.
+        }
+      }
+      setDateError(message);
+    }
+  };
+
   return (
     <Container maxW="4xl">
       <Stack spacing={4}>
@@ -208,13 +250,54 @@ export function ReviewEvent() {
               <Flex>
                 <Box>
                   <Heading size="s">Event Dates and Times</Heading>
-                  <Text>{eventDates}</Text>
+                  <Text>{eventDateSummary}</Text>
                 </Box>
                 <Spacer />
-                {/*<ButtonGroup>*/}
-                {/*  <RoundedButton colorScheme="brand">Update Dates and Times</RoundedButton>*/}
-                {/*</ButtonGroup>*/}
               </Flex>
+              <Box>
+                <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+                  <Box>
+                    <FormLabel htmlFor="event-start-date">Start date</FormLabel>
+                    <Input
+                      id="event-start-date"
+                      type="date"
+                      value={editableDates.from}
+                      onChange={(change) => setEditableDates((dates) => ({ ...dates, from: change.target.value }))}
+                    />
+                  </Box>
+                  <Box>
+                    <FormLabel htmlFor="event-start-time">Start time</FormLabel>
+                    <Input
+                      id="event-start-time"
+                      type="time"
+                      value={editableDates.fromTime}
+                      onChange={(change) => setEditableDates((dates) => ({ ...dates, fromTime: change.target.value }))}
+                    />
+                  </Box>
+                  <Box>
+                    <FormLabel htmlFor="event-end-date">End date</FormLabel>
+                    <Input
+                      id="event-end-date"
+                      type="date"
+                      value={editableDates.to}
+                      onChange={(change) => setEditableDates((dates) => ({ ...dates, to: change.target.value }))}
+                    />
+                  </Box>
+                  <Box>
+                    <FormLabel htmlFor="event-end-time">End time</FormLabel>
+                    <Input
+                      id="event-end-time"
+                      type="time"
+                      value={editableDates.toTime}
+                      onChange={(change) => setEditableDates((dates) => ({ ...dates, toTime: change.target.value }))}
+                    />
+                  </Box>
+                </SimpleGrid>
+                <Text color="red">{dateError}</Text>
+                <RoundedButton onClick={saveDates} isLoading={savingDates} marginTop={2}>
+                  Update Dates and Times
+                </RoundedButton>
+              </Box>
               <Box>
                 <Heading size="s">Event Details</Heading>
                 <Text>{event.details}</Text>

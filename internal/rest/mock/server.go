@@ -341,6 +341,20 @@ func (mr *MockDatabaseMockRecorder) SetRate(ctx, eventID, rate any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRate", reflect.TypeOf((*MockDatabase)(nil).SetRate), ctx, eventID, rate)
 }
 
+// UpdateEventDates mocks base method.
+func (m *MockDatabase) UpdateEventDates(ctx context.Context, eventID string, input rest.UpdateEventDatesBody) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEventDates", ctx, eventID, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEventDates indicates an expected call of UpdateEventDates.
+func (mr *MockDatabaseMockRecorder) UpdateEventDates(ctx, eventID, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDates", reflect.TypeOf((*MockDatabase)(nil).UpdateEventDates), ctx, eventID, input)
+}
+
 // UpdateKeyholder mocks base method.
 func (m *MockDatabase) UpdateKeyholder(ctx context.Context, id types.UUID, input rest.UpdateKeyholderBody) (rest.Keyholder, error) {
 	m.ctrl.T.Helper()

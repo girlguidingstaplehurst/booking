@@ -21,6 +21,7 @@ import AdminLayout from "./admin/AdminLayout";
 import { AuthProvider } from "./admin/useAuth";
 import { Dashboard, populateDashboard } from "./admin/Dashboard";
 import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
+import { reviewEventGroup, ReviewEventGroup } from "./admin/ReviewEventGroup";
 import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
@@ -102,6 +103,11 @@ const router = createBrowserRouter(
           path="review/:eventID"
           element={<ReviewEvent />}
           loader={({ params }) => reviewEvent(params.eventID)}
+        />
+        <Route
+          path="review-group/:groupID"
+          element={<ReviewEventGroup />}
+          loader={({ params }) => reviewEventGroup(params.groupID)}
         />
         <Route
           path="create-invoice"

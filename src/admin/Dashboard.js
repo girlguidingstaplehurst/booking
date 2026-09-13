@@ -15,11 +15,7 @@ import { AdminFetcher } from "../Fetcher";
 import { markInvoicePaid } from "./components/invoiceActions";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
-import { Calendar, dayjsLocalizer } from "react-big-calendar";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 import React from "react";
-
-const localizer = dayjsLocalizer(dayjs);
 
 export async function populateDashboard() {
   return await AdminFetcher("/api/v1/admin/events", {
@@ -92,6 +88,41 @@ export function normalizeDashboardData(data) {
   };
 }
 
+export function isEventOnOrAfterToday(event, today = dayjs()) {
+  return !dayjs(event.to).isBefore(today, "day");
+}
+
+export function isEventActiveToday(event, today = dayjs()) {
+  const start = dayjs(event.from);
+  const end = dayjs(event.to);
+  return !start.isAfter(today, "day") && !end.isBefore(today, "day");
+}
+
+export function getRemainingEventGroups(events, eventGroups, today = dayjs()) {
+  return eventGroups
+    .map((group) => ({
+      ...group,
+      sessions: events
+        .filter((event) => event.eventGroupID === group.id)
+        .filter((event) => isEventOnOrAfterToday(event, today))
+        .sort((a, b) => dayjs(a.from).valueOf() - dayjs(b.from).valueOf()),
+    }))
+    .filter((group) => group.sessions.length > 0);
+}
+
+export function getBookedEvents(events, sections, today = dayjs()) {
+  const workflowEventIDs = new Set(
+    sections.flatMap((section) => section.events.map((event) => event.id)),
+  );
+
+  return events
+    .filter((event) => event.status === "approved")
+    .filter((event) => !event.eventGroupID)
+    .filter((event) => !workflowEventIDs.has(event.id))
+    .filter((event) => isEventOnOrAfterToday(event, today))
+    .sort((a, b) => dayjs(a.from).valueOf() - dayjs(b.from).valueOf());
+}
+
 function getInvoiceColorScheme(status) {
   switch (status) {
     case "raised":
@@ -110,13 +141,6 @@ export function Dashboard() {
   const revalidator = useRevalidator();
   const [payingInvoiceIDs, setPayingInvoiceIDs] = React.useState(() => new Set());
   const [paymentError, setPaymentError] = React.useState("");
-  const calendarEvents = eventsList.events.map((event) => ({
-    title: event.name,
-    start: dayjs(event.from).toDate(),
-    end: dayjs(event.to).toDate(),
-    allDay: false,
-    status: event.status,
-  }));
 
   const sections = [
     {
@@ -153,6 +177,11 @@ export function Dashboard() {
       ),
     },
   ];
+  const remainingEventGroups = getRemainingEventGroups(
+    eventsList.events,
+    eventsList.eventGroups || [],
+  );
+  const bookedEvents = getBookedEvents(eventsList.events, sections);
 
   const sortedEvents = (events) =>
     [...events].sort(
@@ -163,10 +192,20 @@ export function Dashboard() {
     const from = dayjs(event.from);
     const to = dayjs(event.to);
     const isPast = to.isBefore(dayjs());
+    const isActiveToday = isEventActiveToday(event);
 
     return (
       <Box key={event.id} borderRadius="md" overflow="hidden" boxShadow="md">
-        <Box backgroundColor={isPast ? "red.600" : "brand.900"} padding={5}>
+        <Box
+          backgroundColor={
+            sectionTitle === "Booked events" && isActiveToday
+              ? "purple.600"
+              : isPast
+                ? "red.600"
+                : "brand.900"
+          }
+          padding={5}
+        >
           <Text as="span" color="white" fontSize="xl" fontWeight="bold">
             {event.name}
           </Text>
@@ -283,13 +322,22 @@ export function Dashboard() {
             </Stack>
           </Box>
         )}
-        <RoundedButton
-          as={ReactRouterLink}
-          to={`/admin/create-invoice?eventGroup=${group.id}`}
-          marginTop={4}
-        >
-          Create Invoice
-        </RoundedButton>
+        <ButtonGroup marginTop={4}>
+          {sectionTitle === "Event groups with remaining sessions" && (
+            <RoundedButton
+              as={ReactRouterLink}
+              to={`/admin/review-group/${group.id}`}
+            >
+              Review
+            </RoundedButton>
+          )}
+          <RoundedButton
+            as={ReactRouterLink}
+            to={`/admin/create-invoice?eventGroup=${group.id}`}
+          >
+            Create Invoice
+          </RoundedButton>
+        </ButtonGroup>
       </Box>
     </Box>
   );
@@ -351,22 +399,28 @@ export function Dashboard() {
               </Box>
             ),
         )}
-        <Box>
-          <Heading size="md" marginBottom={4}>
-            Event calendar
-          </Heading>
-          <Box backgroundColor="white" borderRadius="md" boxShadow="md" padding={4} overflowX="auto">
-            <Calendar
-              localizer={localizer}
-              defaultView="month"
-              views={["month"]}
-              events={calendarEvents}
-              date={dayjs().toDate()}
-              showMultiDayTimes
-              style={{ height: "80vh", minWidth: "620px" }}
-            />
+        {remainingEventGroups.length > 0 && (
+          <Box>
+            <Heading size="md" marginBottom={4}>
+              Event groups with remaining sessions
+            </Heading>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              {remainingEventGroups.map((group) =>
+                eventGroupCard(group, "Event groups with remaining sessions"),
+              )}
+            </SimpleGrid>
           </Box>
-        </Box>
+        )}
+        {bookedEvents.length > 0 && (
+          <Box>
+            <Heading size="md" marginBottom={4}>
+              Booked events
+            </Heading>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              {bookedEvents.map((event) => eventCard(event, "Booked events"))}
+            </SimpleGrid>
+          </Box>
+        )}
       </Stack>
     </Container>
   );

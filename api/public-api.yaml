@@ -226,6 +226,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/events/{eventID}/dates:
+    put:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Update event dates and times
+      operationId: adminUpdateEventDates
+      parameters:
+        - in: path
+          name: eventID
+          required: true
+          schema:
+            type: string
+          description: The ID of the event to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventDatesBody'
+      responses:
+        '200':
+          description: Event dates updated
+        '404':
+          description: No event exists with that ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The new dates conflict with an existing booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: The date range is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/invoices/for-events:
     get:
       security:
@@ -1430,6 +1479,18 @@ components:
           type: string
           format: uuid
           nullable: true
+    UpdateEventDatesBody:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
   securitySchemes:
     admin_auth:
       type: http

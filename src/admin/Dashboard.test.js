@@ -7,7 +7,14 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { AdminPoster } from "../Poster";
-import { Dashboard, normalizeDashboardData } from "./Dashboard";
+import dayjs from "dayjs";
+import {
+  Dashboard,
+  getBookedEvents,
+  getRemainingEventGroups,
+  isEventActiveToday,
+  normalizeDashboardData,
+} from "./Dashboard";
 
 jest.mock("../Poster", () => ({
   AdminPoster: jest.fn(),
@@ -168,5 +175,79 @@ describe("Dashboard invoice behavior", () => {
 
     expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Review" })).toHaveLength(4);
+  });
+});
+
+describe("Dashboard booked event sections", () => {
+  const today = dayjs("2026-09-13T12:00:00Z");
+  const workflowSections = [{ events: [{ id: "workflow-event" }] }];
+
+  test("keeps groups with sessions ending today and hides completed groups", () => {
+    const groups = getRemainingEventGroups(
+      [
+        {
+          id: "today-session",
+          eventGroupID: "active-group",
+          from: "2026-09-13T09:00:00Z",
+          to: "2026-09-13T10:00:00Z",
+        },
+        {
+          id: "completed-session",
+          eventGroupID: "completed-group",
+          from: "2026-09-12T09:00:00Z",
+          to: "2026-09-12T10:00:00Z",
+        },
+      ],
+      [{ id: "active-group" }, { id: "completed-group" }],
+      today,
+    );
+
+    expect(groups.map((group) => group.id)).toEqual(["active-group"]);
+    expect(groups[0].sessions.map((session) => session.id)).toEqual(["today-session"]);
+  });
+
+  test("shows approved ungrouped events not already in workflow sections", () => {
+    const events = getBookedEvents(
+      [
+        {
+          id: "workflow-event",
+          status: "approved",
+          to: "2026-09-20T10:00:00Z",
+        },
+        {
+          id: "future-event",
+          status: "approved",
+          from: "2026-09-20T09:00:00Z",
+          to: "2026-09-20T10:00:00Z",
+        },
+        {
+          id: "ended-event",
+          status: "approved",
+          from: "2026-09-12T09:00:00Z",
+          to: "2026-09-12T10:00:00Z",
+        },
+        {
+          id: "group-session",
+          status: "approved",
+          eventGroupID: "group-1",
+          to: "2026-09-20T10:00:00Z",
+        },
+      ],
+      workflowSections,
+      today,
+    );
+
+    expect(events.map((event) => event.id)).toEqual(["future-event"]);
+  });
+
+  test("treats multi-day and today-ending events as active today", () => {
+    expect(isEventActiveToday({
+      from: "2026-09-12T09:00:00Z",
+      to: "2026-09-13T10:00:00Z",
+    }, today)).toBe(true);
+    expect(isEventActiveToday({
+      from: "2026-09-14T09:00:00Z",
+      to: "2026-09-14T10:00:00Z",
+    }, today)).toBe(false);
   });
 });

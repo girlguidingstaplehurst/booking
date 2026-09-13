@@ -114,4 +114,41 @@ describe("ReviewEvent keyholders", () => {
     expect(screen.getByLabelText("Keyholder in")).toHaveValue("");
     expect(screen.getByLabelText("Keyholder out")).toHaveValue("");
   });
+
+  test("updates event dates and revalidates", async () => {
+    const revalidate = jest.fn();
+    useLoaderData.mockReturnValue(event);
+    useRevalidator.mockReturnValue({ revalidate });
+    render(
+      <ChakraProvider>
+        <ReviewEvent />
+      </ChakraProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-09-14" } });
+    fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-09-14" } });
+    fireEvent.click(screen.getByRole("button", { name: "Update Dates and Times" }));
+
+    await waitFor(() => expect(AdminPutter).toHaveBeenCalledWith(
+      "/api/v1/admin/events/event-1/dates",
+      {
+        from: "2026-09-14T09:00:00.000Z",
+        to: "2026-09-14T11:00:00.000Z",
+      },
+    ));
+    expect(revalidate).toHaveBeenCalled();
+  });
+
+  test("shows a date conflict without refreshing the event", async () => {
+    AdminPutter.mockResolvedValue({
+      ok: false,
+      json: async () => ({ error_message: "a booking exists for these dates" }),
+    });
+    renderReviewEvent();
+
+    fireEvent.click(screen.getByRole("button", { name: "Update Dates and Times" }));
+
+    expect(await screen.findByText("a booking exists for these dates")).toBeInTheDocument();
+    expect(useRevalidator().revalidate).not.toHaveBeenCalled();
+  });
 });

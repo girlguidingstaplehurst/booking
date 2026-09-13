@@ -548,6 +548,57 @@ func (db *Database) SetEventKeyholders(ctx context.Context, eventID string, inpu
 	})
 }
 
+func (db *Database) UpdateEventDates(ctx context.Context, eventID string, input rest.UpdateEventDatesBody) error {
+	from, to, err := parseEventDates(input)
+	if err != nil {
+		return err
+	}
+
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode"); err != nil {
+			return errors.Join(err, errors.New("failed to lock table"))
+		}
+
+		var id string
+		if err := tx.QueryRow(ctx, "select id from booking_events where id = $1 for update", eventID).Scan(&id); err != nil {
+			return err
+		}
+
+		var count int
+		err := tx.QueryRow(ctx, `select count(*)
+			from booking_events
+			where id <> $1
+			and (
+				(event_start - interval '30 minutes' <= $2 and event_end + interval '30 minutes' >= $2)
+				or (event_start - interval '30 minutes' <= $3 and event_end + interval '30 minutes' >= $3)
+				or (event_start - interval '30 minutes' >= $2 and event_end + interval '30 minutes' <= $3)
+			)`, eventID, from, to).Scan(&count)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return consts.ErrBookingExists
+		}
+
+		_, err = tx.Exec(ctx, `update booking_events
+			set event_start = $1, event_end = $2
+			where id = $3`, from, to, eventID)
+		return err
+	})
+}
+
+func parseEventDates(input rest.UpdateEventDatesBody) (time.Time, time.Time, error) {
+	from, err := time.Parse(time.RFC3339, input.From)
+	if err != nil {
+		return time.Time{}, time.Time{}, consts.ErrInvalidEventDates
+	}
+	to, err := time.Parse(time.RFC3339, input.To)
+	if err != nil || !to.After(from) {
+		return time.Time{}, time.Time{}, consts.ErrInvalidEventDates
+	}
+	return from, to, nil
+}
+
 func ensureActiveKeyholder(ctx context.Context, tx pgx.Tx, keyholderID *openapi_types.UUID) error {
 	if keyholderID == nil {
 		return nil

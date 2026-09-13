@@ -371,6 +371,12 @@ type SetRateBody struct {
 	Rate string `json:"rate"`
 }
 
+// UpdateEventDatesBody defines model for UpdateEventDatesBody.
+type UpdateEventDatesBody struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
 // UpdateKeyholderBody defines model for UpdateKeyholderBody.
 type UpdateKeyholderBody struct {
 	Active    bool   `json:"active"`
@@ -423,6 +429,9 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
+
+// AdminUpdateEventDatesJSONRequestBody defines body for AdminUpdateEventDates for application/json ContentType.
+type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody
 
 // AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
 type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
