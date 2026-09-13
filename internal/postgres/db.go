@@ -707,7 +707,7 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 			}
 			if _, err := tx.Exec(ctx, `insert into booking_events
 				(id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in_id, keyholder_out_id)
-				values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $11, $11)`, uuid.New(), instance.From, instance.To,
+				values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $10)`, uuid.New(), instance.From, instance.To,
 				group.Name, group.PubliclyVisible, group.Contact.EmailAddress, group.Rate, group.Details, groupID, group.Keyholder); err != nil {
 				return errors.Join(err, errors.New("failed to insert event group instance"))
 			}

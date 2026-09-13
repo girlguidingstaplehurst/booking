@@ -19,7 +19,7 @@ async function createAdminEvent(page, suffix) {
     .fill("An E2E invoice event with enough detail to satisfy validation.");
   await page.getByLabel("Name", { exact: true }).fill("E2E Invoice Contact");
   await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByRole("button", { name: "Submit" }).click();
+  await page.getByRole("button", { name: "Create Events" }).click();
   await expect(page).toHaveURL(/\/admin$/);
 
   const result = await query(

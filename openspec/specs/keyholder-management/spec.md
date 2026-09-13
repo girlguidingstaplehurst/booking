@@ -66,13 +66,14 @@ The system SHALL allow an authenticated administrator to assign separate keyhold
 
 ### Requirement: Event groups use one keyholder for entry and exit
 
-The system SHALL allow an authenticated administrator to select one active keyholder when creating an event group and SHALL apply that keyholder to both entry and exit for every generated event instance. The event-group assignment control SHALL display names only. Client-side event-group validation SHALL reject an unassigned keyholder before submission.
+The system SHALL allow an authenticated administrator to select one active keyholder when creating an event group and SHALL apply that keyholder to both entry and exit for every generated event instance. The event-group assignment control SHALL display names only. Client-side event-group validation SHALL reject an unassigned keyholder before submission. Valid event-group requests SHALL persist the event group and all generated instances without a SQL insertion error.
 
 #### Scenario: Administrator creates an event group with a keyholder
 
 - **WHEN** an authenticated administrator selects an active keyholder and creates an event group
 - **THEN** every generated event instance references that keyholder for both entry and exit
 - **AND** the event-group form does not display the key number
+- **AND** the event group creation request succeeds
 
 #### Scenario: Inactive keyholder cannot be selected for a new event group
 
