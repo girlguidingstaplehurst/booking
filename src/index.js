@@ -31,6 +31,7 @@ import { KeyholderEditor, Keyholders, keyholderEditorLoader } from "./admin/Keyh
 import { keyholdersLoader } from "./admin/components/KeyholderSelect";
 import Location from "./Location";
 import WhatsOn from "./WhatsOn";
+import ThankYou from "./ThankYou";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -59,6 +60,7 @@ const router = createBrowserRouter(
           loader={async () => await fetch("/api/v1/events")}
         />
         <Route path="add-event" element={<AddEvent />} />
+        <Route path="thank-you" element={<ThankYou />} />
         <Route
           path="whats-on"
           element={<WhatsOn />}

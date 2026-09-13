@@ -29,6 +29,10 @@ test("a public booking is persisted through the booking page", async ({ page }) 
   const responsePromise = page.waitForResponse("**/api/v1/add-event");
   await page.getByRole("button", { name: "Book" }).click();
   await expect((await responsePromise).status()).toBe(200);
+  await expect(page).toHaveURL(/\/thank-you$/);
+  await expect(
+    page.getByRole("link", { name: "Return to main page" }),
+  ).toHaveAttribute("href", "/");
 
   const result = await query(
     "select e.event_name, e.email, c.name from booking_events e join booking_contacts c on c.email = e.email where e.event_name = $1",

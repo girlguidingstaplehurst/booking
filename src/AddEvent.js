@@ -195,7 +195,7 @@ function AddEvent() {
           `An error occured when booking (${json.error_message}). Please retry.`,
         );
       } else {
-        return navigate("/");
+        return navigate("/thank-you");
       }
     },
   });
