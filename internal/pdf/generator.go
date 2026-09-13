@@ -245,6 +245,12 @@ func (g *Generator) GenerateInvoice(ctx context.Context, invoice *rest.Invoice) 
 		Family: poppinsFontFamily,
 	}))
 
+	m.AddRow(8, text.NewCol(8, "or by cheque made payable to Staplehurst District Girl Guides.", props.Text{
+		Size:   12,
+		Color:  ggDarkBlue,
+		Family: poppinsFontFamily,
+	}))
+
 	return g.generateDocument(m)
 }
 
