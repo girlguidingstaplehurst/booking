@@ -27,6 +27,8 @@ func Migrate() error {
 		return err
 	}
 
+	slog.Info("starting db migration update")
+
 	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err

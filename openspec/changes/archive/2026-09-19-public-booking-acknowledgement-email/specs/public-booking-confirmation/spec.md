@@ -1,10 +1,4 @@
-# public-booking-confirmation Specification
-
-## Purpose
-
-Provide public booking users with a clear, content-managed confirmation page after their booking succeeds, while preserving a reliable route back to the main page.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Successful public bookings show the thank-you page
 

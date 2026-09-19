@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -152,6 +153,17 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 		return AddEvent500JSONResponse{
 			ErrorMessage: err.Error(),
 		}, nil
+	}
+
+	const acknowledgementEmailKey = "event-name-booking-in-review"
+	emailContent, err := s.content.Email(ctx, acknowledgementEmailKey)
+	if err != nil {
+		slog.Error("failed to load public booking acknowledgement email", "resource", acknowledgementEmailKey, "recipient", req.Body.Contact.EmailAddress, "err", err)
+		return AddEvent200Response{}, nil
+	}
+
+	if err := s.email.Send(ctx, string(req.Body.Contact.EmailAddress), emailContent.Subject, emailContent.Body); err != nil {
+		slog.Error("failed to send public booking acknowledgement email", "resource", acknowledgementEmailKey, "recipient", req.Body.Contact.EmailAddress, "err", err)
 	}
 
 	return AddEvent200Response{}, nil

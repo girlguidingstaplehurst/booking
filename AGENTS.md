@@ -11,6 +11,7 @@
 - Frontend dependencies use `npm ci`; use `npm start` for the React dev server and `npm run build` to regenerate the production frontend in `build/`.
 - Run all generation from the repository root with `go generate ./...` (or `mage generate`); this includes the frontend build, OpenAPI codegen, mocks, and test client/builders.
 - Run Go tests with `go test ./...`; run the frontend test suite with `npm test -- --watchAll=false`, or focus it with `npm test -- --watchAll=false ShowCalendar.test.js`.
+- Run the Playwright acceptance suite with `mage e2ETest`; prompt the user to start the E2E environment separately with `mage e2E` (or the equivalent Skaffold E2E environment) before running the tests.
 - Run the service directly with `go run ./cmd/booking` (or `mage run`); it listens on port `8080` and requires a reachable PostgreSQL `DATABASE_URL` because migrations run at startup.
 - `mage dev` runs `skaffold dev`, which builds with ko, deploys `deploy/k8s/local`, and port-forwards the app to `localhost:8080` and PostgreSQL to `localhost:5432`.
 
