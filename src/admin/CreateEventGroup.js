@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import FormFieldAndLabel from "../components/FormFieldAndLabel";
-import DateTimeRangeAccumulator from "./components/DateTimeRangeAccumulator";
+import MultiDateTimeRangeAccumulator from "./components/MultiDateTimeRangeAccumulator";
 import { RateSelect } from "./components/RateSelect";
 import { AdminPoster } from "../Poster";
 import RoundedButton from "../components/RoundedButton";
@@ -100,7 +100,7 @@ export function CreateEventGroup() {
               ],
             }}
           />
-          <DateTimeRangeAccumulator
+          <MultiDateTimeRangeAccumulator
             value={instances}
             setter={setInstances}
             name="instances"

@@ -60,7 +60,7 @@ export function generateWeeklyOccurrences({ startDate, endDate, from, to }) {
   return occurrences;
 }
 
-function DateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
+export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPrefix = "recurrence" }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [from, setFrom] = useState("");
@@ -138,16 +138,21 @@ function DateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
   return (
     <Box>
       <Text fontWeight="bold" marginBottom={2}>{label}</Text>
-      <Checkbox isChecked={repeatWeekly} onChange={updateRepeatWeekly} marginBottom={2}>
+      <Checkbox
+        id={`${idPrefix}-repeat-weekly`}
+        isChecked={repeatWeekly}
+        onChange={updateRepeatWeekly}
+        marginBottom={2}
+      >
         Repeat weekly
       </Checkbox>
       <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
         <Box>
-          <FormLabel htmlFor="recurrence-start-date">
+            <FormLabel htmlFor={`${idPrefix}-start-date`}>
             {repeatWeekly ? "First meeting date" : "Event date"}
           </FormLabel>
           <Input
-            id="recurrence-start-date"
+            id={`${idPrefix}-start-date`}
             value={startDate}
             onChange={updateInput(setStartDate, true)}
             type="date"
@@ -155,9 +160,9 @@ function DateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
         </Box>
         {repeatWeekly && (
           <Box>
-            <FormLabel htmlFor="recurrence-end-date">Repeat weekly until</FormLabel>
+            <FormLabel htmlFor={`${idPrefix}-end-date`}>Repeat weekly until</FormLabel>
             <Input
-              id="recurrence-end-date"
+              id={`${idPrefix}-end-date`}
               value={endDate}
               onChange={updateInput(setEndDate)}
               type="date"
@@ -165,18 +170,18 @@ function DateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
           </Box>
         )}
         <Box>
-          <FormLabel htmlFor="recurrence-start-time">From</FormLabel>
+          <FormLabel htmlFor={`${idPrefix}-start-time`}>From</FormLabel>
           <Input
-            id="recurrence-start-time"
+            id={`${idPrefix}-start-time`}
             value={from}
             onChange={updateInput(setFrom)}
             type="time"
           />
         </Box>
         <Box>
-          <FormLabel htmlFor="recurrence-end-time">To</FormLabel>
+          <FormLabel htmlFor={`${idPrefix}-end-time`}>To</FormLabel>
           <Input
-            id="recurrence-end-time"
+            id={`${idPrefix}-end-time`}
             value={to}
             onChange={updateInput(setTo)}
             type="time"

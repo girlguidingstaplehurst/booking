@@ -1,10 +1,4 @@
-# recurring-event-date-selection Specification
-
-## Purpose
-
-This capability lets administrators create one or more independent one-off or fixed-time weekly schedules, remove occurrences when no meeting occurs, and submit the resulting concrete event instances through the existing booking workflows.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Administrator can create a single event by default
 
