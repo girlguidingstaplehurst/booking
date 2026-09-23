@@ -146,6 +146,20 @@ func (mr *MockDatabaseMockRecorder) CreateRate(ctx, rate any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRate", reflect.TypeOf((*MockDatabase)(nil).CreateRate), ctx, rate)
 }
 
+// DuplicateEventGroup mocks base method.
+func (m *MockDatabase) DuplicateEventGroup(ctx context.Context, event rest.AdminDuplicateEventGroupRequestObject) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DuplicateEventGroup", ctx, event)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DuplicateEventGroup indicates an expected call of DuplicateEventGroup.
+func (mr *MockDatabaseMockRecorder) DuplicateEventGroup(ctx, event any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DuplicateEventGroup", reflect.TypeOf((*MockDatabase)(nil).DuplicateEventGroup), ctx, event)
+}
+
 // GetEvent mocks base method.
 func (m *MockDatabase) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	m.ctrl.T.Helper()
@@ -159,6 +173,21 @@ func (m *MockDatabase) GetEvent(ctx context.Context, id string) (rest.Event, err
 func (mr *MockDatabaseMockRecorder) GetEvent(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvent", reflect.TypeOf((*MockDatabase)(nil).GetEvent), ctx, id)
+}
+
+// GetEventGroup mocks base method.
+func (m *MockDatabase) GetEventGroup(ctx context.Context, id string) (rest.AdminEventGroupDetails, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEventGroup", ctx, id)
+	ret0, _ := ret[0].(rest.AdminEventGroupDetails)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEventGroup indicates an expected call of GetEventGroup.
+func (mr *MockDatabaseMockRecorder) GetEventGroup(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventGroup", reflect.TypeOf((*MockDatabase)(nil).GetEventGroup), ctx, id)
 }
 
 // GetInvoiceByID mocks base method.
@@ -297,6 +326,21 @@ func (m *MockDatabase) MarkInvoiceSent(ctx context.Context, id string) error {
 func (mr *MockDatabaseMockRecorder) MarkInvoiceSent(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvoiceSent", reflect.TypeOf((*MockDatabase)(nil).MarkInvoiceSent), ctx, id)
+}
+
+// SearchEventGroups mocks base method.
+func (m *MockDatabase) SearchEventGroups(ctx context.Context, title string) ([]rest.AdminEventGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchEventGroups", ctx, title)
+	ret0, _ := ret[0].([]rest.AdminEventGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchEventGroups indicates an expected call of SearchEventGroups.
+func (mr *MockDatabaseMockRecorder) SearchEventGroups(ctx, title any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchEventGroups", reflect.TypeOf((*MockDatabase)(nil).SearchEventGroups), ctx, title)
 }
 
 // SetEventKeyholders mocks base method.

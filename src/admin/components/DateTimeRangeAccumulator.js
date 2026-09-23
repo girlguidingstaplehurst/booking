@@ -60,11 +60,11 @@ export function generateWeeklyOccurrences({ startDate, endDate, from, to }) {
   return occurrences;
 }
 
-export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPrefix = "recurrence" }) {
+export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPrefix = "recurrence", initialTimes = [] }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState(initialTimes[0]?.from || "");
+  const [to, setTo] = useState(initialTimes[0]?.to || "");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [excludedDates, setExcludedDates] = useState(() => new Set());
 

@@ -16,6 +16,7 @@ import { markInvoicePaid } from "./components/invoiceActions";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
 import React from "react";
+import { EventGroupSearch } from "./EventGroupSearch";
 
 export async function populateDashboard() {
   return await AdminFetcher("/api/v1/admin/events", {
@@ -423,6 +424,7 @@ export function Dashboard() {
             </SimpleGrid>
           </Box>
         )}
+        <EventGroupSearch />
       </Stack>
     </Container>
   );

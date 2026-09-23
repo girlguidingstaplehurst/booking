@@ -20,3 +20,10 @@ export async function AdminFetcher(url, dummyData) {
   const token = getStoredToken();
   return Fetcher(url, dummyData, {Authorization: "Bearer " + token})
 }
+
+export async function searchEventGroups(title) {
+  return AdminFetcher(
+    `/api/v1/admin/event-groups/search?title=${encodeURIComponent(title)}`,
+    [],
+  );
+}

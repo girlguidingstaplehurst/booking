@@ -85,6 +85,14 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// AdminDuplicateEventGroup defines model for AdminDuplicateEventGroup.
+type AdminDuplicateEventGroup struct {
+	EventGroupId string             `json:"event_group_id"`
+	Instances    []EventInstance    `json:"instances"`
+	Keyholder    openapi_types.UUID `json:"keyholder"`
+	Rate         string             `json:"rate"`
+}
+
 // AdminEventGroup defines model for AdminEventGroup.
 type AdminEventGroup struct {
 	From     string        `json:"from"`
@@ -92,6 +100,27 @@ type AdminEventGroup struct {
 	Invoices *[]InvoiceRef `json:"invoices,omitempty"`
 	Name     string        `json:"name"`
 	To       string        `json:"to"`
+}
+
+// AdminEventGroupDetails defines model for AdminEventGroupDetails.
+type AdminEventGroupDetails struct {
+	Contact struct {
+		EmailAddress openapi_types.Email `json:"email_address"`
+		Name         string              `json:"name"`
+	} `json:"contact"`
+	Details   string `json:"details"`
+	Id        string `json:"id"`
+	Keyholder struct {
+		Id   openapi_types.UUID `json:"id"`
+		Name string             `json:"name"`
+	} `json:"keyholder"`
+	Name            string `json:"name"`
+	PubliclyVisible bool   `json:"publicly_visible"`
+	Rate            string `json:"rate"`
+	TimeRanges      []struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"time_ranges"`
 }
 
 // AdminEventList defines model for AdminEventList.
@@ -391,6 +420,12 @@ type UpdateRateBody struct {
 	PerSession  PerSessionPricing `json:"perSession"`
 }
 
+// AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.
+type AdminSearchEventGroupsParams struct {
+	// Title Case-insensitive partial event-group title to search for
+	Title string `form:"title" json:"title"`
+}
+
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
 type GetApiV1AdminEventsParams struct {
 	// From The date to obtain events from
@@ -429,6 +464,9 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
+
+// AdminDuplicateEventGroupJSONRequestBody defines body for AdminDuplicateEventGroup for application/json ContentType.
+type AdminDuplicateEventGroupJSONRequestBody = AdminDuplicateEventGroup
 
 // AdminUpdateEventDatesJSONRequestBody defines body for AdminUpdateEventDates for application/json ContentType.
 type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody

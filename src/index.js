@@ -27,6 +27,7 @@ import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
 import { CreateEventGroup } from "./admin/CreateEventGroup";
+import { DuplicateEventGroup, duplicateEventGroupLoader } from "./admin/DuplicateEventGroup";
 import { Rates, RateEditor, ratesLoader, rateLoader } from "./admin/Rates";
 import { KeyholderEditor, Keyholders, keyholderEditorLoader } from "./admin/Keyholders";
 import { keyholdersLoader } from "./admin/components/KeyholderSelect";
@@ -100,6 +101,7 @@ const router = createBrowserRouter(
         />
         <Route path="create-events" element={<CreateEvents />} />
         <Route path="create-event-group" element={<CreateEventGroup />} />
+        <Route path="duplicate-event-group/:groupID" element={<DuplicateEventGroup />} loader={authenticatedLoader(duplicateEventGroupLoader)} />
         <Route
           path="review/:eventID"
           element={<ReviewEvent />}

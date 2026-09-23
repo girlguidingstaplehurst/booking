@@ -62,6 +62,8 @@ export function RateSelect({
   onBlur,
   hourlyOnly = false,
   preserveCurrentRate = false,
+  currentName,
+  error,
 }) {
   const [rates, setRates] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -102,9 +104,14 @@ export function RateSelect({
       )
     : rates;
 
+  const hasCurrentRate = visibleRates.some((rate) => rate.id === rateID);
+
   return (
     <Skeleton isLoaded={loaded}>
-      <Select name="rate" value={rateID} onChange={onChange} onBlur={onBlur}>
+      <Select name="rate" value={rateID} onChange={onChange} onBlur={onBlur} aria-invalid={Boolean(error)}>
+        {rateID && !hasCurrentRate && (
+          <option value={rateID}>{currentName || "Current rate"}</option>
+        )}
         {visibleRates.map((item) => (
           <option
             value={item.id}
@@ -115,6 +122,7 @@ export function RateSelect({
           </option>
         ))}
       </Select>
+      {error && <div role="alert">{error}</div>}
     </Skeleton>
   );
 }

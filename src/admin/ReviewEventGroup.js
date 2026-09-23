@@ -88,6 +88,13 @@ export function ReviewEventGroup() {
             >
               Create New Invoice
             </Button>
+            <Button
+              as={ReactRouterLink}
+              to={`/admin/duplicate-event-group/${group.id}`}
+              colorScheme="blue"
+            >
+              Duplicate Event Group
+            </Button>
           </Stack>
         </Box>
         <Box>

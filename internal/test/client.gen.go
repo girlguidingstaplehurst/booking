@@ -95,6 +95,14 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// AdminDuplicateEventGroup defines model for AdminDuplicateEventGroup.
+type AdminDuplicateEventGroup struct {
+	EventGroupId string             `json:"event_group_id"`
+	Instances    []EventInstance    `json:"instances"`
+	Keyholder    openapi_types.UUID `json:"keyholder"`
+	Rate         string             `json:"rate"`
+}
+
 // AdminEventGroup defines model for AdminEventGroup.
 type AdminEventGroup struct {
 	From     string        `json:"from"`
@@ -102,6 +110,27 @@ type AdminEventGroup struct {
 	Invoices *[]InvoiceRef `json:"invoices,omitempty"`
 	Name     string        `json:"name"`
 	To       string        `json:"to"`
+}
+
+// AdminEventGroupDetails defines model for AdminEventGroupDetails.
+type AdminEventGroupDetails struct {
+	Contact struct {
+		EmailAddress openapi_types.Email `json:"email_address"`
+		Name         string              `json:"name"`
+	} `json:"contact"`
+	Details   string `json:"details"`
+	Id        string `json:"id"`
+	Keyholder struct {
+		Id   openapi_types.UUID `json:"id"`
+		Name string             `json:"name"`
+	} `json:"keyholder"`
+	Name            string `json:"name"`
+	PubliclyVisible bool   `json:"publicly_visible"`
+	Rate            string `json:"rate"`
+	TimeRanges      []struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"time_ranges"`
 }
 
 // AdminEventList defines model for AdminEventList.
@@ -401,6 +430,12 @@ type UpdateRateBody struct {
 	PerSession  PerSessionPricing `json:"perSession"`
 }
 
+// AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.
+type AdminSearchEventGroupsParams struct {
+	// Title Case-insensitive partial event-group title to search for
+	Title string `form:"title" json:"title"`
+}
+
 // GetApiV1AdminEventsParams defines parameters for GetApiV1AdminEvents.
 type GetApiV1AdminEventsParams struct {
 	// From The date to obtain events from
@@ -439,6 +474,9 @@ type AdminAddEventGroupJSONRequestBody = AdminNewEventGroup
 
 // AdminAddEventsJSONRequestBody defines body for AdminAddEvents for application/json ContentType.
 type AdminAddEventsJSONRequestBody = AdminNewEvents
+
+// AdminDuplicateEventGroupJSONRequestBody defines body for AdminDuplicateEventGroup for application/json ContentType.
+type AdminDuplicateEventGroupJSONRequestBody = AdminDuplicateEventGroup
 
 // AdminUpdateEventDatesJSONRequestBody defines body for AdminUpdateEventDates for application/json ContentType.
 type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody
@@ -590,6 +628,30 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/admin/add-events (the `AdminAddEvents` operationId).
 	AdminAddEvents(ctx context.Context, body AdminAddEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminDuplicateEventGroupWithBody Duplicate an event group
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+	AdminDuplicateEventGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminDuplicateEventGroup Duplicate an event group
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+	AdminDuplicateEventGroup(ctx context.Context, body AdminDuplicateEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminSearchEventGroups Search event groups by title
+	//
+	// Corresponds with GET /api/v1/admin/event-groups/search (the `AdminSearchEventGroups` operationId).
+	AdminSearchEventGroups(ctx context.Context, params *AdminSearchEventGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminGetEventGroup Get an event group for duplication
+	//
+	// Corresponds with GET /api/v1/admin/event-groups/{eventGroupID} (the `AdminGetEventGroup` operationId).
+	AdminGetEventGroup(ctx context.Context, eventGroupID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1AdminEvents performs a GET /api/v1/admin/events (the `GetApiV1AdminEvents` operationId) request.
 	GetApiV1AdminEvents(ctx context.Context, params *GetApiV1AdminEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -823,6 +885,70 @@ func (c *Client) AdminAddEventsWithBody(ctx context.Context, contentType string,
 // Corresponds with POST /api/v1/admin/add-events (the `AdminAddEvents` operationId).
 func (c *Client) AdminAddEvents(ctx context.Context, body AdminAddEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminAddEventsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminDuplicateEventGroupWithBody Duplicate an event group
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+func (c *Client) AdminDuplicateEventGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminDuplicateEventGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminDuplicateEventGroup Duplicate an event group
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+func (c *Client) AdminDuplicateEventGroup(ctx context.Context, body AdminDuplicateEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminDuplicateEventGroupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminSearchEventGroups Search event groups by title
+//
+// Corresponds with GET /api/v1/admin/event-groups/search (the `AdminSearchEventGroups` operationId).
+func (c *Client) AdminSearchEventGroups(ctx context.Context, params *AdminSearchEventGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminSearchEventGroupsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminGetEventGroup Get an event group for duplication
+//
+// Corresponds with GET /api/v1/admin/event-groups/{eventGroupID} (the `AdminGetEventGroup` operationId).
+func (c *Client) AdminGetEventGroup(ctx context.Context, eventGroupID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminGetEventGroupRequest(c.Server, eventGroupID)
 	if err != nil {
 		return nil, err
 	}
@@ -1370,6 +1496,130 @@ func NewAdminAddEventsRequestWithBody(server string, contentType string, body io
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminDuplicateEventGroupRequest calls the generic AdminDuplicateEventGroup builder with application/json body
+func NewAdminDuplicateEventGroupRequest(server string, body AdminDuplicateEventGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminDuplicateEventGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAdminDuplicateEventGroupRequestWithBody constructs an http.Request for the AdminDuplicateEventGroup method, with any body, and a specified content type
+func NewAdminDuplicateEventGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/duplicate-event-group")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminSearchEventGroupsRequest constructs an http.Request for the AdminSearchEventGroups method
+func NewAdminSearchEventGroupsRequest(server string, params *AdminSearchEventGroupsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/event-groups/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "title", params.Title, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAdminGetEventGroupRequest constructs an http.Request for the AdminGetEventGroup method
+func NewAdminGetEventGroupRequest(server string, eventGroupID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "eventGroupID", eventGroupID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/event-groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -2331,6 +2581,34 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/admin/add-events (the `AdminAddEvents` operationId).
 	AdminAddEventsWithResponse(ctx context.Context, body AdminAddEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminAddEventsResponse, error)
 
+	// AdminDuplicateEventGroupWithBodyWithResponse Duplicate an event group
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+	AdminDuplicateEventGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminDuplicateEventGroupResponse, error)
+
+	// AdminDuplicateEventGroupWithResponse Duplicate an event group
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+	AdminDuplicateEventGroupWithResponse(ctx context.Context, body AdminDuplicateEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminDuplicateEventGroupResponse, error)
+
+	// AdminSearchEventGroupsWithResponse Search event groups by title
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/admin/event-groups/search (the `AdminSearchEventGroups` operationId).
+	AdminSearchEventGroupsWithResponse(ctx context.Context, params *AdminSearchEventGroupsParams, reqEditors ...RequestEditorFn) (*AdminSearchEventGroupsResponse, error)
+
+	// AdminGetEventGroupWithResponse Get an event group for duplication
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/admin/event-groups/{eventGroupID} (the `AdminGetEventGroup` operationId).
+	AdminGetEventGroupWithResponse(ctx context.Context, eventGroupID string, reqEditors ...RequestEditorFn) (*AdminGetEventGroupResponse, error)
+
 	// GetApiV1AdminEventsWithResponse performs a GET /api/v1/admin/events (the `GetApiV1AdminEvents` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -2654,6 +2932,178 @@ func (r AdminAddEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AdminAddEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminDuplicateEventGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminDuplicateEventGroupResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdminDuplicateEventGroupResponse) GetJSON409() *ErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminDuplicateEventGroupResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminDuplicateEventGroupResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminDuplicateEventGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminDuplicateEventGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminDuplicateEventGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminDuplicateEventGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminSearchEventGroupsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *[]AdminEventGroup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminSearchEventGroupsResponse) GetJSON200() *[]AdminEventGroup {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AdminSearchEventGroupsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminSearchEventGroupsResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminSearchEventGroupsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminSearchEventGroupsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminSearchEventGroupsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminSearchEventGroupsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminGetEventGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AdminEventGroupDetails
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminGetEventGroupResponse) GetJSON200() *AdminEventGroupDetails {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminGetEventGroupResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminGetEventGroupResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminGetEventGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminGetEventGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminGetEventGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminGetEventGroupResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3825,6 +4275,58 @@ func (c *ClientWithResponses) AdminAddEventsWithResponse(ctx context.Context, bo
 	return ParseAdminAddEventsResponse(rsp)
 }
 
+// AdminDuplicateEventGroupWithBodyWithResponse Duplicate an event group
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+func (c *ClientWithResponses) AdminDuplicateEventGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminDuplicateEventGroupResponse, error) {
+	rsp, err := c.AdminDuplicateEventGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminDuplicateEventGroupResponse(rsp)
+}
+
+// AdminDuplicateEventGroupWithResponse Duplicate an event group
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/duplicate-event-group (the `AdminDuplicateEventGroup` operationId).
+func (c *ClientWithResponses) AdminDuplicateEventGroupWithResponse(ctx context.Context, body AdminDuplicateEventGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminDuplicateEventGroupResponse, error) {
+	rsp, err := c.AdminDuplicateEventGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminDuplicateEventGroupResponse(rsp)
+}
+
+// AdminSearchEventGroupsWithResponse Search event groups by title
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/admin/event-groups/search (the `AdminSearchEventGroups` operationId).
+func (c *ClientWithResponses) AdminSearchEventGroupsWithResponse(ctx context.Context, params *AdminSearchEventGroupsParams, reqEditors ...RequestEditorFn) (*AdminSearchEventGroupsResponse, error) {
+	rsp, err := c.AdminSearchEventGroups(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminSearchEventGroupsResponse(rsp)
+}
+
+// AdminGetEventGroupWithResponse Get an event group for duplication
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/admin/event-groups/{eventGroupID} (the `AdminGetEventGroup` operationId).
+func (c *ClientWithResponses) AdminGetEventGroupWithResponse(ctx context.Context, eventGroupID string, reqEditors ...RequestEditorFn) (*AdminGetEventGroupResponse, error) {
+	rsp, err := c.AdminGetEventGroup(ctx, eventGroupID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminGetEventGroupResponse(rsp)
+}
+
 // GetApiV1AdminEventsWithResponse performs a GET /api/v1/admin/events (the `GetApiV1AdminEvents` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -4278,6 +4780,136 @@ func ParseAdminAddEventsResponse(rsp *http.Response) (*AdminAddEventsResponse, e
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminDuplicateEventGroupResponse parses an HTTP response from a AdminDuplicateEventGroupWithResponse call
+func ParseAdminDuplicateEventGroupResponse(rsp *http.Response) (*AdminDuplicateEventGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminDuplicateEventGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminSearchEventGroupsResponse parses an HTTP response from a AdminSearchEventGroupsWithResponse call
+func ParseAdminSearchEventGroupsResponse(rsp *http.Response) (*AdminSearchEventGroupsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminSearchEventGroupsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []AdminEventGroup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminGetEventGroupResponse parses an HTTP response from a AdminGetEventGroupWithResponse call
+func ParseAdminGetEventGroupResponse(rsp *http.Response) (*AdminGetEventGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminGetEventGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AdminEventGroupDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

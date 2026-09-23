@@ -119,7 +119,20 @@ redundant event calendar with event-group and booked-event card sections. Event
 group cards in the `Event groups with remaining sessions` section SHALL provide
 the group review action without displaying a direct `Create Invoice` action;
 event groups in the `Events to be invoiced` section SHALL retain direct group
-invoice creation.
+invoice creation. The Dashboard SHALL provide an Event Group Search widget at
+the bottom that searches historical and current group titles and links matching
+results to group review.
+
+#### Scenario: Dashboard displays historical event-group search
+
+- **WHEN** an authenticated administrator views the Dashboard
+- **THEN** the Dashboard displays an Event Group Search widget below the existing Dashboard sections
+- **AND** matching results use the existing event-group card presentation and provide a Review action
+
+#### Scenario: Search results remain available for completed groups
+
+- **WHEN** an administrator searches for a title belonging to an event group whose sessions have all ended
+- **THEN** the matching group can appear in the search results even though it is absent from the operational event-group sections
 
 #### Scenario: Dashboard receives an event without invoices
 
@@ -219,12 +232,18 @@ invoice creation.
 
 ### Requirement: Administrators can review an event group and reach its sessions
 
-The system SHALL provide an authenticated administrator route for reviewing an
+ The system SHALL provide an authenticated administrator route for reviewing an
 event group. The group review view SHALL show the group summary and invoice
 references, provide an action to create a new invoice for the group using the
-existing group invoice workflow, and list each session that ends today or later
-with a link to that session's individual event review route, where an
+existing group invoice workflow, provide a Duplicate Event Group action that
+opens the dedicated duplicate form, and list each session that ends today or
+later with a link to that session's individual event review route, where an
 administrator can move the session when necessary.
+
+#### Scenario: Administrator starts duplicating from group review
+
+- **WHEN** an administrator activates Duplicate Event Group on the group review page
+- **THEN** the application opens the dedicated duplicate form for that group
 
 #### Scenario: Administrator opens an event-group review page
 

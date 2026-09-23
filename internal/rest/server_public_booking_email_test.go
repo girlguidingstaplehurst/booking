@@ -29,6 +29,9 @@ func (d *testDatabase) AddEvents(context.Context, AdminAddEventsRequestObject) e
 func (d *testDatabase) AddEventGroup(context.Context, AdminAddEventGroupRequestObject) error {
 	return nil
 }
+func (d *testDatabase) DuplicateEventGroup(context.Context, AdminDuplicateEventGroupRequestObject) error {
+	return nil
+}
 func (d *testDatabase) AddInvoice(context.Context, *SendInvoiceBody) (*Invoice, error) {
 	return nil, nil
 }
@@ -55,6 +58,12 @@ func (d *testDatabase) ListEventsForContact(context.Context, string, time.Time, 
 }
 func (d *testDatabase) AdminListEvents(context.Context, time.Time, time.Time) (AdminEventList, error) {
 	return AdminEventList{}, nil
+}
+func (d *testDatabase) SearchEventGroups(context.Context, string) ([]AdminEventGroup, error) {
+	return nil, nil
+}
+func (d *testDatabase) GetEventGroup(context.Context, string) (AdminEventGroupDetails, error) {
+	return AdminEventGroupDetails{}, nil
 }
 func (d *testDatabase) ListKeyholders(context.Context) (KeyholderList, error) { return nil, nil }
 func (d *testDatabase) CreateKeyholder(context.Context, CreateKeyholderBody) (Keyholder, error) {

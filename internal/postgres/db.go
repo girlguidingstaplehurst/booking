@@ -767,3 +767,122 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 		return nil
 	})
 }
+
+func (db *Database) SearchEventGroups(ctx context.Context, title string) ([]rest.AdminEventGroup, error) {
+	rows, err := db.pool.Query(ctx, `
+		select g.id, g.event_name,
+		       to_char(min(e.event_start), $2),
+		       to_char(max(e.event_end), $2),
+		       coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb)
+		from booking_event_groups g
+		join booking_events e on e.event_group_id = g.id
+		left join booking_invoices bi on bi.event_group_id = g.id
+		where g.event_name ilike '%' || $1 || '%'
+		group by g.id, g.event_name
+		order by max(e.event_end) desc, g.event_name
+		limit 100`, title, dbDateTimeFormat)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
+		var group rest.AdminEventGroup
+		var invoiceJSON []byte
+		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON); err != nil {
+			return group, err
+		}
+		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {
+			return group, err
+		}
+		return group, nil
+	})
+}
+
+func (db *Database) GetEventGroup(ctx context.Context, id string) (rest.AdminEventGroupDetails, error) {
+	var group rest.AdminEventGroupDetails
+	var keyholderID *openapi_types.UUID
+	var keyholderName *string
+	if err := db.pool.QueryRow(ctx, `
+		select g.id, g.event_name, g.details, g.visible, g.rate,
+		       c.name, c.email, kh.id, kh.name
+		from booking_event_groups g
+		join booking_contacts c on c.email = g.email
+		left join booking_events e on e.event_group_id = g.id
+		left join booking_keyholders kh on kh.id = e.keyholder_in_id
+		where g.id = $1
+		order by e.event_start
+		limit 1`, id).Scan(&group.Id, &group.Name, &group.Details, &group.PubliclyVisible, &group.Rate, &group.Contact.Name, &group.Contact.EmailAddress, &keyholderID, &keyholderName); err != nil {
+		return group, err
+	}
+	if keyholderID != nil {
+		group.Keyholder.Id = *keyholderID
+		group.Keyholder.Name = *keyholderName
+	}
+	rows, err := db.pool.Query(ctx, `select to_char(event_start, 'HH24:MI'), to_char(event_end, 'HH24:MI') from booking_events where event_group_id = $1 order by event_start`, id)
+	if err != nil {
+		return group, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var from, to string
+		if err := rows.Scan(&from, &to); err != nil {
+			return group, err
+		}
+		group.TimeRanges = append(group.TimeRanges, struct {
+			From string `json:"from"`
+			To   string `json:"to"`
+		}{From: from, To: to})
+	}
+	if err := rows.Err(); err != nil {
+		return group, err
+	}
+	return group, nil
+}
+
+func (db *Database) DuplicateEventGroup(ctx context.Context, request rest.AdminDuplicateEventGroupRequestObject) error {
+	group := request.Body
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		var name, details, email string
+		var visible bool
+		if err := tx.QueryRow(ctx, `select event_name, details, visible, email from booking_event_groups where id = $1 for share`, group.EventGroupId).Scan(&name, &details, &visible, &email); err != nil {
+			return err
+		}
+		if err := ensureActiveKeyholder(ctx, tx, &group.Keyholder); err != nil {
+			return err
+		}
+		var rateExists bool
+		if err := tx.QueryRow(ctx, `select exists(select 1 from booking_rates where id = $1)`, group.Rate).Scan(&rateExists); err != nil {
+			return errors.Join(err, errors.New("failed to validate rate"))
+		}
+		if !rateExists {
+			return errors.New("invalid rate")
+		}
+		if len(group.Instances) == 0 {
+			return errors.New("at least one event group instance is required")
+		}
+
+		if _, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode"); err != nil {
+			return errors.Join(err, errors.New("failed to lock table"))
+		}
+		for _, instance := range group.Instances {
+			if instance.From == "" || instance.To == "" {
+				return errors.New("invalid event group instance")
+			}
+			if err := db.checkForNearbyBookings(ctx, tx, instance.From, instance.To); err != nil {
+				return err
+			}
+		}
+
+		groupID := uuid.New().String()
+		if _, err := tx.Exec(ctx, `insert into booking_event_groups (id, event_name, details, visible, email, rate) values ($1, $2, $3, $4, $5, $6)`, groupID, name, details, visible, email, group.Rate); err != nil {
+			return errors.Join(err, errors.New("failed to insert duplicated event group"))
+		}
+		for _, instance := range group.Instances {
+			if _, err := tx.Exec(ctx, `insert into booking_events (id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in_id, keyholder_out_id) values ($1, $2, $3, $4, $5, $6, 'approved', $7, $8, $9, $10, $10)`, uuid.New(), instance.From, instance.To, name, visible, email, group.Rate, details, groupID, group.Keyholder); err != nil {
+				return errors.Join(err, errors.New("failed to insert duplicated event group instance"))
+			}
+		}
+		return nil
+	})
+}

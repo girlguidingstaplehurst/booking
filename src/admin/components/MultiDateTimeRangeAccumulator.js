@@ -27,7 +27,7 @@ export function flattenDateSetInstances(dateSets) {
   return dateSets.flatMap(({ instances }) => instances || []);
 }
 
-function MultiDateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
+function MultiDateTimeRangeAccumulator({ setter, label = "Event Dates", initialTimeRanges = [] }) {
   const [dateSets, setDateSets] = useState(() => [emptyDateSet()]);
   const [instancesBySet, setInstancesBySet] = useState({});
 
@@ -72,6 +72,7 @@ function MultiDateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
           canRemove={dateSets.length > 1}
           onRemove={removeSet}
           onUpdate={updateSet}
+          initialTimes={index === 0 ? initialTimeRanges : []}
         />
       ))}
       {combinedError && <Text color="red.500" marginBottom={3}>{combinedError}</Text>}
@@ -86,7 +87,7 @@ function MultiDateTimeRangeAccumulator({ setter, label = "Event Dates" }) {
   );
 }
 
-function DateSetEditor({ dateSet, index, canRemove, onRemove, onUpdate }) {
+function DateSetEditor({ dateSet, index, canRemove, onRemove, onUpdate, initialTimes }) {
   const update = useCallback(
     (nextInstances) => onUpdate(dateSet.id, nextInstances),
     [dateSet.id, onUpdate],
@@ -106,6 +107,7 @@ function DateSetEditor({ dateSet, index, canRemove, onRemove, onUpdate }) {
         setter={update}
         label=""
         idPrefix={`date-set-${dateSet.id}`}
+        initialTimes={initialTimes}
       />
     </Box>
   );

@@ -152,6 +152,121 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/admin/event-groups/search:
+    get:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Search event groups by title
+      operationId: adminSearchEventGroups
+      parameters:
+        - in: query
+          name: title
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 200
+          description: Case-insensitive partial event-group title to search for
+      responses:
+        '200':
+          description: Matching event groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminEventGroup'
+        '400':
+          description: Request parameters are invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/event-groups/{eventGroupID}:
+    get:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Get an event group for duplication
+      operationId: adminGetEventGroup
+      parameters:
+        - in: path
+          name: eventGroupID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event group details and source setup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEventGroupDetails'
+        '404':
+          description: Event group does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/duplicate-event-group:
+    post:
+      security:
+        - admin_auth: [ ]
+      tags:
+        - admin
+      summary: Duplicate an event group
+      operationId: adminDuplicateEventGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDuplicateEventGroup'
+      responses:
+        '200':
+          description: Event group duplicated successfully
+        '404':
+          description: Source event group does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: One or more schedule conflicts exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/admin/events/{eventID}:
     get:
       security:
@@ -1386,6 +1501,84 @@ components:
             email_address:
               type: string
               format: email
+    AdminDuplicateEventGroup:
+      type: object
+      required:
+        - event_group_id
+        - rate
+        - keyholder
+        - instances
+      properties:
+        event_group_id:
+          type: string
+        rate:
+          type: string
+        keyholder:
+          type: string
+          format: uuid
+        instances:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/EventInstance'
+    AdminEventGroupDetails:
+      type: object
+      required:
+        - id
+        - name
+        - details
+        - publicly_visible
+        - contact
+        - rate
+        - keyholder
+        - time_ranges
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        details:
+          type: string
+        publicly_visible:
+          type: boolean
+        rate:
+          type: string
+        keyholder:
+          type: object
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        contact:
+          type: object
+          required:
+            - name
+            - email_address
+          properties:
+            name:
+              type: string
+            email_address:
+              type: string
+              format: email
+        time_ranges:
+          type: array
+          items:
+            type: object
+            required:
+              - from
+              - to
+            properties:
+              from:
+                type: string
+                format: time
+              to:
+                type: string
+                format: time
     EventInstance:
       type: object
       required:

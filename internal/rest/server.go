@@ -28,6 +28,7 @@ type Database interface {
 	AddEvent(ctx context.Context, event *AddEventJSONRequestBody) error
 	AddEvents(ctx context.Context, event AdminAddEventsRequestObject) error
 	AddEventGroup(ctx context.Context, event AdminAddEventGroupRequestObject) error
+	DuplicateEventGroup(ctx context.Context, event AdminDuplicateEventGroupRequestObject) error
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids ...string) ([]DBInvoiceEvent, error)
@@ -39,6 +40,8 @@ type Database interface {
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
+	SearchEventGroups(ctx context.Context, title string) ([]AdminEventGroup, error)
+	GetEventGroup(ctx context.Context, id string) (AdminEventGroupDetails, error)
 	ListKeyholders(ctx context.Context) (KeyholderList, error)
 	CreateKeyholder(ctx context.Context, input CreateKeyholderBody) (Keyholder, error)
 	UpdateKeyholder(ctx context.Context, id openapi_types.UUID, input UpdateKeyholderBody) (Keyholder, error)
@@ -757,6 +760,44 @@ func (s *Server) AdminAddEventGroup(ctx context.Context, request AdminAddEventGr
 	}
 
 	return AdminAddEventGroup200Response{}, nil
+}
+
+func (s *Server) AdminSearchEventGroups(ctx context.Context, request AdminSearchEventGroupsRequestObject) (AdminSearchEventGroupsResponseObject, error) {
+	if len(strings.TrimSpace(request.Params.Title)) < 3 {
+		return AdminSearchEventGroups400JSONResponse{ErrorMessage: "title must contain at least 3 characters"}, nil
+	}
+	groups, err := s.db.SearchEventGroups(ctx, request.Params.Title)
+	if err != nil {
+		return AdminSearchEventGroups500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminSearchEventGroups200JSONResponse(groups), nil
+}
+
+func (s *Server) AdminGetEventGroup(ctx context.Context, request AdminGetEventGroupRequestObject) (AdminGetEventGroupResponseObject, error) {
+	group, err := s.db.GetEventGroup(ctx, request.EventGroupID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AdminGetEventGroup404JSONResponse{ErrorMessage: "event group not found"}, nil
+		}
+		return AdminGetEventGroup500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminGetEventGroup200JSONResponse(group), nil
+}
+
+func (s *Server) AdminDuplicateEventGroup(ctx context.Context, request AdminDuplicateEventGroupRequestObject) (AdminDuplicateEventGroupResponseObject, error) {
+	if err := s.db.DuplicateEventGroup(ctx, request); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AdminDuplicateEventGroup404JSONResponse{ErrorMessage: "event group not found"}, nil
+		}
+		if errors.Is(err, consts.ErrBookingExists) {
+			return AdminDuplicateEventGroup409JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+		if strings.Contains(err.Error(), "keyholder") || strings.Contains(err.Error(), "rate") || strings.Contains(err.Error(), "instance") {
+			return AdminDuplicateEventGroup422JSONResponse{ErrorMessage: err.Error()}, nil
+		}
+		return AdminDuplicateEventGroup500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminDuplicateEventGroup200Response{}, nil
 }
 
 func (s *Server) GetEventsICS(ctx context.Context, request GetEventsICSRequestObject) (GetEventsICSResponseObject, error) {
