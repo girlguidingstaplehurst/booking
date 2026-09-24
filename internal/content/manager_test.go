@@ -1,18 +1,22 @@
 package content
 
 import (
-	"context"
-	"log/slog"
+	"strings"
 	"testing"
 
+	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"github.com/stretchr/testify/require"
 )
 
-func Test(t *testing.T) {
-	m := NewManager("https://graphql.contentful.com/content/v1/spaces/o3u1j7dkyy42", "mnamX4N0qebOgpJN6KJVgakUGcSLFrFEvcHhdtcEO14")
+func TestApplyTemplate(t *testing.T) {
+	m := &Manager{}
+	got, err := m.applyTemplate("Dear {{.event.Contact}}, {{.event.Name}} on {{.date}}.", map[string]any{
+		"event": rest.Event{Contact: "Booker", Name: "Test event"},
+		"date":  "Thu Sep 24 2026",
+	})
 
-	email, err := m.Page(context.Background(), "terms-of-hire")
 	require.NoError(t, err)
-
-	slog.Info("dumping email", "email", email)
+	require.Equal(t, "Dear Booker, Test event on Thu Sep 24 2026.", got)
+	require.NotContains(t, got, "{{")
+	require.True(t, strings.Contains(got, "Test event"))
 }

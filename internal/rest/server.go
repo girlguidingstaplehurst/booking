@@ -159,9 +159,26 @@ func (s *Server) AddEvent(ctx context.Context, req AddEventRequestObject) (AddEv
 	}
 
 	const acknowledgementEmailKey = "event-name-booking-in-review"
-	emailContent, err := s.content.Email(ctx, acknowledgementEmailKey)
+	start, err := time.Parse(time.RFC3339, req.Body.Event.From)
 	if err != nil {
-		slog.Error("failed to load public booking acknowledgement email", "resource", acknowledgementEmailKey, "recipient", req.Body.Contact.EmailAddress, "err", err)
+		slog.Error("failed to parse public booking date for acknowledgement email", "resource", acknowledgementEmailKey, "recipient", req.Body.Contact.EmailAddress, "err", err)
+		return AddEvent200Response{}, nil
+	}
+
+	event := Event{
+		Contact: req.Body.Contact.Name,
+		Email:   req.Body.Contact.EmailAddress,
+		From:    req.Body.Event.From,
+		Name:    req.Body.Event.Name,
+		To:      req.Body.Event.To,
+		Details: req.Body.Event.Details,
+	}
+	emailContent, err := s.content.EmailTemplate(ctx, acknowledgementEmailKey, map[string]any{
+		"event": event,
+		"date":  start.Format(emailDateFormat),
+	})
+	if err != nil {
+		slog.Error("failed to render public booking acknowledgement email", "resource", acknowledgementEmailKey, "recipient", req.Body.Contact.EmailAddress, "err", err)
 		return AddEvent200Response{}, nil
 	}
 

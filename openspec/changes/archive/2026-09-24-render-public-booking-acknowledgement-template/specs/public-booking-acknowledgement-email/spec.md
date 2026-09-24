@@ -1,10 +1,4 @@
-# public-booking-acknowledgement-email Specification
-
-## Purpose
-
-Provide public booking users with a content-managed email acknowledgement after their booking is successfully received, without making email availability a prerequisite for booking success.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Successful public bookings send a rendered acknowledgement email
 
@@ -18,7 +12,7 @@ After a valid public booking has been successfully persisted, the system MUST re
 #### Scenario: Booking and email delivery succeed
 
 - **WHEN** a valid public booking is persisted and the managed email resource is available
-- **THEN** the system sends the resource's subject and body to the booker's email address and returns HTTP 200
+- **THEN** the system sends the rendered resource content to the booker's email address and returns HTTP 200
 
 #### Scenario: Invalid or duplicate booking is rejected
 

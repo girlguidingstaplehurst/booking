@@ -87,6 +87,7 @@ type testContent struct {
 	content EmailContent
 	err     error
 	key     string
+	vars    map[string]any
 }
 
 func (c *testContent) Email(_ context.Context, key string) (EmailContent, error) {
@@ -94,8 +95,10 @@ func (c *testContent) Email(_ context.Context, key string) (EmailContent, error)
 	return c.content, c.err
 }
 
-func (c *testContent) EmailTemplate(context.Context, string, map[string]any) (EmailContent, error) {
-	return EmailContent{}, nil
+func (c *testContent) EmailTemplate(_ context.Context, key string, vars map[string]any) (EmailContent, error) {
+	c.key = key
+	c.vars = vars
+	return c.content, c.err
 }
 
 type testSender struct {
@@ -128,6 +131,13 @@ func TestAddEventSendsAcknowledgementEmail(t *testing.T) {
 	}
 	if content.key != "event-name-booking-in-review" {
 		t.Fatalf("content key = %q", content.key)
+	}
+	event, ok := content.vars["event"].(Event)
+	if !ok || event.Name != "Test event" || event.Contact != "Booker" {
+		t.Fatalf("template event = %#v, want submitted event context", content.vars["event"])
+	}
+	if date, ok := content.vars["date"].(string); !ok || date == "" {
+		t.Fatalf("template date = %#v, want formatted date", content.vars["date"])
 	}
 	if !sender.called || sender.to != "booker@example.org" || sender.subject != "Booking received" || sender.body != "We received your request." {
 		t.Fatalf("sender = %#v, want acknowledgement", sender)
@@ -187,7 +197,8 @@ func publicBookingRequest() *AddEventJSONRequestBody {
 	return &AddEventJSONRequestBody{
 		CaptchaToken: "captcha", PrivacyPolicy: true, TermsOfHire: true,
 		CleaningAndDamage: true, CarParking: true, Adhesives: true,
-		Contact: Contact{EmailAddress: "booker@example.org"},
+		Contact: Contact{Name: "Booker", EmailAddress: "booker@example.org"},
+		Event:   EventDetails{Name: "Test event", From: "2026-09-24T10:00:00Z", To: "2026-09-24T11:00:00Z"},
 	}
 }
 
