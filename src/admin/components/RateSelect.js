@@ -75,11 +75,13 @@ export function RateSelect({
           id: "default",
           description: "External Hire Rate",
           hourlyRate: 25,
+          pricingMode: "hourly",
         },
         {
           id: "regular-external",
           description: "Regular External Hire Rate",
           hourlyRate: 20,
+          pricingMode: "hourly",
         },
       ]);
 
@@ -99,7 +101,7 @@ export function RateSelect({
   const visibleRates = hourlyOnly
     ? rates.filter(
         (rate) =>
-          !rate.perSession?.length ||
+          rate.pricingMode === "hourly" ||
           (preserveCurrentRate && rate.id === currentRate?.id),
       )
     : rates;
@@ -118,7 +120,7 @@ export function RateSelect({
             key={item.id}
             disabled={hourlyOnly && item.id === currentRate?.id && !!item.perSession?.length}
           >
-            {item.description} - £{item.hourlyRate}/hour
+            {item.description} - {item.pricingMode === "fixedSession" ? `£${item.sessionPrice}/session` : item.pricingMode === "perSession" ? "progressive per-session" : `£${item.hourlyRate}/hour`}
           </option>
         ))}
       </Select>

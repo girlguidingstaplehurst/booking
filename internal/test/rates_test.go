@@ -28,7 +28,8 @@ func TestIntegration_RateDefinitions(t *testing.T) {
 	created, err := client.AdminCreateRateWithResponse(context.Background(), AdminCreateRateJSONRequestBody{
 		Id:          id,
 		Description: "Integration test rate",
-		HourlyRate:  25,
+		HourlyRate:  0,
+		PricingMode: PerSession,
 		PerSession:  PerSessionPricing{{Count: intPointer(10), Price: 150}, {Price: 13.5}},
 	}, auth)
 	require.NoError(t, err)
@@ -51,6 +52,7 @@ func TestIntegration_RateDefinitions(t *testing.T) {
 	updated, err := client.AdminUpdateRateWithResponse(context.Background(), id, AdminUpdateRateJSONRequestBody{
 		Description: "Updated integration test rate",
 		HourlyRate:  30,
+		PricingMode: Hourly,
 		PerSession:  PerSessionPricing{},
 	}, auth)
 	require.NoError(t, err)

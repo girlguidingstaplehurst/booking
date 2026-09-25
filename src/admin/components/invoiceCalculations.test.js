@@ -33,6 +33,30 @@ test("individual invoices calculate event hire and one optional deposit", () => 
   });
 });
 
+test("fixed-session individual invoices use one session price", () => {
+  const preparation = {
+    mode: "individual",
+    rate: { pricingMode: "fixedSession", sessionPrice: 80 },
+    events: [{ ...events[0], to: "2026-09-12T18:00:00Z" }],
+  };
+
+  expect(populateInvoiceItems(preparation)).toEqual([
+    { description: "Event hire - 1 session", cost: 80 },
+  ]);
+});
+
+test("fixed-session group invoices multiply the session price", () => {
+  const preparation = {
+    mode: "group",
+    rate: { pricingMode: "fixedSession", sessionPrice: 80 },
+    events: [events[0], events[1], { ...events[0], id: "three" }],
+  };
+
+  expect(populateInvoiceItems(preparation)).toEqual([
+    { description: "Event hire - 3 sessions", cost: 240 },
+  ]);
+});
+
 test("hourly group invoices create a dated line for each session", () => {
   const items = populateInvoiceItems({ mode: "group", events });
 

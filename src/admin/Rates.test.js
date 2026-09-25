@@ -69,6 +69,8 @@ describe("rate data", () => {
       id: "standard",
       description: "Standard",
       hourlyRate: 25,
+      pricingMode: "hourly",
+      sessionPrice: null,
       perSession: [],
     });
   });

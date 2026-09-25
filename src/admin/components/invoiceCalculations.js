@@ -51,7 +51,12 @@ export function populateInvoiceItems(preparation, includeDeposit = false) {
   const events = preparation.events || [];
   let items;
 
-  if (preparation.mode === "group" && preparation.rate?.perSession?.length) {
+  if (preparation.rate?.pricingMode === "fixedSession") {
+    items = [{
+      description: `Event hire - ${events.length} session${events.length === 1 ? "" : "s"}`,
+      cost: events.length * Number(preparation.rate.sessionPrice),
+    }];
+  } else if (preparation.mode === "group" && preparation.rate?.perSession?.length) {
     const [firstTier, additionalTier] = preparation.rate.perSession;
     const sessionCount = events.length;
     const additionalSessions = Math.max(sessionCount - firstTier.count, 0);

@@ -33,12 +33,16 @@ export const fallbackRates = [
     id: "default",
     description: "External Hire Rate",
     hourlyRate: 25,
+    pricingMode: "hourly",
+    sessionPrice: null,
     perSession: [],
   },
   {
     id: "external-per-session",
     description: "External Per-session Rate",
     hourlyRate: 0,
+    pricingMode: "perSession",
+    sessionPrice: null,
     perSession: [{ count: 10, price: 150 }, { price: 13.5 }],
   },
 ];
@@ -62,6 +66,9 @@ export function rateSummary(rate) {
     const first = rate.perSession[0];
     const additional = rate.perSession[1];
     return `${first.count} sessions for £${formatMoney(first.price, true)}, £${formatMoney(additional.price)} thereafter`;
+  }
+  if (rate.pricingMode === "fixedSession") {
+    return `£${formatMoney(rate.sessionPrice)} / session`;
   }
   return `£${formatMoney(rate.hourlyRate)} / hour`;
 }
@@ -96,7 +103,7 @@ export function Rates() {
 export const rateSchema = Yup.object({
   id: Yup.string().trim().required("Required"),
   description: Yup.string().trim().required("Required"),
-  pricingMode: Yup.string().oneOf(["hourly", "perSession"]).required("Required"),
+  pricingMode: Yup.string().oneOf(["hourly", "fixedSession", "perSession"]).required("Required"),
   hourlyRate: Yup.number().min(0, "Must not be negative").when("pricingMode", {
     is: "hourly",
     then: (rule) => rule.required("Required"),
@@ -113,6 +120,10 @@ export const rateSchema = Yup.object({
     is: "perSession",
     then: (rule) => rule.required("Required"),
   }),
+  fixedSessionPrice: Yup.number().min(0, "Must not be negative").when("pricingMode", {
+    is: "fixedSession",
+    then: (rule) => rule.required("Required"),
+  }),
 });
 
 export function rateFormValues(rate) {
@@ -122,7 +133,8 @@ export function rateFormValues(rate) {
     id: rate?.id || "",
     description: rate?.description || "",
     hourlyRate: rate?.hourlyRate ?? "",
-    pricingMode: rate?.perSession?.length ? "perSession" : "hourly",
+    pricingMode: rate?.pricingMode || (rate?.perSession?.length ? "perSession" : "hourly"),
+    fixedSessionPrice: rate?.sessionPrice ?? "",
     sessionCount: first?.count ?? "",
     sessionPrice: first?.price ?? "",
     extraSessionPrice: second?.price ?? "",
@@ -133,7 +145,9 @@ export function buildRateBody(values, editing) {
   return {
     ...(editing ? {} : { id: values.id.trim() }),
     description: values.description.trim(),
+    pricingMode: values.pricingMode,
     hourlyRate: values.pricingMode === "hourly" ? Number(values.hourlyRate) : 0,
+    sessionPrice: values.pricingMode === "fixedSession" ? Number(values.fixedSessionPrice) : null,
     perSession: values.pricingMode === "perSession"
       ? [{ count: Number(values.sessionCount), price: Number(values.sessionPrice) }, { price: Number(values.extraSessionPrice) }]
       : [],
@@ -210,6 +224,15 @@ export function RateEditor() {
               name="hourlyRate"
               value={formik.values.hourlyRate}
               errValue={formik.touched.hourlyRate && formik.errors.hourlyRate}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              fieldProps={{ type: "number", min: "0", step: "0.01" }}
+            />}
+            {formik.values.pricingMode === "fixedSession" && <FormFieldAndLabel
+              label="Session price"
+              name="fixedSessionPrice"
+              value={formik.values.fixedSessionPrice}
+              errValue={formik.touched.fixedSessionPrice && formik.errors.fixedSessionPrice}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               fieldProps={{ type: "number", min: "0", step: "0.01" }}

@@ -1220,6 +1220,7 @@ components:
         - status
         - rate
         - discountTable
+        - rateDefinition
       properties:
         id:
           type: string
@@ -1237,6 +1238,8 @@ components:
           type: number
         discountTable:
           $ref: '#/components/schemas/DiscountTable'
+        rateDefinition:
+          $ref: '#/components/schemas/Rate'
     DiscountTable:
       type: object
       additionalProperties:
@@ -1325,15 +1328,24 @@ components:
       required:
         - id
         - description
+        - pricingMode
         - hourlyRate
+        - sessionPrice
         - perSession
       properties:
         id:
           type: string
         description:
           type: string
+        pricingMode:
+          $ref: '#/components/schemas/RatePricingMode'
         hourlyRate:
           type: number
+          minimum: 0
+        sessionPrice:
+          type: number
+          minimum: 0
+          nullable: true
         discountTable:
           type: object
         perSession:
@@ -1354,12 +1366,20 @@ components:
         price:
           type: number
           minimum: 0
+    RatePricingMode:
+      type: string
+      enum:
+        - hourly
+        - fixedSession
+        - perSession
     CreateRateBody:
       type: object
       required:
         - id
         - description
+        - pricingMode
         - hourlyRate
+        - sessionPrice
         - perSession
       properties:
         id:
@@ -1368,24 +1388,38 @@ components:
         description:
           type: string
           minLength: 1
+        pricingMode:
+          $ref: '#/components/schemas/RatePricingMode'
         hourlyRate:
           type: number
           minimum: 0
+        sessionPrice:
+          type: number
+          minimum: 0
+          nullable: true
         perSession:
           $ref: '#/components/schemas/PerSessionPricing'
     UpdateRateBody:
       type: object
       required:
         - description
+        - pricingMode
         - hourlyRate
+        - sessionPrice
         - perSession
       properties:
         description:
           type: string
           minLength: 1
+        pricingMode:
+          $ref: '#/components/schemas/RatePricingMode'
         hourlyRate:
           type: number
           minimum: 0
+        sessionPrice:
+          type: number
+          minimum: 0
+          nullable: true
         perSession:
           $ref: '#/components/schemas/PerSessionPricing'
     SetRateBody:

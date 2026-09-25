@@ -370,6 +370,7 @@ func (s *Server) AdminGetInvoicesForEvents(ctx context.Context, request AdminGet
 				Contact:     openapi_types.Email(event.Email),
 				ContactName: event.ContactName,
 				Events:      make([]InvoiceEvent, 0),
+				Rate:        event.RateDefinition,
 			})
 		}
 		preparations[index].Events = append(preparations[index].Events, event.InvoiceEvent)
@@ -529,6 +530,45 @@ func validatePerSessionPricing(pricing PerSessionPricing) string {
 	return ""
 }
 
+func validateRatePricing(mode RatePricingMode, hourly float32, sessionPrice *float32, perSession PerSessionPricing) string {
+	if mode == "" {
+		if len(perSession) > 0 {
+			mode = "perSession"
+		} else {
+			mode = "hourly"
+		}
+	}
+	switch mode {
+	case "hourly":
+		if hourly < 0 {
+			return "hourly rate cannot be negative"
+		}
+		if sessionPrice != nil || len(perSession) > 0 {
+			return "hourly pricing cannot include session pricing"
+		}
+	case "fixedSession":
+		if sessionPrice == nil {
+			return "fixed-session pricing requires a session price"
+		}
+		if *sessionPrice < 0 {
+			return "session price cannot be negative"
+		}
+		if hourly != 0 || len(perSession) > 0 {
+			return "fixed-session pricing cannot include hourly or progressive pricing"
+		}
+	case "perSession":
+		if hourly != 0 || sessionPrice != nil {
+			return "progressive pricing cannot include hourly or fixed-session pricing"
+		}
+		if message := validatePerSessionPricing(perSession); message != "" {
+			return message
+		}
+	default:
+		return "unknown rate pricing mode"
+	}
+	return ""
+}
+
 func (s *Server) AdminCreateRate(ctx context.Context, request AdminCreateRateRequestObject) (AdminCreateRateResponseObject, error) {
 	if request.Body == nil {
 		return AdminCreateRate422JSONResponse{ErrorMessage: "rate definition is required"}, nil
@@ -536,10 +576,7 @@ func (s *Server) AdminCreateRate(ctx context.Context, request AdminCreateRateReq
 	if strings.TrimSpace(request.Body.Id) == "" || strings.TrimSpace(request.Body.Description) == "" {
 		return AdminCreateRate422JSONResponse{ErrorMessage: "rate identifier and description are required"}, nil
 	}
-	if request.Body.HourlyRate < 0 {
-		return AdminCreateRate422JSONResponse{ErrorMessage: "hourly rate cannot be negative"}, nil
-	}
-	if message := validatePerSessionPricing(request.Body.PerSession); message != "" {
+	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession); message != "" {
 		return AdminCreateRate422JSONResponse{ErrorMessage: message}, nil
 	}
 
@@ -561,10 +598,7 @@ func (s *Server) AdminUpdateRate(ctx context.Context, request AdminUpdateRateReq
 	if strings.TrimSpace(request.Body.Description) == "" {
 		return AdminUpdateRate422JSONResponse{ErrorMessage: "rate description is required"}, nil
 	}
-	if request.Body.HourlyRate < 0 {
-		return AdminUpdateRate422JSONResponse{ErrorMessage: "hourly rate cannot be negative"}, nil
-	}
-	if message := validatePerSessionPricing(request.Body.PerSession); message != "" {
+	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession); message != "" {
 		return AdminUpdateRate422JSONResponse{ErrorMessage: message}, nil
 	}
 

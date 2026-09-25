@@ -11,12 +11,14 @@ const rates = [
     id: "hourly",
     description: "Hourly rate",
     hourlyRate: 25,
+    pricingMode: "hourly",
     perSession: [],
   },
   {
     id: "progressive",
     description: "Progressive rate",
     hourlyRate: 0,
+    pricingMode: "perSession",
     perSession: [{ count: 10, price: 150 }, { price: 13.5 }],
   },
 ];

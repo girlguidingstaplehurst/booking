@@ -372,7 +372,8 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids ...string) ([]rest
 			to_char(be.event_end, '`+dbDateTimeFormat+`'), 
 			be.event_name, be.status, be.email, 
 			bc.name,
-       		br.hourly_rate::numeric::decimal, br.discount_table
+			br.hourly_rate::numeric::decimal, br.discount_table, br.id, br.description, br.per_session,
+		br.session_price::numeric::decimal, br.pricing_mode
 		from booking_events be
 		join booking_contacts bc on bc.email = be.email
 		join booking_rates br on be.rate_id = br.id
@@ -387,9 +388,22 @@ func (db *Database) GetInvoiceEvents(ctx context.Context, ids ...string) ([]rest
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.DBInvoiceEvent, error) {
 		slog.Info("dumping row", "row", row)
 		var event rest.DBInvoiceEvent
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.ContactName, &event.Rate, &event.DiscountTable); err != nil {
+		var rateID, description string
+		var perSession []byte
+		var sessionPrice *float32
+		var pricingMode rest.RatePricingMode
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.ContactName, &event.Rate, &event.DiscountTable, &rateID, &description, &perSession, &sessionPrice, &pricingMode); err != nil {
 			return event, err
 		}
+		pricing := rest.PerSessionPricing{}
+		if err := json.Unmarshal(perSession, &pricing); err != nil {
+			return event, err
+		}
+		discountJSON, err := json.Marshal(event.DiscountTable)
+		if err != nil {
+			return event, err
+		}
+		event.RateDefinition = rateFromFields(rateID, description, event.Rate, discountJSON, pricing, sessionPrice, pricingMode)
 
 		return event, nil
 	})
@@ -401,7 +415,8 @@ func (db *Database) GetInvoiceEventsForGroup(ctx context.Context, groupID string
 		to_char(be.event_end, '`+dbDateTimeFormat+`'),
 		be.event_name, be.status, be.email, bc.name,
 		beg.id, beg.event_name,
-		br.id, br.description, br.hourly_rate::numeric::decimal, br.discount_table, br.per_session
+		br.id, br.description, br.hourly_rate::numeric::decimal, br.discount_table, br.per_session, br.session_price::numeric::decimal,
+		br.pricing_mode
 		from booking_events be
 		join booking_event_groups beg on beg.id = be.event_group_id
 		join booking_contacts bc on bc.email = beg.email
@@ -415,12 +430,14 @@ func (db *Database) GetInvoiceEventsForGroup(ctx context.Context, groupID string
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.DBInvoiceEvent, error) {
 		var event rest.DBInvoiceEvent
 		var standardDiscount, standardPerSession []byte
+		var standardSessionPrice *float32
+		var standardPricingMode rest.RatePricingMode
 		var standardID, standardDescription string
 		var standardHourly float32
 		if err := row.Scan(
 			&event.Id, &event.From, &event.To, &event.Name, &event.Status, &event.Email, &event.ContactName,
 			&event.EventGroup, &event.GroupName,
-			&standardID, &standardDescription, &standardHourly, &standardDiscount, &standardPerSession,
+			&standardID, &standardDescription, &standardHourly, &standardDiscount, &standardPerSession, &standardSessionPrice, &standardPricingMode,
 		); err != nil {
 			return event, err
 		}
@@ -433,12 +450,12 @@ func (db *Database) GetInvoiceEventsForGroup(ctx context.Context, groupID string
 			return event, err
 		}
 		event.Rate = standardHourly
-		event.RateDefinition = rateFromFields(standardID, standardDescription, standardHourly, standardDiscount, standardPricing)
+		event.RateDefinition = rateFromFields(standardID, standardDescription, standardHourly, standardDiscount, standardPricing, standardSessionPrice, standardPricingMode)
 		return event, nil
 	})
 }
 
-func rateFromFields(id, description string, hourly float32, discountJSON []byte, perSession rest.PerSessionPricing) *rest.Rate {
+func rateFromFields(id, description string, hourly float32, discountJSON []byte, perSession rest.PerSessionPricing, sessionPrice *float32, pricingMode rest.RatePricingMode) *rest.Rate {
 	var discountTable map[string]interface{}
 	if err := json.Unmarshal(discountJSON, &discountTable); err != nil {
 		discountTable = map[string]interface{}{}
@@ -449,6 +466,8 @@ func rateFromFields(id, description string, hourly float32, discountJSON []byte,
 		HourlyRate:    hourly,
 		DiscountTable: &discountTable,
 		PerSession:    perSession,
+		SessionPrice:  sessionPrice,
+		PricingMode:   pricingMode,
 	}
 }
 
@@ -493,7 +512,8 @@ func (db *Database) MarkInvoicePaid(ctx context.Context, id string) error {
 }
 
 func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
-	rows, err := db.pool.Query(ctx, `select id, description, hourly_rate::numeric::decimal, discount_table, per_session
+	rows, err := db.pool.Query(ctx, `select id, description, hourly_rate::numeric::decimal, discount_table, per_session, session_price::numeric::decimal,
+		case when session_price is not null then 'fixedSession' when jsonb_array_length(per_session) > 0 then 'perSession' else 'hourly' end
 		from booking_rates
 		order by id`)
 	if err != nil {
@@ -502,7 +522,7 @@ func (db *Database) GetRates(ctx context.Context) ([]rest.Rate, error) {
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Rate, error) {
 		var rate rest.Rate
-		if err := row.Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession); err != nil {
+		if err := row.Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession, &rate.SessionPrice, &rate.PricingMode); err != nil {
 			return rate, err
 		}
 
@@ -642,11 +662,12 @@ func (db *Database) CreateRate(ctx context.Context, input rest.CreateRateBody) (
 
 	var rate rest.Rate
 	err = db.pool.QueryRow(ctx, `
-		insert into booking_rates (id, description, hourly_rate, discount_table, per_session)
-		values ($1, $2, $3, '{}', $4)
-		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session`,
-		input.Id, input.Description, input.HourlyRate, perSession,
-	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession)
+		insert into booking_rates (id, description, hourly_rate, discount_table, per_session, session_price)
+		values ($1, $2, $3, '{}', $4, $5)
+		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session, session_price::numeric::decimal,
+		case when session_price is not null then 'fixedSession' when jsonb_array_length(per_session) > 0 then 'perSession' else 'hourly' end`,
+		input.Id, input.Description, input.HourlyRate, perSession, input.SessionPrice,
+	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession, &rate.SessionPrice, &rate.PricingMode)
 	return rate, err
 }
 
@@ -659,11 +680,12 @@ func (db *Database) UpdateRate(ctx context.Context, id string, input rest.Update
 	var rate rest.Rate
 	err = db.pool.QueryRow(ctx, `
 		update booking_rates
-		set description = $1, hourly_rate = $2, per_session = $3
-		where id = $4
-		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session`,
-		input.Description, input.HourlyRate, perSession, id,
-	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession)
+		set description = $1, hourly_rate = $2, per_session = $3, session_price = $4
+		where id = $5
+		returning id, description, hourly_rate::numeric::decimal, discount_table, per_session, session_price::numeric::decimal,
+		case when session_price is not null then 'fixedSession' when jsonb_array_length(per_session) > 0 then 'perSession' else 'hourly' end`,
+		input.Description, input.HourlyRate, perSession, input.SessionPrice, id,
+	).Scan(&rate.Id, &rate.Description, &rate.HourlyRate, &rate.DiscountTable, &rate.PerSession, &rate.SessionPrice, &rate.PricingMode)
 	return rate, err
 }
 

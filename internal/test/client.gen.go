@@ -95,6 +95,27 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// Defines values for RatePricingMode.
+const (
+	FixedSession RatePricingMode = "fixedSession"
+	Hourly       RatePricingMode = "hourly"
+	PerSession   RatePricingMode = "perSession"
+)
+
+// Valid indicates whether the value is a known member of the RatePricingMode enum.
+func (e RatePricingMode) Valid() bool {
+	switch e {
+	case FixedSession:
+		return true
+	case Hourly:
+		return true
+	case PerSession:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdminDuplicateEventGroup defines model for AdminDuplicateEventGroup.
 type AdminDuplicateEventGroup struct {
 	EventGroupId string             `json:"event_group_id"`
@@ -185,10 +206,12 @@ type CreateKeyholderBody struct {
 
 // CreateRateBody defines model for CreateRateBody.
 type CreateRateBody struct {
-	Description string            `json:"description"`
-	HourlyRate  float32           `json:"hourlyRate"`
-	Id          string            `json:"id"`
-	PerSession  PerSessionPricing `json:"perSession"`
+	Description  string            `json:"description"`
+	HourlyRate   float32           `json:"hourlyRate"`
+	Id           string            `json:"id"`
+	PerSession   PerSessionPricing `json:"perSession"`
+	PricingMode  RatePricingMode   `json:"pricingMode"`
+	SessionPrice *float32          `json:"sessionPrice"`
 }
 
 // DiscountTable defines model for DiscountTable.
@@ -263,13 +286,14 @@ type Invoice struct {
 
 // InvoiceEvent defines model for InvoiceEvent.
 type InvoiceEvent struct {
-	DiscountTable DiscountTable `json:"discountTable"`
-	From          string        `json:"from"`
-	Id            string        `json:"id"`
-	Name          string        `json:"name"`
-	Rate          float32       `json:"rate"`
-	Status        EventStatus   `json:"status"`
-	To            string        `json:"to"`
+	DiscountTable  DiscountTable `json:"discountTable"`
+	From           string        `json:"from"`
+	Id             string        `json:"id"`
+	Name           string        `json:"name"`
+	Rate           float32       `json:"rate"`
+	RateDefinition Rate          `json:"rateDefinition"`
+	Status         EventStatus   `json:"status"`
+	To             string        `json:"to"`
 }
 
 // InvoiceItem defines model for InvoiceItem.
@@ -368,7 +392,12 @@ type Rate struct {
 	HourlyRate    float32                 `json:"hourlyRate"`
 	Id            string                  `json:"id"`
 	PerSession    PerSessionPricing       `json:"perSession"`
+	PricingMode   RatePricingMode         `json:"pricingMode"`
+	SessionPrice  *float32                `json:"sessionPrice"`
 }
+
+// RatePricingMode defines model for RatePricingMode.
+type RatePricingMode string
 
 // RatesList defines model for RatesList.
 type RatesList = []Rate
@@ -425,9 +454,11 @@ type UpdateKeyholderBody struct {
 
 // UpdateRateBody defines model for UpdateRateBody.
 type UpdateRateBody struct {
-	Description string            `json:"description"`
-	HourlyRate  float32           `json:"hourlyRate"`
-	PerSession  PerSessionPricing `json:"perSession"`
+	Description  string            `json:"description"`
+	HourlyRate   float32           `json:"hourlyRate"`
+	PerSession   PerSessionPricing `json:"perSession"`
+	PricingMode  RatePricingMode   `json:"pricingMode"`
+	SessionPrice *float32          `json:"sessionPrice"`
 }
 
 // AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.

@@ -1,10 +1,4 @@
-# rate-definitions Specification
-
-## Purpose
-
-Provide administrators with a secure, understandable way to maintain reusable hourly, fixed-session, and progressive per-session rate definitions used by booking workflows.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Administrators can list rate definitions
 
@@ -46,7 +40,7 @@ The system SHALL allow an authenticated administrator to create a rate definitio
 
 #### Scenario: Reject invalid or ambiguous rate creation
 
-- **WHEN** the submitted identifier, description, or monetary values fail validation, or the identifier is already in use
+- **WHEN** the submitted identifier or description is invalid, the selected mode's price configuration is invalid, more than one pricing mode is configured, or the identifier is already in use
 - **THEN** the system rejects the request with a meaningful validation error and does not create a partial rate
 
 #### Scenario: Reject invalid rate creation
@@ -61,7 +55,7 @@ The system SHALL allow an authenticated administrator to update a rate's descrip
 #### Scenario: Update an existing rate
 
 - **WHEN** the administrator submits valid changes for an existing rate, including a change between hourly, fixed-session, and progressive pricing
-- **THEN** the system persists the changes and returns the updated rate definition
+- **THEN** the system persists the selected pricing mode and its configuration and returns the updated rate definition
 
 #### Scenario: Attempt to edit a missing rate
 
@@ -94,7 +88,7 @@ The system SHALL represent fixed-session pricing with a non-negative session pri
 
 ### Requirement: Per-session pricing uses an unambiguous two-tier format
 
-The system SHALL represent configured per-session pricing as an ordered array whose first item contains `count` and `price`, whose second item contains `price`, and whose empty array means no per-session pricing.
+The system SHALL represent progressive per-session pricing as an ordered array whose first item contains `count` and `price`, whose second item contains `price`, and whose empty array means that progressive pricing is not configured.
 
 #### Scenario: Interpret the two-tier definition
 
@@ -103,7 +97,7 @@ The system SHALL represent configured per-session pricing as an ordered array wh
 
 #### Scenario: Validate per-session structure
 
-- **WHEN** a submitted per-session definition has a non-positive count, a negative price, missing required tier values, or more than the supported two tiers
+- **WHEN** a submitted progressive per-session definition has a non-positive count, a negative price, missing required tier values, or more than the supported two tiers
 - **THEN** the system rejects the definition with a validation error
 
 ### Requirement: Rate editor provides actionable client-side validation feedback
@@ -122,16 +116,16 @@ The rate editor SHALL validate entered rate values before submission and SHALL p
 - **THEN** the hourly rate field is marked invalid with a validation message
 - **AND** the form cannot be submitted
 
-#### Scenario: Invalid progressive pricing
-
-- **WHEN** an administrator selects progressive per-session pricing and enters a missing, fractional, or non-positive session count, or a negative price
-- **THEN** the relevant per-session field is marked invalid with a validation message
-- **AND** the form cannot be submitted
-
 #### Scenario: Invalid fixed-session pricing
 
 - **WHEN** an administrator selects fixed-session pricing and enters a missing or negative session price
 - **THEN** the session price field is marked invalid with a validation message
+- **AND** the form cannot be submitted
+
+#### Scenario: Invalid progressive pricing
+
+- **WHEN** an administrator selects progressive per-session pricing and enters a missing, fractional, or non-positive session count, or a negative price
+- **THEN** the relevant per-session field is marked invalid with a validation message
 - **AND** the form cannot be submitted
 
 #### Scenario: Correcting a validation error
