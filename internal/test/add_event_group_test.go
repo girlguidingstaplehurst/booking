@@ -78,6 +78,49 @@ func TestIntegration_CreateEventGroupPersistsInstances(t *testing.T) {
 	require.Equal(t, 2, persisted)
 }
 
+func TestIntegration_CreateEventGroupAllowsNonOverlappingNearbyInstance(t *testing.T) {
+	token := os.Getenv("BOOKING_ADMIN_TOKEN")
+	if token == "" {
+		t.Skip("BOOKING_ADMIN_TOKEN is required for authenticated event-group integration tests")
+	}
+
+	ctx := context.Background()
+	require.NoError(t, TruncateTables("booking_event_groups", "booking_events", "booking_keyholders"))
+	db, err := pgx.Connect(ctx, "postgresql://postgres:password@localhost:5432/postgres?sslmode=disable")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close(ctx) })
+
+	keyholderID := uuid.New()
+	_, err = db.Exec(ctx, `insert into booking_keyholders (id, name, key_number) values ($1, $2, $3)`, keyholderID, "Nearby Group Keyholder", 900003)
+	require.NoError(t, err)
+
+	start := time.Now().AddDate(0, 4, 0).Truncate(time.Second)
+	_, err = db.Exec(ctx, `insert into booking_events (id, event_start, event_end, event_name, visible, email, status, rate_id, details) values ($1, $2, $3, $4, true, $5, 'approved', 'default', '')`, uuid.New(), start, start.Add(time.Hour), "Existing Nearby Event", email)
+	require.NoError(t, err)
+
+	groupName := "Nearby Event Group " + uuid.NewString()
+	body := AdminNewEventGroup{
+		Details:         "Nearby group details",
+		Keyholder:       openapi_types.UUID(keyholderID),
+		Name:            groupName,
+		PubliclyVisible: true,
+		Rate:            "default",
+		Instances:       []EventInstance{{From: start.Add(65 * time.Minute).Format(time.RFC3339), To: start.Add(125 * time.Minute).Format(time.RFC3339)}},
+	}
+	body.Contact.EmailAddress = email
+	body.Contact.Name = contactName
+
+	client, err := NewClientWithResponses("http://localhost:8080")
+	require.NoError(t, err)
+	auth := func(_ context.Context, request *http.Request) error {
+		request.Header.Set("Authorization", "Bearer "+token)
+		return nil
+	}
+	response, err := client.AdminAddEventGroupWithResponse(ctx, body, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.StatusCode(), string(response.Body))
+}
+
 func TestIntegration_SearchAndDuplicateEventGroup(t *testing.T) {
 	token := os.Getenv("BOOKING_ADMIN_TOKEN")
 	if token == "" {
@@ -125,7 +168,7 @@ func TestIntegration_SearchAndDuplicateEventGroup(t *testing.T) {
 		EventGroupId: (*search.JSON200)[0].Id,
 		Rate:         "default",
 		Keyholder:    openapi_types.UUID(keyholderID),
-		Instances:    []EventInstance{{From: start.Add(24 * time.Hour).Format(time.RFC3339), To: start.Add(25 * time.Hour).Format(time.RFC3339)}},
+		Instances:    []EventInstance{{From: start.Add(65 * time.Minute).Format(time.RFC3339), To: start.Add(125 * time.Minute).Format(time.RFC3339)}},
 	}, auth)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, duplicate.StatusCode(), string(duplicate.Body))
@@ -137,4 +180,61 @@ func TestIntegration_SearchAndDuplicateEventGroup(t *testing.T) {
 	require.NoError(t, db.QueryRow(ctx, `select count(*) from booking_events where event_name = $1`, sourceName).Scan(&sourceEvents))
 	require.Equal(t, 2, sourceEvents)
 	_ = duplicateEvents
+}
+
+func TestIntegration_DuplicateEventGroupRejectsOverlapWithoutPartialDestination(t *testing.T) {
+	token := os.Getenv("BOOKING_ADMIN_TOKEN")
+	if token == "" {
+		t.Skip("BOOKING_ADMIN_TOKEN is required for authenticated event-group integration tests")
+	}
+
+	ctx := context.Background()
+	require.NoError(t, TruncateTables("booking_invoices", "booking_event_groups", "booking_events", "booking_keyholders"))
+	keyholderID := uuid.New()
+	db, err := pgx.Connect(ctx, "postgresql://postgres:password@localhost:5432/postgres?sslmode=disable")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close(ctx) })
+	_, err = db.Exec(ctx, `insert into booking_keyholders (id, name, key_number) values ($1, $2, $3)`, keyholderID, "Overlap Keyholder", 900004)
+	require.NoError(t, err)
+
+	start := time.Now().AddDate(0, 5, 0).Truncate(time.Second)
+	groupName := "Overlap Group " + uuid.NewString()
+	body := AdminNewEventGroup{
+		Details:         "Overlap source details",
+		Keyholder:       openapi_types.UUID(keyholderID),
+		Name:            groupName,
+		PubliclyVisible: true,
+		Rate:            "default",
+		Instances:       []EventInstance{{From: start.Format(time.RFC3339), To: start.Add(time.Hour).Format(time.RFC3339)}},
+	}
+	body.Contact.EmailAddress = email
+	body.Contact.Name = contactName
+	client, err := NewClientWithResponses("http://localhost:8080")
+	require.NoError(t, err)
+	auth := func(_ context.Context, request *http.Request) error {
+		request.Header.Set("Authorization", "Bearer "+token)
+		return nil
+	}
+	response, err := client.AdminAddEventGroupWithResponse(ctx, body, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.StatusCode(), string(response.Body))
+
+	search, err := client.AdminSearchEventGroupsWithResponse(ctx, &AdminSearchEventGroupsParams{Title: groupName[len(groupName)-12:]}, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, search.StatusCode(), string(search.Body))
+	require.NotNil(t, search.JSON200)
+	require.Len(t, *search.JSON200, 1)
+
+	duplicate, err := client.AdminDuplicateEventGroupWithResponse(ctx, AdminDuplicateEventGroup{
+		EventGroupId: (*search.JSON200)[0].Id,
+		Rate:         "default",
+		Keyholder:    openapi_types.UUID(keyholderID),
+		Instances:    []EventInstance{{From: start.Add(30 * time.Minute).Format(time.RFC3339), To: start.Add(90 * time.Minute).Format(time.RFC3339)}},
+	}, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusConflict, duplicate.StatusCode(), string(duplicate.Body))
+
+	var groups int
+	require.NoError(t, db.QueryRow(ctx, `select count(*) from booking_event_groups where event_name = $1`, groupName).Scan(&groups))
+	require.Equal(t, 1, groups)
 }

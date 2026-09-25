@@ -87,7 +87,6 @@ func TestIntegration_CreateEvent(t *testing.T) {
 		},
 		//TODO event is too early
 		//TODO event is same time as an existing event
-		//TODO event overlaps 30min clear time between events
 		{
 			name: "can create a publicly visible event",
 			body: NewNewEventBuilder(successfulRequest).Build(),

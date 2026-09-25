@@ -99,6 +99,24 @@ func (db *Database) checkForNearbyBookings(ctx context.Context, tx pgx.Tx, from,
 	return nil
 }
 
+func (db *Database) checkForOverlappingBookings(ctx context.Context, tx pgx.Tx, from, to string) error {
+	rows, err := tx.Query(ctx, `select count(*) from booking_events
+			where event_start < $2 and event_end > $1`, from, to)
+	if err != nil {
+		return errors.Join(err, errors.New("failed to count existing overlapping bookings"))
+	}
+
+	count, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+	if err != nil {
+		return errors.Join(err, errors.New("failed to extract count of rows"))
+	}
+
+	if count > 0 {
+		return consts.ErrBookingExists
+	}
+	return nil
+}
+
 func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) (*rest.Invoice, error) {
 	inv := &rest.Invoice{
 		Id:        uuid.New().String(),
@@ -752,9 +770,14 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 			return errors.Join(err, errors.New("failed to lock table"))
 		}
 
-		for _, instance := range group.Instances {
-			if err := db.checkForNearbyBookings(ctx, tx, instance.From, instance.To); err != nil {
+		for index, instance := range group.Instances {
+			if err := db.checkForOverlappingBookings(ctx, tx, instance.From, instance.To); err != nil {
 				return err
+			}
+			for _, previous := range group.Instances[:index] {
+				if instance.From < previous.To && instance.To > previous.From {
+					return consts.ErrBookingExists
+				}
 			}
 			if _, err := tx.Exec(ctx, `insert into booking_events
 				(id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id, keyholder_in_id, keyholder_out_id)
@@ -865,12 +888,17 @@ func (db *Database) DuplicateEventGroup(ctx context.Context, request rest.AdminD
 		if _, err := tx.Exec(ctx, "lock table booking_events in share row exclusive mode"); err != nil {
 			return errors.Join(err, errors.New("failed to lock table"))
 		}
-		for _, instance := range group.Instances {
+		for index, instance := range group.Instances {
 			if instance.From == "" || instance.To == "" {
 				return errors.New("invalid event group instance")
 			}
-			if err := db.checkForNearbyBookings(ctx, tx, instance.From, instance.To); err != nil {
+			if err := db.checkForOverlappingBookings(ctx, tx, instance.From, instance.To); err != nil {
 				return err
+			}
+			for _, previous := range group.Instances[:index] {
+				if instance.From < previous.To && instance.To > previous.From {
+					return consts.ErrBookingExists
+				}
 			}
 		}
 
