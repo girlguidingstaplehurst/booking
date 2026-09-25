@@ -87,7 +87,7 @@ The duplicate form SHALL copy the source group’s name, details, visibility, an
 
 ### Requirement: Event-group duplication is server-authoritative and transactional
 
-The system SHALL provide an authenticated duplication operation that accepts the source group identifier, an editable rate, an editable keyholder, and new date/time instances. The server SHALL copy only the source group’s immutable setup, validate the selected rate and active keyholder, validate the submitted instances and booking conflicts, and create the new group and all sessions atomically. For event-group schedules, a submitted instance SHALL conflict with an existing event only when its time range overlaps that event’s time range; proximity within 30 minutes without overlap SHALL NOT by itself cause a conflict. A failed validation or conflict SHALL leave both the source and destination absent or unchanged.
+The system SHALL provide an authenticated duplication operation that accepts the source group identifier, an editable rate, an editable keyholder, and new date/time instances. The server SHALL copy only the source group’s immutable setup, validate the selected rate and active keyholder, validate the submitted instances and booking conflicts, and create the new group and all sessions atomically. For event-group schedules, a submitted instance SHALL conflict with an existing event only when its time range overlaps that event’s time range; proximity within 30 minutes without overlap SHALL NOT by itself cause a conflict. For ordinary event creation, public booking, and event-date updates, a proposed schedule SHALL conflict when it overlaps an existing event or leaves less than 30 minutes between the proposed and existing event; an exact 30-minute boundary SHALL be allowed. A failed validation or conflict SHALL leave both the source and destination absent or unchanged.
 
 #### Scenario: Valid duplication creates a new group
 
@@ -123,5 +123,10 @@ The system SHALL provide an authenticated duplication operation that accepts the
 
 #### Scenario: Duplication preserves ordinary booking clearance behavior elsewhere
 
-- **WHEN** an ordinary event, public booking, or event-date update is submitted within 30 minutes of an existing event without overlapping it
-- **THEN** the existing 30-minute conflict rule remains in effect
+- **WHEN** an ordinary event, public booking, or event-date update is submitted exactly 30 minutes after an existing event ends without overlapping it
+- **THEN** the submission is accepted if all other validation passes
+
+#### Scenario: Ordinary booking remains blocked inside the 30-minute gap
+
+- **WHEN** an ordinary event, public booking, or event-date update is submitted less than 30 minutes after an existing event ends without overlapping it
+- **THEN** the system rejects the submission as a booking conflict

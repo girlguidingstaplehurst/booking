@@ -81,9 +81,8 @@ func (db *Database) insertEvent(ctx context.Context, tx pgx.Tx, event *rest.AddE
 
 func (db *Database) checkForNearbyBookings(ctx context.Context, tx pgx.Tx, from, to string) error {
 	rows, err := tx.Query(ctx, `select count(*) from booking_events 
-			where (event_start - interval '30 minutes' <= $1 and event_end + interval '30 minutes' >= $1)
-			or (event_start - interval '30 minutes' <= $2 and event_end + interval '30 minutes'>= $2)
-			or (event_start - interval '30 minutes'>= $1 and event_end + interval '30 minutes' <= $2)`, from, to)
+			where event_start - interval '30 minutes' < $2
+			and event_end + interval '30 minutes' > $1`, from, to)
 	if err != nil {
 		return errors.Join(err, errors.New("failed to count existing overlapping bookings"))
 	}
@@ -606,11 +605,8 @@ func (db *Database) UpdateEventDates(ctx context.Context, eventID string, input 
 		err := tx.QueryRow(ctx, `select count(*)
 			from booking_events
 			where id <> $1
-			and (
-				(event_start - interval '30 minutes' <= $2 and event_end + interval '30 minutes' >= $2)
-				or (event_start - interval '30 minutes' <= $3 and event_end + interval '30 minutes' >= $3)
-				or (event_start - interval '30 minutes' >= $2 and event_end + interval '30 minutes' <= $3)
-			)`, eventID, from, to).Scan(&count)
+			and event_start - interval '30 minutes' < $3
+			and event_end + interval '30 minutes' > $2`, eventID, from, to).Scan(&count)
 		if err != nil {
 			return err
 		}
