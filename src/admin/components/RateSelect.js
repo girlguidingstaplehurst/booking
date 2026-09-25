@@ -17,6 +17,7 @@ async function setRate(eventID, rateID) {
 
 export function RateUpdater({ eventID, rateID = "default" }) {
   const [settingRate, setSettingRate] = useState(false);
+  const [error, setError] = useState("");
 
   const formik = useFormik({
     initialValues: {
@@ -24,8 +25,12 @@ export function RateUpdater({ eventID, rateID = "default" }) {
     },
     onSubmit: async (values) => {
       setSettingRate(true);
-      await setRate(eventID, values.rate);
+      setError("");
+      const response = await setRate(eventID, values.rate);
       setSettingRate(false);
+      if (response === undefined) {
+        setError("Unable to update the hiring rate.");
+      }
     },
   });
 
@@ -33,13 +38,13 @@ export function RateUpdater({ eventID, rateID = "default" }) {
     <form onChange={formik.handleChange} onSubmit={formik.handleSubmit}>
       <Flex gap={2}>
         <Box flex="1">
-          <RateSelect
-            rateID={rateID}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            hourlyOnly
-            preserveCurrentRate
-          />
+            <RateSelect
+              rateID={rateID}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              preserveCurrentRate
+              error={error}
+            />
         </Box>
         <ButtonGroup>
           <RoundedButton

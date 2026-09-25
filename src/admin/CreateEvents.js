@@ -190,7 +190,6 @@ export function CreateEvents() {
               rateID={formik.values.rate}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              hourlyOnly
             />
           </Box>
 

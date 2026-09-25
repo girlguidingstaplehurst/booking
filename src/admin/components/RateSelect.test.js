@@ -21,6 +21,13 @@ const rates = [
     pricingMode: "perSession",
     perSession: [{ count: 10, price: 150 }, { price: 13.5 }],
   },
+  {
+    id: "fixed",
+    description: "Fixed rate",
+    sessionPrice: 80,
+    pricingMode: "fixedSession",
+    perSession: [],
+  },
 ];
 
 const onChange = jest.fn();
@@ -39,6 +46,12 @@ describe("RateSelect", () => {
 
     expect(await screen.findByRole("option", { name: /Hourly rate/ })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Progressive rate/ })).toBeInTheDocument();
+  });
+
+  test("shows fixed-session rates with their per-session price", async () => {
+    render(<RateSelect rateID="hourly" onChange={onChange} />);
+
+    expect(await screen.findByRole("option", { name: /Fixed rate - £80\/session/ })).toBeInTheDocument();
   });
 
   test("filters progressive rates when hourly-only mode is enabled", async () => {

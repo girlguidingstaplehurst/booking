@@ -17,7 +17,7 @@ jest.mock("./components/RateSelect", () => ({
 }));
 
 describe("CreateEvents", () => {
-  test("accepts short details and restricts the selector to hourly rates", () => {
+  test("accepts short details and allows all rate modes", () => {
     render(
       <MemoryRouter>
         <CreateEvents />
@@ -30,7 +30,7 @@ describe("CreateEvents", () => {
     fireEvent.blur(screen.getByLabelText("Event Details"));
 
     expect(screen.queryByText("too short")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Hiring Rate")).toHaveAttribute("data-hourly-only", "true");
+    expect(screen.getByLabelText("Hiring Rate")).toHaveAttribute("data-hourly-only", "false");
     const submitButton = screen.getByRole("button", { name: "Create Events" });
     expect(submitButton).toBeInTheDocument();
     expect(submitButton).toHaveStyle({ width: "100%" });

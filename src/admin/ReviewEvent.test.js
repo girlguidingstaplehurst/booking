@@ -16,7 +16,7 @@ jest.mock("../Poster", () => ({
 }));
 
 jest.mock("./components/RateSelect", () => ({
-  RateUpdater: () => <div>Rate updater</div>,
+  RateUpdater: ({ rateID }) => <div data-rate-id={rateID}>Rate updater</div>,
 }));
 
 jest.mock("./components/KeyholderSelect", () => ({
