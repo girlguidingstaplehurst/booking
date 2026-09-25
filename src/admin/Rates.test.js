@@ -90,6 +90,23 @@ describe("rate data", () => {
     ]);
   });
 
+  test("builds a fixed-session rate body", () => {
+    expect(buildRateBody({
+      id: "full-day",
+      description: "Full day",
+      hourlyRate: "25",
+      pricingMode: "fixedSession",
+      fixedSessionPrice: "80",
+    }, false)).toEqual({
+      id: "full-day",
+      description: "Full day",
+      hourlyRate: 0,
+      pricingMode: "fixedSession",
+      sessionPrice: 80,
+      perSession: [],
+    });
+  });
+
   test("populates edit fields from progressive pricing", () => {
     expect(rateFormValues({
       id: "standard",
@@ -105,6 +122,21 @@ describe("rate data", () => {
     });
   });
 
+  test("populates edit fields from fixed-session pricing", () => {
+    expect(rateFormValues({
+      id: "full-day",
+      description: "Full day",
+      hourlyRate: 0,
+      pricingMode: "fixedSession",
+      sessionPrice: 80,
+      perSession: [],
+    })).toMatchObject({
+      id: "full-day",
+      pricingMode: "fixedSession",
+      fixedSessionPrice: 80,
+    });
+  });
+
   test("summarizes hourly pricing", () => {
     expect(rateSummary({ hourlyRate: 25, perSession: [] })).toBe("£25.00 / hour");
   });
@@ -113,6 +145,10 @@ describe("rate data", () => {
     expect(rateSummary({ perSession: [{ count: 10, price: 150 }, { price: 13.5 }] })).toBe(
       "10 sessions for £150, £13.50 thereafter",
     );
+  });
+
+  test("summarizes fixed-session pricing", () => {
+    expect(rateSummary({ pricingMode: "fixedSession", sessionPrice: 80, perSession: [] })).toBe("£80.00 / session");
   });
 
   test("validates hourly and progressive pricing rules", async () => {
@@ -138,6 +174,20 @@ describe("rate data", () => {
       pricingMode: "hourly",
       hourlyRate: 25,
     })).resolves.toMatchObject({ hourlyRate: 25 });
+
+    await expect(rateSchema.validate({
+      id: "rate",
+      description: "Rate",
+      pricingMode: "fixedSession",
+      fixedSessionPrice: -1,
+    })).rejects.toThrow("Must not be negative");
+
+    await expect(rateSchema.validate({
+      id: "rate",
+      description: "Rate",
+      pricingMode: "fixedSession",
+      fixedSessionPrice: 80,
+    })).resolves.toMatchObject({ fixedSessionPrice: 80 });
   });
 });
 
@@ -180,6 +230,46 @@ describe("RateEditor", () => {
     await waitFor(() => expect(screen.getAllByText("Required").length).toBeGreaterThan(0));
     expect(screen.queryByRole("spinbutton", { name: "Hourly rate" })).not.toBeInTheDocument();
     expect(screen.getByRole("spinbutton", { name: "Session count" })).toBeInvalid();
+  });
+
+  test("selects fixed-session pricing and validates its session price", async () => {
+    render(<RateEditor />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Fixed price per session"));
+    });
+
+    expect(screen.getByRole("spinbutton", { name: "Session price" })).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Hourly rate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Session count" })).not.toBeInTheDocument();
+
+    fireEvent.blur(screen.getByRole("spinbutton", { name: "Session price" }));
+    await waitFor(() => expect(screen.getByText("Required")).toBeInTheDocument());
+    expect(screen.getByRole("spinbutton", { name: "Session price" })).toBeInvalid();
+  });
+
+  test("submits a valid fixed-session rate", async () => {
+    render(<RateEditor />);
+
+    fireEvent.change(screen.getByLabelText("ID"), { target: { value: "full-day" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Full day" } });
+    fireEvent.click(screen.getByLabelText("Fixed price per session"));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Session price" }), { target: { value: "80" } });
+
+    const save = screen.getByRole("button", { name: "Save rate" });
+    await waitFor(() => expect(save).toBeEnabled());
+    await act(async () => {
+      fireEvent.click(save);
+    });
+
+    await waitFor(() => expect(AdminPoster).toHaveBeenCalledWith("/api/v1/admin/rates", {
+      id: "full-day",
+      description: "Full day",
+      pricingMode: "fixedSession",
+      hourlyRate: 0,
+      sessionPrice: 80,
+      perSession: [],
+    }));
   });
 
   test("enables Save after correcting a valid hourly form", async () => {

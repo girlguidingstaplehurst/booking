@@ -213,9 +213,10 @@ export function RateEditor() {
             <FormControl>
               <FormLabel>Pricing type</FormLabel>
               <RadioGroup value={formik.values.pricingMode} onChange={(value) => formik.setFieldValue("pricingMode", value)}>
-                <Stack direction="row">
+                  <Stack direction="row">
                   <Radio value="hourly">Hourly rate</Radio>
-                  <Radio value="perSession">Progressive per-session pricing</Radio>
+                   <Radio value="fixedSession">Fixed price per session</Radio>
+                   <Radio value="perSession">Progressive per-session pricing</Radio>
                 </Stack>
               </RadioGroup>
             </FormControl>
