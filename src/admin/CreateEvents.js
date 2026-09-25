@@ -133,6 +133,7 @@ export function CreateEvents() {
             setter={setEventDates}
             name="eventDates"
             label="Event Dates"
+            allowMultiDay
           />
 
           <FormFieldAndLabel

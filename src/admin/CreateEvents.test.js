@@ -6,7 +6,11 @@ jest.mock("../Poster", () => ({
   AdminPoster: jest.fn(),
 }));
 
-jest.mock("./components/DateTimeRangeAccumulator", () => () => null);
+const mockDateTimeRangeAccumulator = jest.fn(() => null);
+jest.mock("./components/DateTimeRangeAccumulator", () => (props) => {
+  mockDateTimeRangeAccumulator(props);
+  return null;
+});
 
 jest.mock("./components/KeyholderSelect", () => ({ KeyholderSelect: () => null }));
 
@@ -17,6 +21,8 @@ jest.mock("./components/RateSelect", () => ({
 }));
 
 describe("CreateEvents", () => {
+  beforeEach(() => mockDateTimeRangeAccumulator.mockClear());
+
   test("accepts short details and allows all rate modes", () => {
     render(
       <MemoryRouter>
@@ -34,6 +40,7 @@ describe("CreateEvents", () => {
     const submitButton = screen.getByRole("button", { name: "Create Events" });
     expect(submitButton).toBeInTheDocument();
     expect(submitButton).toHaveStyle({ width: "100%" });
+    expect(mockDateTimeRangeAccumulator).toHaveBeenCalledWith(expect.objectContaining({ allowMultiDay: true }));
   });
 
   test("rejects details longer than 50,000 characters", async () => {

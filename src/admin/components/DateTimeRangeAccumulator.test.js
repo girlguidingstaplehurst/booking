@@ -1,8 +1,33 @@
 import dayjs from "dayjs";
 import {
+  generateMultiDayOccurrence,
   generateWeeklyOccurrences,
+  validateMultiDaySchedule,
   validateWeeklySchedule,
 } from "./DateTimeRangeAccumulator";
+
+describe("multi-day interval generation", () => {
+  const schedule = {
+    startDate: "2026-10-05",
+    endDate: "2026-10-07",
+    from: "18:00",
+    to: "09:00",
+  };
+
+  test("generates one continuous interval across dates", () => {
+    const [occurrence] = generateMultiDayOccurrence(schedule);
+
+    expect(dayjs(occurrence.from).format("YYYY-MM-DD HH:mm")).toBe("2026-10-05 18:00");
+    expect(dayjs(occurrence.to).format("YYYY-MM-DD HH:mm")).toBe("2026-10-07 09:00");
+  });
+
+  test("rejects incomplete, equal, and reversed intervals", () => {
+    expect(validateMultiDaySchedule({ ...schedule, endDate: "" })).toBeTruthy();
+    expect(generateMultiDayOccurrence({ ...schedule, endDate: "" })).toEqual([]);
+    expect(generateMultiDayOccurrence({ ...schedule, endDate: "2026-10-05", to: "18:00" })).toEqual([]);
+    expect(generateMultiDayOccurrence({ ...schedule, endDate: "2026-10-04" })).toEqual([]);
+  });
+});
 
 describe("weekly recurrence generation", () => {
   const schedule = {

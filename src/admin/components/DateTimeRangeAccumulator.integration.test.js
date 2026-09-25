@@ -135,4 +135,41 @@ describe("DateTimeRangeAccumulator", () => {
     expect(screen.getByText("Enter a date, start time, and end time.")).toBeInTheDocument();
     expect(setter).toHaveBeenLastCalledWith([]);
   });
+
+  test("creates one continuous multi-day occurrence", async () => {
+    const setter = jest.fn();
+
+    render(<DateTimeRangeAccumulator setter={setter} allowMultiDay />);
+
+    expect(screen.getByLabelText("Event spans multiple days")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Event spans multiple days"));
+    fireEvent.change(screen.getByLabelText("Start date"), {
+      target: { value: "2026-10-05" },
+    });
+    fireEvent.change(screen.getByLabelText("End date"), {
+      target: { value: "2026-10-07" },
+    });
+    fireEvent.change(screen.getByLabelText("Start time"), {
+      target: { value: "18:00" },
+    });
+    fireEvent.change(screen.getByLabelText("End time"), {
+      target: { value: "09:00" },
+    });
+
+    await waitFor(() => expect(setter).toHaveBeenLastCalledWith([{
+      from: expect.any(String),
+      to: expect.any(String),
+    }]));
+    expect(setter).toHaveBeenLastCalledWith([{
+      from: expect.stringContaining("2026-10-05"),
+      to: expect.stringContaining("2026-10-07"),
+    }]);
+    expect(screen.queryByText(/occurrence will be submitted/)).not.toBeInTheDocument();
+  });
+
+  test("does not expose multi-day mode unless enabled by the caller", () => {
+    render(<DateTimeRangeAccumulator setter={jest.fn()} />);
+
+    expect(screen.queryByLabelText("Event spans multiple days")).not.toBeInTheDocument();
+  });
 });

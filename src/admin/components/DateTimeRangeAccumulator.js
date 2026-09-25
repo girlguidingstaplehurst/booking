@@ -34,6 +34,18 @@ export function validateSchedule({ startDate, endDate, from, to, repeatWeekly })
   return "";
 }
 
+export function validateMultiDaySchedule({ startDate, endDate, from, to }) {
+  if (!startDate || !endDate || !from || !to) {
+    return "Enter a start date, start time, end date, and end time.";
+  }
+
+  if (!dateTime(startDate, from).isBefore(dateTime(endDate, to))) {
+    return "The end date and time must be after the start date and time.";
+  }
+
+  return "";
+}
+
 export function validateWeeklySchedule(schedule) {
   return validateSchedule({ ...schedule, repeatWeekly: true });
 }
@@ -60,20 +72,36 @@ export function generateWeeklyOccurrences({ startDate, endDate, from, to }) {
   return occurrences;
 }
 
-export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPrefix = "recurrence", initialTimes = [] }) {
+export function generateMultiDayOccurrence(schedule) {
+  if (validateMultiDaySchedule(schedule)) {
+    return [];
+  }
+
+  return [{
+    from: dateTime(schedule.startDate, schedule.from).toISOString(),
+    to: dateTime(schedule.endDate, schedule.to).toISOString(),
+  }];
+}
+
+export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPrefix = "recurrence", initialTimes = [], allowMultiDay = false }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [from, setFrom] = useState(initialTimes[0]?.from || "");
   const [to, setTo] = useState(initialTimes[0]?.to || "");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
+  const [multiDay, setMultiDay] = useState(false);
   const [excludedDates, setExcludedDates] = useState(() => new Set());
 
   const schedule = { startDate, endDate, from, to };
-  const validationError = repeatWeekly
+  const validationError = multiDay
+    ? validateMultiDaySchedule(schedule)
+    : repeatWeekly
     ? validateWeeklySchedule(schedule)
     : validateSchedule({ ...schedule, repeatWeekly: false });
   const occurrences = useMemo(
-    () => repeatWeekly
+    () => multiDay
+      ? generateMultiDayOccurrence({ startDate, endDate, from, to })
+      : repeatWeekly
       ? generateWeeklyOccurrences({ startDate, endDate, from, to })
       : validationError
         ? []
@@ -82,7 +110,7 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
             from: dateTime(startDate, from).toISOString(),
             to: dateTime(startDate, to).toISOString(),
           }],
-    [startDate, endDate, from, to, repeatWeekly, validationError],
+    [startDate, endDate, from, to, repeatWeekly, multiDay, validationError],
   );
   const includedOccurrences = useMemo(
     () => occurrences.filter((occurrence) => !excludedDates.has(occurrence.date)),
@@ -119,6 +147,14 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
 
   const updateRepeatWeekly = (event) => {
     setRepeatWeekly(event.target.checked);
+    setMultiDay(false);
+    setter([]);
+    setExcludedDates(new Set());
+  };
+
+  const updateMultiDay = (event) => {
+    setMultiDay(event.target.checked);
+    setRepeatWeekly(false);
     setter([]);
     setExcludedDates(new Set());
   };
@@ -146,10 +182,21 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
       >
         Repeat weekly
       </Checkbox>
+      {allowMultiDay && (
+        <Checkbox
+          id={`${idPrefix}-multi-day`}
+          isChecked={multiDay}
+          onChange={updateMultiDay}
+          marginLeft={4}
+          marginBottom={2}
+        >
+          Event spans multiple days
+        </Checkbox>
+      )}
       <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
         <Box>
             <FormLabel htmlFor={`${idPrefix}-start-date`}>
-            {repeatWeekly ? "First meeting date" : "Event date"}
+            {multiDay ? "Start date" : repeatWeekly ? "First meeting date" : "Event date"}
           </FormLabel>
           <Input
             id={`${idPrefix}-start-date`}
@@ -158,9 +205,11 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
             type="date"
           />
         </Box>
-        {repeatWeekly && (
+        {(repeatWeekly || multiDay) && (
           <Box>
-            <FormLabel htmlFor={`${idPrefix}-end-date`}>Repeat weekly until</FormLabel>
+            <FormLabel htmlFor={`${idPrefix}-end-date`}>
+              {multiDay ? "End date" : "Repeat weekly until"}
+            </FormLabel>
             <Input
               id={`${idPrefix}-end-date`}
               value={endDate}
@@ -170,7 +219,7 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
           </Box>
         )}
         <Box>
-          <FormLabel htmlFor={`${idPrefix}-start-time`}>From</FormLabel>
+          <FormLabel htmlFor={`${idPrefix}-start-time`}>{multiDay ? "Start time" : "From"}</FormLabel>
           <Input
             id={`${idPrefix}-start-time`}
             value={from}
@@ -179,7 +228,7 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
           />
         </Box>
         <Box>
-          <FormLabel htmlFor={`${idPrefix}-end-time`}>To</FormLabel>
+          <FormLabel htmlFor={`${idPrefix}-end-time`}>{multiDay ? "End time" : "To"}</FormLabel>
           <Input
             id={`${idPrefix}-end-time`}
             value={to}
@@ -191,7 +240,7 @@ export function DateTimeRangeAccumulator({ setter, label = "Event Dates", idPref
       {validationError && (startDate || endDate || from || to) && (
         <Text color="red.500" marginTop={2}>{validationError}</Text>
       )}
-      {!validationError && occurrences.length > 0 && (
+      {!multiDay && !validationError && occurrences.length > 0 && (
         <Box marginTop={4}>
           <Text fontWeight="bold">
             {includedOccurrences.length} occurrence{includedOccurrences.length === 1 ? "" : "s"} will be submitted
