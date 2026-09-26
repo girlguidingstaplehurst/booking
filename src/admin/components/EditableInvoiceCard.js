@@ -40,16 +40,19 @@ export function EditableInvoiceCard({ preparation }) {
   const navigate = useNavigate();
   const { token } = useAuth();
   const isIndividual = preparation.mode === "individual";
+  const isGroup = preparation.mode === "group";
+  const isHourlyGroup = isGroup && !preparation.rate?.perSession?.length;
   const eventNames = preparation.events.map((event) => event.name).join(", ");
+
+  const selectedEvents = (events) =>
+    preparation.events.filter((event) => events.includes(event.id));
 
   const formik = useFormik({
     initialValues: {
       contact: preparation.contact,
       items: populateInvoiceItems(preparation),
       ...(preparation.eventGroup ? { eventGroup: preparation.eventGroup } : {}),
-      ...(!preparation.eventGroup
-        ? { events: preparation.events.map((event) => event.id) }
-        : {}),
+       events: preparation.events.map((event) => event.id),
       cleaningDeposit: false,
     }, // validationSchema: EventSchema,
     onSubmit: async (values) => {
@@ -73,6 +76,15 @@ export function EditableInvoiceCard({ preparation }) {
       return resp;
     },
   });
+
+  const updateSelectedEvents = (events) => {
+    const nextPreparation = { ...preparation, events: selectedEvents(events) };
+    formik.setValues({
+      ...formik.values,
+      events,
+      items: populateInvoiceItems(nextPreparation, formik.values.cleaningDeposit),
+    });
+  };
 
   const totalCost = formik.values.items.reduce(
     (acc, item) => acc + item.cost,
@@ -168,6 +180,32 @@ export function EditableInvoiceCard({ preparation }) {
               </Tbody>
             </Table>
           </TableContainer>
+          {isHourlyGroup && (
+            <Box marginTop={4}>
+              <Checkbox
+                isChecked={formik.values.events.length === preparation.events.length}
+                isIndeterminate={formik.values.events.length > 0 && formik.values.events.length < preparation.events.length}
+                onChange={(event) => updateSelectedEvents(event.target.checked ? preparation.events.map((item) => item.id) : [])}
+              >
+                Select all sessions ({preparation.events.length})
+              </Checkbox>
+              {preparation.events.map((event) => (
+                <Checkbox
+                  key={event.id}
+                  display="block"
+                  isChecked={formik.values.events.includes(event.id)}
+                  onChange={() => updateSelectedEvents(
+                    formik.values.events.includes(event.id)
+                      ? formik.values.events.filter((id) => id !== event.id)
+                      : [...formik.values.events, event.id],
+                  )}
+                >
+                  {event.name}
+                </Checkbox>
+              ))}
+              <Text>{formik.values.events.length} session{formik.values.events.length === 1 ? "" : "s"} selected</Text>
+            </Box>
+          )}
           {isIndividual && (
             <Checkbox
               isChecked={formik.values.cleaningDeposit}
@@ -190,6 +228,7 @@ export function EditableInvoiceCard({ preparation }) {
               colorScheme="green"
               width="100%"
               isLoading={submitting}
+              isDisabled={isGroup && formik.values.events.length === 0}
               type="submit"
             >
               Send Invoice

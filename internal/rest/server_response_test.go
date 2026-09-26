@@ -156,6 +156,46 @@ func TestAdminGetInvoicesForEventsIncludesGroupRate(t *testing.T) {
 	}
 }
 
+func TestAdminGetInvoicesForEventsReturnsRemainingHourlyGroupSessions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	database := mock_rest.NewMockDatabase(ctrl)
+	server := rest.NewServer(database, nil, nil, nil, nil)
+	groupID := "hourly-group"
+	rate := &rest.Rate{Id: "hourly-rate", PricingMode: rest.Hourly}
+	database.EXPECT().GetInvoiceEventsForGroup(gomock.Any(), groupID).Return([]rest.DBInvoiceEvent{
+		{Email: "contact@example.org", ContactName: "Contact", EventGroup: &groupID, GroupName: "Hourly group", RateDefinition: rate, InvoiceEvent: rest.InvoiceEvent{Id: "remaining-session"}},
+	}, nil)
+
+	response, err := server.AdminGetInvoicesForEvents(context.Background(), rest.AdminGetInvoicesForEventsRequestObject{
+		Params: rest.AdminGetInvoicesForEventsParams{EventGroup: &groupID},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	preparations := response.(rest.AdminGetInvoicesForEvents200JSONResponse).Preparations
+	if len(preparations) != 1 || len(preparations[0].Events) != 1 || preparations[0].Events[0].Id != "remaining-session" {
+		t.Fatalf("got hourly preparations %+v", preparations)
+	}
+}
+
+func TestAdminGetInvoicesForEventsReturnsEmptyForFullyInvoicedHourlyGroup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	database := mock_rest.NewMockDatabase(ctrl)
+	server := rest.NewServer(database, nil, nil, nil, nil)
+	groupID := "fully-invoiced-group"
+	database.EXPECT().GetInvoiceEventsForGroup(gomock.Any(), groupID).Return([]rest.DBInvoiceEvent{}, nil)
+
+	response, err := server.AdminGetInvoicesForEvents(context.Background(), rest.AdminGetInvoicesForEventsRequestObject{
+		Params: rest.AdminGetInvoicesForEventsParams{EventGroup: &groupID},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preparations := response.(rest.AdminGetInvoicesForEvents200JSONResponse).Preparations; len(preparations) != 0 {
+		t.Fatalf("got preparations %+v, want empty result", preparations)
+	}
+}
+
 func intPointer(value int) *int {
 	return &value
 }

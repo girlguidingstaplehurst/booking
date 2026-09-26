@@ -1,8 +1,4 @@
-## Purpose
-
-Provide administrators with a clear, accurate invoice-preparation workflow for individual events and event groups, including optional deposits, hourly session charges, and progressive per-session pricing.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Invoice preparation distinguishes individual and group modes
 
@@ -136,6 +132,8 @@ The system SHALL allow administrators to edit invoice line descriptions and cost
 - **AND** the invoice-send request returns a response where `ok` is false or no response
 - **THEN** the system keeps the administrator on the invoice preparation form
 
+## ADDED Requirements
+
 ### Requirement: Dashboard exposes remaining hourly group invoiceability
 
 The system SHALL keep an hourly event group in the invoiceable admin workflow while it has at least one session without an invoice association, including when earlier invoices cover other sessions. The system SHALL exclude the group from that workflow when all of its sessions are invoiced. A historical group invoice with no per-session associations SHALL be treated as covering every session in that group.
@@ -156,104 +154,3 @@ The system SHALL keep an hourly event group in the invoiceable admin workflow wh
 - **WHEN** a group has a historical group-level invoice with no per-session associations
 - **THEN** the system treats every session in that group as invoiced
 - **AND** the group does not become invoiceable solely because its session associations are absent
-
-### Requirement: Individual invoice preparation calculates event hire and optional deposit
-
-The system SHALL calculate individual event-hire lines from each event’s duration and assigned hourly rate, apply the existing duration discount behavior, and expose a cleaning-deposit option that is disabled by default and adds at most one deposit line per invoice.
-
-#### Scenario: Prepare individual event-hire lines
-
-- **WHEN** an individual invoice contains one or more events
-- **THEN** the system creates an editable event-hire line for each event using duration multiplied by its assigned hourly rate
-- **AND** applicable duration discounts are represented in the prepared invoice
-
-#### Scenario: Cleaning deposit is disabled by default
-
-- **WHEN** an administrator opens an individual invoice preparation card
-- **THEN** the cleaning-deposit option is unchecked
-- **AND** no cleaning-deposit line is included in the invoice total
-
-#### Scenario: Add one cleaning deposit to a combined invoice
-
-- **WHEN** an administrator enables the cleaning-deposit option on a combined individual invoice
-- **THEN** the system adds exactly one cleaning-deposit line to that invoice regardless of how many events it contains
-
-### Requirement: Administrators can review invoice items and invoice association
-
-The system SHALL display every item on an existing invoice with its description and cost, display the invoice-level associated event or event group name and date/time when that association exists, and display the sum of all item costs as the invoice total. Invoices without an association SHALL remain reviewable.
-
-#### Scenario: Review an invoice associated with events
-
-- **WHEN** an administrator opens an existing invoice associated with one or more events
-- **THEN** the invoice review displays each item description and cost
-- **AND** displays the associated event name and date/time in the invoice header
-- **AND** displays a total equal to the sum of all item costs
-
-#### Scenario: Review an invoice associated with an event group
-
-- **WHEN** an administrator opens an existing invoice associated with an event group
-- **THEN** the invoice review displays the event-group name and date/time in the invoice header
-- **AND** displays every item description and cost
-
-#### Scenario: Review an invoice without an association
-
-- **WHEN** an administrator opens an invoice without an event or event-group association
-- **THEN** the review displays all items in one invoice item list
-- **AND** calculates the total from every displayed item
-
-#### Scenario: Review an invoice with no items
-
-- **WHEN** an administrator opens an invoice whose item collection is empty
-- **THEN** the review displays a total of zero
-- **AND** does not fail because invoice association data is absent
-
-### Requirement: Administrators can find invoiceable individual events by contact
-
-The system SHALL provide an authenticated admin workflow that allows an administrator to select a contact and retrieve all matching events that are approved individual events with no invoice association, without restricting the results by date.
-
-#### Scenario: Retrieve all invoiceable events for a contact
-
-- **WHEN** an authenticated administrator selects a contact
-- **THEN** the system returns every approved event for that contact that is not part of an event group and has no invoice association
-- **AND** the results include events regardless of their date
-
-#### Scenario: Exclude non-invoiceable events
-
-- **WHEN** an authenticated administrator selects a contact
-- **THEN** the system excludes events that are not approved
-- **AND** excludes events that belong to an event group
-- **AND** excludes events with any invoice association
-
-#### Scenario: Contact has no invoiceable events
-
-- **WHEN** an authenticated administrator selects a contact with no matching invoiceable events
-- **THEN** the workflow displays an explicit empty state
-- **AND** the workflow does not offer submission of an invoice with no selected events
-
-### Requirement: Administrators can select contact events for combined invoicing
-
-The system SHALL allow an administrator to select all or a subset of the retrieved invoiceable individual events and continue to the existing individual invoice preparation flow.
-
-#### Scenario: Select all invoiceable events
-
-- **WHEN** an administrator chooses the select-all action
-- **THEN** every displayed invoiceable event becomes selected
-- **AND** the workflow shows the number of selected events
-
-#### Scenario: Select a subset of invoiceable events
-
-- **WHEN** an administrator selects one or more individual events
-- **THEN** only those events are included when the administrator continues
-- **AND** the workflow shows the number of selected events
-
-#### Scenario: Continue without selecting events
-
-- **WHEN** an administrator has selected no events
-- **THEN** the workflow prevents continuation to invoice preparation
-- **AND** explains that at least one event must be selected
-
-#### Scenario: Create one invoice for selected events
-
-- **WHEN** an administrator continues with one or more selected events
-- **THEN** the existing individual invoice preparation flow opens with every selected event
-- **AND** the eventual invoice preserves every selected event association

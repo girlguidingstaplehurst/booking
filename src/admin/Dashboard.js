@@ -137,6 +137,10 @@ export function normalizeDashboardData(data) {
     eventGroups: (data?.eventGroups || []).map((group) => ({
       ...group,
       invoices: group.invoices || [],
+      invoiceableSessionCount:
+        typeof group.invoiceableSessionCount === "number"
+          ? group.invoiceableSessionCount
+          : (group.invoices || []).length === 0 ? 1 : 0,
     })),
   };
 }
@@ -225,7 +229,7 @@ export function Dashboard() {
           (!event.invoices || event.invoices.length === 0),
       ),
       eventGroups: (eventsList.eventGroups || []).filter(
-        (group) => !group.invoices || group.invoices.length === 0,
+        (group) => group.invoiceableSessionCount > 0,
       ),
       isRedFlagged: () => false,
     },

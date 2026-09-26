@@ -138,11 +138,14 @@ type AdminDuplicateEventGroup struct {
 
 // AdminEventGroup defines model for AdminEventGroup.
 type AdminEventGroup struct {
-	From     string        `json:"from"`
-	Id       string        `json:"id"`
-	Invoices *[]InvoiceRef `json:"invoices,omitempty"`
-	Name     string        `json:"name"`
-	To       string        `json:"to"`
+	From string `json:"from"`
+	Id   string `json:"id"`
+
+	// InvoiceableSessionCount Number of sessions that can still be included in a new hourly group invoice.
+	InvoiceableSessionCount int           `json:"invoiceableSessionCount"`
+	Invoices                *[]InvoiceRef `json:"invoices,omitempty"`
+	Name                    string        `json:"name"`
+	To                      string        `json:"to"`
 }
 
 // AdminEventGroupDetails defines model for AdminEventGroupDetails.

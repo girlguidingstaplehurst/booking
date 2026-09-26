@@ -118,7 +118,7 @@ describe("Dashboard invoice behavior", () => {
       eventGroups: [{ id: "group-1" }],
     })).toEqual({
       events: [{ id: "event-1", invoices: [] }],
-      eventGroups: [{ id: "group-1", invoices: [] }],
+      eventGroups: [{ id: "group-1", invoices: [], invoiceableSessionCount: 1 }],
     });
   });
 

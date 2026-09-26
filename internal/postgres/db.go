@@ -28,6 +28,26 @@ type Database struct {
 	pool *pgxpool.Pool
 }
 
+func validateGroupInvoiceSelection(pricingMode string, sessionCount int, selected []string, invoiceable map[string]bool) error {
+	if len(selected) == 0 {
+		return errors.New("group invoices require at least one event")
+	}
+	if pricingMode == string(rest.PerSession) && len(selected) != sessionCount {
+		return errors.New("progressive group invoices cannot be partial")
+	}
+	seen := make(map[string]struct{}, len(selected))
+	for _, eventID := range selected {
+		if _, ok := seen[eventID]; ok {
+			return errors.New("group invoice contains a duplicate event")
+		}
+		seen[eventID] = struct{}{}
+		if !invoiceable[eventID] {
+			return errors.New("event is not an invoiceable session in the supplied group")
+		}
+	}
+	return nil
+}
+
 func NewDatabase(pool *pgxpool.Pool) *Database {
 	return &Database{pool: pool}
 }
@@ -123,6 +143,41 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 		Contact:   invoice.Contact,
 	}
 	err := pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		if invoice.EventGroup != nil {
+			selectedEvents := []string{}
+			if invoice.Events != nil {
+				selectedEvents = *invoice.Events
+			}
+			var pricingMode string
+			if err := tx.QueryRow(ctx, `select br.pricing_mode
+				from booking_event_groups beg
+				join booking_rates br on br.id = beg.rate
+				where beg.id = $1`, *invoice.EventGroup).Scan(&pricingMode); err != nil {
+				return err
+			}
+			var sessionCount int
+			if err := tx.QueryRow(ctx, `select count(*) from booking_events where event_group_id = $1`, *invoice.EventGroup).Scan(&sessionCount); err != nil {
+				return err
+			}
+			invoiceable := make(map[string]bool, len(selectedEvents))
+			for _, eventID := range selectedEvents {
+				var valid bool
+				if err := tx.QueryRow(ctx, `select not exists (
+					select 1 from booking_invoice_events bie where bie.event_id = be.id
+				) and not exists (
+					select 1 from booking_invoices bi
+					where bi.event_group_id = be.event_group_id
+					and not exists (select 1 from booking_invoice_events bie where bie.invoice_id = bi.id)
+				) and be.event_group_id = $1
+				from booking_events be where be.id = $2`, *invoice.EventGroup, eventID).Scan(&valid); err != nil {
+					return err
+				}
+				invoiceable[eventID] = valid
+			}
+			if err := validateGroupInvoiceSelection(pricingMode, sessionCount, selectedEvents, invoiceable); err != nil {
+				return err
+			}
+		}
 		for _, item := range invoice.Items {
 			if item.EventID == nil {
 				continue
@@ -273,7 +328,9 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 
 	groupRows, err := db.pool.Query(ctx, `select g.id, g.event_name,
 		to_char(min(e.event_start), $3), to_char(max(e.event_end), $3),
-		coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb)
+		coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb),
+		case when exists (select 1 from booking_invoices legacy where legacy.event_group_id = g.id and not exists (select 1 from booking_invoice_events bie where bie.invoice_id = legacy.id)) then 0
+			else count(*) filter (where not exists (select 1 from booking_invoice_events bie where bie.event_id = e.id)) end
 		from booking_event_groups g
 		join booking_events e on e.event_group_id = g.id
 		left join booking_invoices bi on bi.event_group_id = g.id
@@ -288,7 +345,7 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 	eventGroups, err := pgx.CollectRows(groupRows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
 		var group rest.AdminEventGroup
 		var invoiceJSON []byte
-		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON); err != nil {
+		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
 			return group, err
 		}
 		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {
@@ -463,6 +520,10 @@ func (db *Database) GetInvoiceEventsForGroup(ctx context.Context, groupID string
 		join booking_contacts bc on bc.email = beg.email
 		join booking_rates br on br.id = beg.rate
 		where be.event_group_id = $1
+		  and (br.pricing_mode <> 'hourly'
+		       or (not exists (select 1 from booking_invoice_events bie where bie.event_id = be.id)
+		           and not exists (select 1 from booking_invoices legacy where legacy.event_group_id = be.event_group_id
+		                         and not exists (select 1 from booking_invoice_events legacy_events where legacy_events.invoice_id = legacy.id))))
 		order by be.event_start`, groupID)
 	if err != nil {
 		return nil, err
@@ -963,7 +1024,9 @@ func (db *Database) SearchEventGroups(ctx context.Context, title string) ([]rest
 		select g.id, g.event_name,
 		       to_char(min(e.event_start), $2),
 		       to_char(max(e.event_end), $2),
-		       coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb)
+		       coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb),
+		       case when exists (select 1 from booking_invoices legacy where legacy.event_group_id = g.id and not exists (select 1 from booking_invoice_events bie where bie.invoice_id = legacy.id)) then 0
+		        else count(*) filter (where not exists (select 1 from booking_invoice_events bie where bie.event_id = e.id)) end
 		from booking_event_groups g
 		join booking_events e on e.event_group_id = g.id
 		left join booking_invoices bi on bi.event_group_id = g.id
@@ -979,7 +1042,7 @@ func (db *Database) SearchEventGroups(ctx context.Context, title string) ([]rest
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
 		var group rest.AdminEventGroup
 		var invoiceJSON []byte
-		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON); err != nil {
+		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
 			return group, err
 		}
 		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {

@@ -1138,6 +1138,7 @@ components:
         - name
         - from
         - to
+        - invoiceableSessionCount
       properties:
         id:
           type: string
@@ -1153,6 +1154,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InvoiceRef'
+        invoiceableSessionCount:
+          type: integer
+          minimum: 0
+          description: Number of sessions that can still be included in a new hourly group invoice.
     Event:
       type: object
       required:

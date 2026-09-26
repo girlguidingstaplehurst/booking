@@ -23,11 +23,43 @@ const preparation = {
   ],
 };
 
+const hourlyGroupPreparation = {
+  mode: "group",
+  contact: "contact@example.org",
+  contactName: "Contact Person",
+  name: "Weekend Group",
+  eventGroup: "group-1",
+  events: [
+    { ...preparation.events[0], id: "session-1", name: "Weekend Group" },
+    { ...preparation.events[0], id: "session-2", name: "Weekend Group" },
+  ],
+  rate: { pricingMode: "hourly", hourlyRate: 20, perSession: [] },
+};
+
 function renderCard() {
   const router = createMemoryRouter([
     {
       path: "/admin/create-invoice",
       element: <EditableInvoiceCard preparation={preparation} />,
+    },
+    { path: "/admin", element: <div>Dashboard</div> },
+  ], { initialEntries: ["/admin/create-invoice"] });
+
+  return {
+    ...render(
+      <ChakraProvider>
+        <RouterProvider router={router} />
+      </ChakraProvider>,
+    ),
+    router,
+  };
+}
+
+function renderGroupCard() {
+  const router = createMemoryRouter([
+    {
+      path: "/admin/create-invoice",
+      element: <EditableInvoiceCard preparation={hourlyGroupPreparation} />,
     },
     { path: "/admin", element: <div>Dashboard</div> },
   ], { initialEntries: ["/admin/create-invoice"] });
@@ -101,4 +133,30 @@ test("stays on the form after a failed send", async () => {
     contact: "contact@example.org",
     events: ["event-1"],
   });
+});
+
+test("hourly group invoices can select a subset of sessions", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  renderGroupCard();
+
+  const sessionCheckboxes = screen.getAllByRole("checkbox");
+  expect(sessionCheckboxes).toHaveLength(3);
+  fireEvent.click(sessionCheckboxes[1]);
+  expect(sessionCheckboxes[1]).not.toBeChecked();
+  expect(screen.getByText("1 session selected")).toBeInTheDocument();
+
+  fireEvent.submit(screen.getByRole("button", { name: "Send Invoice" }).closest("form"));
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toMatchObject({
+    eventGroup: "group-1",
+    events: ["session-2"],
+  });
+});
+
+test("hourly group invoices cannot be submitted with no selected sessions", () => {
+  renderGroupCard();
+
+  const sessionCheckboxes = screen.getAllByRole("checkbox");
+  fireEvent.click(sessionCheckboxes[0]);
+  expect(screen.getByRole("button", { name: "Send Invoice" })).toBeDisabled();
 });

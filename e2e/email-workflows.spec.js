@@ -1,5 +1,6 @@
 const { test, expect } = require("./fixtures");
 const { query } = require("./db");
+const { randomUUID } = require("node:crypto");
 
 async function createAdminEvent(page, suffix) {
   const eventName = `E2E invoice event ${suffix}`;
@@ -84,6 +85,41 @@ async function createPublicBooking(page, suffix) {
   return { eventID: result.rows[0].id, email };
 }
 
+async function createHourlyGroup(suffix) {
+  const groupID = randomUUID();
+  const contact = `e2e-hourly-group-${suffix}@example.org`;
+  const groupName = `E2E hourly invoice group ${suffix}`;
+  const firstID = randomUUID();
+  const secondID = randomUUID();
+  const start = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const secondStart = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+  await query(
+    "insert into booking_contacts (email, name) values ($1, $2)",
+    [contact, "E2E Hourly Group Contact"],
+  );
+  await query(
+    "insert into booking_event_groups (id, event_name, details, visible, email, rate) values ($1, $2, $3, true, $4, 'default')",
+    [groupID, groupName, "E2E hourly group", contact],
+  );
+  await query(
+    "insert into booking_events (id, event_start, event_end, event_name, visible, email, status, rate_id, details, event_group_id) values ($1, $2, $3, $4, true, $5, 'approved', 'default', $6, $7), ($8, $9, $10, $4, true, $5, 'approved', 'default', $6, $7)",
+    [
+      firstID,
+      start,
+      new Date(start.getTime() + 60 * 60 * 1000),
+      groupName,
+      contact,
+      "E2E hourly session",
+      groupID,
+      secondID,
+      secondStart,
+      new Date(secondStart.getTime() + 60 * 60 * 1000),
+    ],
+  );
+  return { groupID, firstID, secondID, contact };
+}
+
 test("an admin can send an invoice through the page", async ({
   authenticatedPage: page,
 }) => {
@@ -128,4 +164,34 @@ test("an admin can approve an event through the page", async ({
     [eventID],
   );
   expect(result.rows).toEqual([{ status: "approved" }]);
+});
+
+test("an admin can invoice hourly group sessions in separate partial invoices", async ({
+  authenticatedPage: page,
+}) => {
+  const { groupID, firstID, secondID, contact } = await createHourlyGroup(Date.now());
+
+  await page.goto(`/admin/create-invoice?eventGroup=${groupID}`);
+  const sessionCheckboxes = page.getByRole("checkbox");
+  await expect(sessionCheckboxes).toHaveCount(3);
+  await sessionCheckboxes.nth(2).uncheck({ force: true });
+  await page.getByRole("button", { name: "Send Invoice" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+
+  const firstInvoice = await query(
+    "select i.id from booking_invoices i join booking_invoice_events ie on ie.invoice_id = i.id where i.contact = $1 and ie.event_id = $2",
+    [contact, firstID],
+  );
+  expect(firstInvoice.rows).toHaveLength(1);
+
+  await page.goto(`/admin/create-invoice?eventGroup=${groupID}`);
+  await expect(page.getByRole("checkbox")).toHaveCount(2);
+  await page.getByRole("button", { name: "Send Invoice" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+
+  const associations = await query(
+    "select bie.event_id from booking_invoice_events bie join booking_invoices i on i.id = bie.invoice_id where i.contact = $1 order by bie.event_id",
+    [contact],
+  );
+  expect(associations.rows.map((row) => row.event_id).sort()).toEqual([firstID, secondID].sort());
 });
