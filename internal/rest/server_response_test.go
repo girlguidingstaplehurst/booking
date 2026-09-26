@@ -35,15 +35,78 @@ func TestAdminGetInvoicesForEventsGroupsIndividualEventsByContact(t *testing.T) 
 	}
 }
 
+func TestAdminListInvoiceableEventsForContact(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	database := mock_rest.NewMockDatabase(ctrl)
+	server := rest.NewServer(database, nil, nil, nil, nil)
+	events := []rest.Event{{Id: "event-1", Name: "Historical event", Status: rest.EventStatusApproved}}
+	database.EXPECT().GetInvoiceableEventsForContact(gomock.Any(), "contact@example.org").Return(rest.AdminInvoiceableEvents{
+		Contact: rest.AdminContact{Name: "Contact", Email: "contact@example.org"},
+		Events:  events,
+	}, nil)
+
+	response, err := server.AdminListInvoiceableEvents(context.Background(), rest.AdminListInvoiceableEventsRequestObject{
+		Params: rest.AdminListInvoiceableEventsParams{Contact: "contact@example.org"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := response.(rest.AdminListInvoiceableEvents200JSONResponse)
+	if result.Contact.Name != "Contact" || len(result.Events) != 1 || result.Events[0].Id != "event-1" {
+		t.Fatalf("got %+v", result)
+	}
+}
+
+func TestAdminListInvoiceableEventsForContactAllowsEmptyResults(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	database := mock_rest.NewMockDatabase(ctrl)
+	server := rest.NewServer(database, nil, nil, nil, nil)
+	database.EXPECT().GetInvoiceableEventsForContact(gomock.Any(), "empty@example.org").Return(rest.AdminInvoiceableEvents{
+		Contact: rest.AdminContact{Name: "Empty", Email: "empty@example.org"},
+		Events:  []rest.Event{},
+	}, nil)
+
+	response, err := server.AdminListInvoiceableEvents(context.Background(), rest.AdminListInvoiceableEventsRequestObject{
+		Params: rest.AdminListInvoiceableEventsParams{Contact: "empty@example.org"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(response.(rest.AdminListInvoiceableEvents200JSONResponse).Events) != 0 {
+		t.Fatal("expected no invoiceable events")
+	}
+}
+
+func TestAdminListInvoiceableEventsRequiresContact(t *testing.T) {
+	server := rest.NewServer(nil, nil, nil, nil, nil)
+	response, err := server.AdminListInvoiceableEvents(context.Background(), rest.AdminListInvoiceableEventsRequestObject{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := response.(rest.AdminListInvoiceableEvents400JSONResponse); !ok {
+		t.Fatalf("got %T, want bad request", response)
+	}
+
+	response, err = server.AdminListInvoiceableEvents(context.Background(), rest.AdminListInvoiceableEventsRequestObject{
+		Params: rest.AdminListInvoiceableEventsParams{Contact: "not-an-email"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := response.(rest.AdminListInvoiceableEvents400JSONResponse); !ok {
+		t.Fatalf("got %T for invalid email, want bad request", response)
+	}
+}
+
 func TestAdminGetInvoiceByIDIncludesInvoiceAssociation(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	database := mock_rest.NewMockDatabase(ctrl)
 	server := rest.NewServer(database, nil, nil, nil, nil)
 	eventID := "event-1"
 	database.EXPECT().GetInvoiceByID(gomock.Any(), "invoice-1").Return(rest.Invoice{
-		Id:      "invoice-1",
-		Items:   []rest.InvoiceItem{{Description: "Hall hire", Cost: 120}},
-		Events:  &[]rest.InvoiceEventSummary{{Id: eventID, Name: "Summer event"}},
+		Id:     "invoice-1",
+		Items:  []rest.InvoiceItem{{Description: "Hall hire", Cost: 120}},
+		Events: &[]rest.InvoiceEventSummary{{Id: eventID, Name: "Summer event"}},
 	}, nil)
 
 	response, err := server.AdminGetInvoiceByID(context.Background(), rest.AdminGetInvoiceByIDRequestObject{

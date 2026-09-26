@@ -35,3 +35,14 @@ export async function listContacts() {
   }
   return response || [];
 }
+
+export async function listInvoiceableEvents(contact) {
+  const response = await AdminFetcher(
+    `/api/v1/admin/invoiceable-events?contact=${encodeURIComponent(contact)}`,
+    { contact: { name: "", email: contact }, events: [] },
+  );
+  if (response?.json) {
+    return await response.json();
+  }
+  return response || { contact: { name: "", email: contact }, events: [] };
+}

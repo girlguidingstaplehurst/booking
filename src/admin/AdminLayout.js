@@ -71,7 +71,8 @@ function AdminNavInDrawer() {
           <DrawerHeader>Navigate</DrawerHeader>
           <DrawerBody>
             <Stack divider={<StackDivider borderTop={`1px solid ${brand900}`} />}>
-               <AdminDrawerLink label="Dashboard" to="/admin" onClick={onClose} />
+                <AdminDrawerLink label="Dashboard" to="/admin" onClick={onClose} />
+                <AdminDrawerLink label="Invoice by contact" to="/admin/invoice-by-contact" onClick={onClose} />
                <AdminDrawerLink label="Rates" to="/admin/rates" onClick={onClose} />
                <AdminDrawerLink label="Keyholders" to="/admin/keyholders" onClick={onClose} />
             </Stack>
@@ -126,6 +127,7 @@ function AdminTopNav() {
       alignItems="stretch"
     >
       <AdminMenuLink to="/admin" label="Dashboard" />
+      <AdminMenuLink to="/admin/invoice-by-contact" label="Invoice by contact" />
       <AdminMenuLink to="/admin/rates" label="Rates" />
       <AdminMenuLink to="/admin/keyholders" label="Keyholders" />
     </Stack>

@@ -303,6 +303,46 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 	return rest.AdminEventList{Events: events, EventGroups: eventGroups}, nil
 }
 
+func (db *Database) GetInvoiceableEventsForContact(ctx context.Context, contact string) (rest.AdminInvoiceableEvents, error) {
+	result := rest.AdminInvoiceableEvents{
+		Contact: rest.AdminContact{Email: openapi_types.Email(contact), Name: contact},
+		Events:  []rest.Event{},
+	}
+
+	contactRow := db.pool.QueryRow(ctx, `select name from booking_contacts where email = $1`, contact)
+	if err := contactRow.Scan(&result.Contact.Name); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return result, err
+	}
+
+	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $2), to_char(e.event_end, $2), e.event_name,
+		e.details, e.visible, e.status, e.rate_id, c.name, c.email
+		from booking_events e
+		join booking_contacts c on c.email = e.email
+		where e.email = $1
+		  and e.status = $3
+		  and e.event_group_id is null
+		  and not exists (select 1 from booking_invoice_events bie where bie.event_id = e.id)
+		order by e.event_start, e.event_end, e.event_name`, contact, dbDateTimeFormat, consts.EventStatusApproved)
+	if err != nil {
+		return result, err
+	}
+
+	result.Events, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
+		var event rest.Event
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Details, &event.Visible,
+			&event.Status, &event.RateID, &event.Contact, &event.Email); err != nil {
+			return event, err
+		}
+		event.Invoices = &[]rest.InvoiceRef{}
+		return event, nil
+	})
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx, `select e.id, to_char(e.event_start, $2), to_char(e.event_end, $2), e.event_name, e.visible, e.status, contact.name, contact.email,
 		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.rate_id, e.details

@@ -92,11 +92,11 @@ describe("AdminLayout navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Admin Navigation Menu" }));
     const drawer = screen.getByRole("dialog");
 
-    expect(within(drawer).getAllByRole("link")).toHaveLength(3);
+    expect(within(drawer).getAllByRole("link")).toHaveLength(4);
     expect(within(drawer).getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(within(drawer).getByRole("link", { name: "Rates" })).toBeInTheDocument();
     expect(within(drawer).getByRole("link", { name: "Keyholders" })).toBeInTheDocument();
-    expect(within(drawer).queryByRole("link", { name: /invoice|event/i })).not.toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: "Invoice by contact" })).toBeInTheDocument();
   });
 
   test("closes the drawer after navigating to Rates", async () => {

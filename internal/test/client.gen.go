@@ -172,6 +172,12 @@ type AdminEventList struct {
 	Events      []Event           `json:"events"`
 }
 
+// AdminInvoiceableEvents defines model for AdminInvoiceableEvents.
+type AdminInvoiceableEvents struct {
+	Contact AdminContact `json:"contact"`
+	Events  []Event      `json:"events"`
+}
+
 // AdminNewEventGroup defines model for AdminNewEventGroup.
 type AdminNewEventGroup struct {
 	Contact struct {
@@ -517,6 +523,12 @@ type GetApiV1AdminEventsParams struct {
 	Contact *string `form:"contact,omitempty" json:"contact,omitempty"`
 }
 
+// AdminListInvoiceableEventsParams defines parameters for AdminListInvoiceableEvents.
+type AdminListInvoiceableEventsParams struct {
+	// Contact Contact email whose approved, uninvoiced individual events should be returned.
+	Contact openapi_types.Email `form:"contact" json:"contact"`
+}
+
 // AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.
 type AdminGetInvoicesForEventsParams struct {
 	// Events A comma-separated list of events to generate invoices for
@@ -782,6 +794,11 @@ type ClientInterface interface {
 	// AdminEventSetRate performs a POST /api/v1/admin/events/{eventID}/set-rate (the `AdminEventSetRate` operationId) request.
 	// Takes a body of the `application/json` content type.
 	AdminEventSetRate(ctx context.Context, eventID string, body AdminEventSetRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminListInvoiceableEvents List invoiceable individual events for a contact
+	//
+	// Corresponds with GET /api/v1/admin/invoiceable-events (the `AdminListInvoiceableEvents` operationId).
+	AdminListInvoiceableEvents(ctx context.Context, params *AdminListInvoiceableEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminGetInvoiceByID performs a GET /api/v1/admin/invoices/by-id/{invoiceID} (the `AdminGetInvoiceByID` operationId) request.
 	AdminGetInvoiceByID(ctx context.Context, invoiceID string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1214,6 +1231,21 @@ func (c *Client) AdminEventSetRateWithBody(ctx context.Context, eventID string, 
 // Takes a body of the `application/json` content type.
 func (c *Client) AdminEventSetRate(ctx context.Context, eventID string, body AdminEventSetRateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminEventSetRateRequest(c.Server, eventID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminListInvoiceableEvents List invoiceable individual events for a contact
+//
+// Corresponds with GET /api/v1/admin/invoiceable-events (the `AdminListInvoiceableEvents` operationId).
+func (c *Client) AdminListInvoiceableEvents(ctx context.Context, params *AdminListInvoiceableEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminListInvoiceableEventsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2108,6 +2140,56 @@ func NewAdminEventSetRateRequestWithBody(server string, eventID string, contentT
 	return req, nil
 }
 
+// NewAdminListInvoiceableEventsRequest constructs an http.Request for the AdminListInvoiceableEvents method
+func NewAdminListInvoiceableEventsRequest(server string, params *AdminListInvoiceableEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/invoiceable-events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "contact", params.Contact, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "email"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAdminGetInvoiceByIDRequest constructs an http.Request for the AdminGetInvoiceByID method
 func NewAdminGetInvoiceByIDRequest(server string, invoiceID string) (*http.Request, error) {
 	var err error
@@ -2799,6 +2881,13 @@ type ClientWithResponsesInterface interface {
 	// AdminEventSetRateWithResponse performs a POST /api/v1/admin/events/{eventID}/set-rate (the `AdminEventSetRate` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	AdminEventSetRateWithResponse(ctx context.Context, eventID string, body AdminEventSetRateJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminEventSetRateResponse, error)
+
+	// AdminListInvoiceableEventsWithResponse List invoiceable individual events for a contact
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/admin/invoiceable-events (the `AdminListInvoiceableEvents` operationId).
+	AdminListInvoiceableEventsWithResponse(ctx context.Context, params *AdminListInvoiceableEventsParams, reqEditors ...RequestEditorFn) (*AdminListInvoiceableEventsResponse, error)
 
 	// AdminGetInvoiceByIDWithResponse performs a GET /api/v1/admin/invoices/by-id/{invoiceID} (the `AdminGetInvoiceByID` operationId) request.
 	//
@@ -3694,6 +3783,61 @@ func (r AdminEventSetRateResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AdminEventSetRateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminListInvoiceableEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AdminInvoiceableEvents
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdminListInvoiceableEventsResponse) GetJSON200() *AdminInvoiceableEvents {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AdminListInvoiceableEventsResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminListInvoiceableEventsResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminListInvoiceableEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminListInvoiceableEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminListInvoiceableEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminListInvoiceableEventsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -4651,6 +4795,19 @@ func (c *ClientWithResponses) AdminEventSetRateWithResponse(ctx context.Context,
 	return ParseAdminEventSetRateResponse(rsp)
 }
 
+// AdminListInvoiceableEventsWithResponse List invoiceable individual events for a contact
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/admin/invoiceable-events (the `AdminListInvoiceableEvents` operationId).
+func (c *ClientWithResponses) AdminListInvoiceableEventsWithResponse(ctx context.Context, params *AdminListInvoiceableEventsParams, reqEditors ...RequestEditorFn) (*AdminListInvoiceableEventsResponse, error) {
+	rsp, err := c.AdminListInvoiceableEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminListInvoiceableEventsResponse(rsp)
+}
+
 // AdminGetInvoiceByIDWithResponse performs a GET /api/v1/admin/invoices/by-id/{invoiceID} (the `AdminGetInvoiceByID` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -5444,6 +5601,46 @@ func ParseAdminEventSetRateResponse(rsp *http.Response) (*AdminEventSetRateRespo
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminListInvoiceableEventsResponse parses an HTTP response from a AdminListInvoiceableEventsWithResponse call
+func ParseAdminListInvoiceableEventsResponse(rsp *http.Response) (*AdminListInvoiceableEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminListInvoiceableEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AdminInvoiceableEvents
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

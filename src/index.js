@@ -24,6 +24,7 @@ import { reviewEvent, ReviewEvent } from "./admin/ReviewEvent";
 import { reviewEventGroup, ReviewEventGroup } from "./admin/ReviewEventGroup";
 import { createInvoice, CreateInvoice } from "./admin/CreateInvoice";
 import { ManageInvoice, manageInvoice } from "./admin/ManageInvoice";
+import { ContactInvoice } from "./admin/ContactInvoice";
 import ManagedContent from "./components/ManagedContent";
 import { CreateEvents } from "./admin/CreateEvents";
 import { CreateEventGroup } from "./admin/CreateEventGroup";
@@ -100,6 +101,7 @@ const router = createBrowserRouter(
           loader={authenticatedLoader(keyholderEditorLoader)}
         />
         <Route path="create-events" element={<CreateEvents />} />
+        <Route path="invoice-by-contact" element={<ContactInvoice />} />
         <Route path="create-event-group" element={<CreateEventGroup />} />
         <Route path="duplicate-event-group/:groupID" element={<DuplicateEventGroup />} loader={authenticatedLoader(duplicateEventGroupLoader)} />
         <Route

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -40,6 +41,7 @@ type Database interface {
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
+	GetInvoiceableEventsForContact(ctx context.Context, contact string) (AdminInvoiceableEvents, error)
 	SearchEventGroups(ctx context.Context, title string) ([]AdminEventGroup, error)
 	GetEventGroup(ctx context.Context, id string) (AdminEventGroupDetails, error)
 	ListContacts(ctx context.Context) (AdminContactList, error)
@@ -255,6 +257,21 @@ func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminE
 	}
 
 	return GetApiV1AdminEvents200JSONResponse(events), nil
+}
+
+func (s *Server) AdminListInvoiceableEvents(ctx context.Context, request AdminListInvoiceableEventsRequestObject) (AdminListInvoiceableEventsResponseObject, error) {
+	contact := string(request.Params.Contact)
+	parsedContact, parseErr := mail.ParseAddress(contact)
+	if contact == "" || parseErr != nil || parsedContact.Address != contact {
+		return AdminListInvoiceableEvents400JSONResponse{ErrorMessage: "contact is required"}, nil
+	}
+
+	result, err := s.db.GetInvoiceableEventsForContact(ctx, contact)
+	if err != nil {
+		return AdminListInvoiceableEvents500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+
+	return AdminListInvoiceableEvents200JSONResponse(result), nil
 }
 
 func (s *Server) GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV1AdminEventsEventIDRequestObject) (GetApiV1AdminEventsEventIDResponseObject, error) {

@@ -59,13 +59,16 @@ func (d *testDatabase) ListEventsForContact(context.Context, string, time.Time, 
 func (d *testDatabase) AdminListEvents(context.Context, time.Time, time.Time) (AdminEventList, error) {
 	return AdminEventList{}, nil
 }
+func (d *testDatabase) GetInvoiceableEventsForContact(context.Context, string) (AdminInvoiceableEvents, error) {
+	return AdminInvoiceableEvents{}, nil
+}
 func (d *testDatabase) SearchEventGroups(context.Context, string) ([]AdminEventGroup, error) {
 	return nil, nil
 }
 func (d *testDatabase) GetEventGroup(context.Context, string) (AdminEventGroupDetails, error) {
 	return AdminEventGroupDetails{}, nil
 }
-func (d *testDatabase) ListKeyholders(context.Context) (KeyholderList, error) { return nil, nil }
+func (d *testDatabase) ListKeyholders(context.Context) (KeyholderList, error)  { return nil, nil }
 func (d *testDatabase) ListContacts(context.Context) (AdminContactList, error) { return nil, nil }
 func (d *testDatabase) CreateKeyholder(context.Context, CreateKeyholderBody) (Keyholder, error) {
 	return Keyholder{}, nil

@@ -162,6 +162,12 @@ type AdminEventList struct {
 	Events      []Event           `json:"events"`
 }
 
+// AdminInvoiceableEvents defines model for AdminInvoiceableEvents.
+type AdminInvoiceableEvents struct {
+	Contact AdminContact `json:"contact"`
+	Events  []Event      `json:"events"`
+}
+
 // AdminNewEventGroup defines model for AdminNewEventGroup.
 type AdminNewEventGroup struct {
 	Contact struct {
@@ -505,6 +511,12 @@ type GetApiV1AdminEventsParams struct {
 
 	// Contact Optional filter to events for a specific contact. Value is the contact's email.
 	Contact *string `form:"contact,omitempty" json:"contact,omitempty"`
+}
+
+// AdminListInvoiceableEventsParams defines parameters for AdminListInvoiceableEvents.
+type AdminListInvoiceableEventsParams struct {
+	// Contact Contact email whose approved, uninvoiced individual events should be returned.
+	Contact openapi_types.Email `form:"contact" json:"contact"`
 }
 
 // AdminGetInvoicesForEventsParams defines parameters for AdminGetInvoicesForEvents.
