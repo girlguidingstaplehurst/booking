@@ -47,11 +47,32 @@ function hourlyItems(events) {
   }, []);
 }
 
+function multiDayCost(event, rate) {
+  const hours = eventDuration(event);
+  const fullPeriods = Math.floor(hours / 24);
+  const remainingHours = hours - fullPeriods * 24;
+  const initialPeriods = Math.min(fullPeriods, rate.initialDailyPeriods);
+  const laterPeriods = Math.max(fullPeriods - rate.initialDailyPeriods, 0);
+  const fullPeriodCost = initialPeriods * Number(rate.initialDailyRate) + laterPeriods * Number(rate.dailyRate);
+  const cap = fullPeriods < rate.initialDailyPeriods ? Number(rate.initialDailyRate) : Number(rate.dailyRate);
+  return fullPeriodCost + Math.min(remainingHours * Number(rate.hourlyRate), cap);
+}
+
+function multiDayItems(events, rate) {
+  return events.map((event) => ({
+    eventID: event.id,
+    description: `${sessionDescription(event)} (${eventDuration(event).toFixed(1)} hours)`,
+    cost: multiDayCost(event, rate),
+  }));
+}
+
 export function populateInvoiceItems(preparation, includeDeposit = false) {
   const events = preparation.events || [];
   let items;
 
-  if (preparation.rate?.pricingMode === "fixedSession") {
+  if (preparation.rate?.pricingMode === "multiDay" && preparation.mode === "individual") {
+    items = multiDayItems(events, preparation.rate);
+  } else if (preparation.rate?.pricingMode === "fixedSession") {
     items = [{
       description: `Event hire - ${events.length} session${events.length === 1 ? "" : "s"}`,
       cost: events.length * Number(preparation.rate.sessionPrice),

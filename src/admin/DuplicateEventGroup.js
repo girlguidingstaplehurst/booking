@@ -88,7 +88,7 @@ export function DuplicateEventGroup() {
           <FormFieldAndLabel label="Event Visibility" name="visibility" value={source.visible ? "show" : "hide"} fieldAs={Select} fieldProps={{ isDisabled: true, children: [<option key="show" value="show">Show event information</option>, <option key="hide" value="hide">Hide event information</option>] }} />
           <MultiDateTimeRangeAccumulator initialTimeRanges={source.timeRanges} value={instances} setter={setInstances} name="instances" label="New Event Dates" />
           <Text fontWeight="bold">Event Group Rate</Text>
-          <RateSelect rateID={formik.values.rate} currentName="Current rate" onChange={(event) => formik.setFieldValue("rate", event.target.value)} onBlur={() => formik.setFieldTouched("rate", true)} error={formik.touched.rate && formik.errors.rate} />
+          <RateSelect eventGroup rateID={formik.values.rate} currentName="Current rate" onChange={(event) => formik.setFieldValue("rate", event.target.value)} onBlur={() => formik.setFieldTouched("rate", true)} error={formik.touched.rate && formik.errors.rate} />
           <KeyholderSelect label="Keyholder" name="keyholder" value={formik.values.keyholder} currentID={source.keyholder} currentName={source.keyholderName} errValue={formik.touched.keyholder && formik.errors.keyholder} onChange={formik.handleChange} />
           <Text>Name: {source.contactName}</Text>
           <Text>Email: {source.contact}</Text>

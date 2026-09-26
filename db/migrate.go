@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -22,14 +23,26 @@ func Migrate() error {
 		return err
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", d, os.Getenv("DATABASE_URL"))
-	if err != nil {
-		return err
+	errCh := make(chan error, 1)
+	go func() {
+		slog.Info("loaded migrations")
+		m, err := migrate.NewWithSourceInstance("iofs", d, os.Getenv("DATABASE_URL"))
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer m.Close()
+
+		slog.Info("starting db migration update")
+
+		errCh <- m.Up()
+	}()
+
+	select {
+	case err = <-errCh:
+	case <-time.After(5 * time.Second):
+		return errors.New("database migration timed out after 5 seconds")
 	}
-
-	slog.Info("starting db migration update")
-
-	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}

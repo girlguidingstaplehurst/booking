@@ -1346,6 +1346,15 @@ components:
           type: number
           minimum: 0
           nullable: true
+        initialDailyPeriods:
+          type: integer
+          minimum: 1
+        initialDailyRate:
+          type: number
+          minimum: 0
+        dailyRate:
+          type: number
+          minimum: 0
         discountTable:
           type: object
         perSession:
@@ -1372,6 +1381,7 @@ components:
         - hourly
         - fixedSession
         - perSession
+        - multiDay
     CreateRateBody:
       type: object
       required:
@@ -1397,6 +1407,15 @@ components:
           type: number
           minimum: 0
           nullable: true
+        initialDailyPeriods:
+          type: integer
+          minimum: 1
+        initialDailyRate:
+          type: number
+          minimum: 0
+        dailyRate:
+          type: number
+          minimum: 0
         perSession:
           $ref: '#/components/schemas/PerSessionPricing'
     UpdateRateBody:
@@ -1420,6 +1439,15 @@ components:
           type: number
           minimum: 0
           nullable: true
+        initialDailyPeriods:
+          type: integer
+          minimum: 1
+        initialDailyRate:
+          type: number
+          minimum: 0
+        dailyRate:
+          type: number
+          minimum: 0
         perSession:
           $ref: '#/components/schemas/PerSessionPricing'
     SetRateBody:

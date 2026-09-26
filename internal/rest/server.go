@@ -530,7 +530,7 @@ func validatePerSessionPricing(pricing PerSessionPricing) string {
 	return ""
 }
 
-func validateRatePricing(mode RatePricingMode, hourly float32, sessionPrice *float32, perSession PerSessionPricing) string {
+func validateRatePricing(mode RatePricingMode, hourly float32, sessionPrice *float32, perSession PerSessionPricing, initialPeriods *int, initialDailyRate, dailyRate *float32) string {
 	if mode == "" {
 		if len(perSession) > 0 {
 			mode = "perSession"
@@ -563,6 +563,16 @@ func validateRatePricing(mode RatePricingMode, hourly float32, sessionPrice *flo
 		if message := validatePerSessionPricing(perSession); message != "" {
 			return message
 		}
+	case "multiDay":
+		if initialPeriods == nil || *initialPeriods < 1 {
+			return "initial daily periods must be at least 1"
+		}
+		if initialDailyRate == nil || dailyRate == nil || hourly < 0 || *initialDailyRate < 0 || *dailyRate < 0 {
+			return "multi-day rates cannot be negative"
+		}
+		if sessionPrice != nil || len(perSession) > 0 {
+			return "multi-day pricing cannot include session pricing"
+		}
 	default:
 		return "unknown rate pricing mode"
 	}
@@ -576,7 +586,7 @@ func (s *Server) AdminCreateRate(ctx context.Context, request AdminCreateRateReq
 	if strings.TrimSpace(request.Body.Id) == "" || strings.TrimSpace(request.Body.Description) == "" {
 		return AdminCreateRate422JSONResponse{ErrorMessage: "rate identifier and description are required"}, nil
 	}
-	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession); message != "" {
+	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession, request.Body.InitialDailyPeriods, request.Body.InitialDailyRate, request.Body.DailyRate); message != "" {
 		return AdminCreateRate422JSONResponse{ErrorMessage: message}, nil
 	}
 
@@ -598,7 +608,7 @@ func (s *Server) AdminUpdateRate(ctx context.Context, request AdminUpdateRateReq
 	if strings.TrimSpace(request.Body.Description) == "" {
 		return AdminUpdateRate422JSONResponse{ErrorMessage: "rate description is required"}, nil
 	}
-	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession); message != "" {
+	if message := validateRatePricing(request.Body.PricingMode, request.Body.HourlyRate, request.Body.SessionPrice, request.Body.PerSession, request.Body.InitialDailyPeriods, request.Body.InitialDailyRate, request.Body.DailyRate); message != "" {
 		return AdminUpdateRate422JSONResponse{ErrorMessage: message}, nil
 	}
 

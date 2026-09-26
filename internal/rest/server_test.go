@@ -26,6 +26,25 @@ func TestValidatePerSessionPricing(t *testing.T) {
 	}
 }
 
+func TestValidateMultiDayPricing(t *testing.T) {
+	periods, initial, later := 2, float32(100), float32(80)
+	if got := validateRatePricing("multiDay", 5, nil, PerSessionPricing{}, &periods, &initial, &later); got != "" {
+		t.Fatalf("valid multi-day pricing rejected: %s", got)
+	}
+	zero := 0
+	if got := validateRatePricing("multiDay", 5, nil, PerSessionPricing{}, &zero, &initial, &later); got == "" {
+		t.Fatal("zero initial periods accepted")
+	}
+	negative := float32(-1)
+	if got := validateRatePricing("multiDay", 5, nil, PerSessionPricing{}, &periods, &negative, &later); got == "" {
+		t.Fatal("negative initial daily rate accepted")
+	}
+	price := float32(10)
+	if got := validateRatePricing("multiDay", 5, &price, PerSessionPricing{}, &periods, &initial, &later); got == "" {
+		t.Fatal("session pricing accepted for multi-day mode")
+	}
+}
+
 func TestValidateKeyholder(t *testing.T) {
 	tests := []struct {
 		name      string

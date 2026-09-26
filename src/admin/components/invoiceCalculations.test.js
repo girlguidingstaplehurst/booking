@@ -45,6 +45,22 @@ test("fixed-session individual invoices use one session price", () => {
   ]);
 });
 
+test("multi-day individual invoices use tiered daily and capped remainder pricing", () => {
+  const preparation = {
+    mode: "individual",
+    rate: {
+      pricingMode: "multiDay",
+      initialDailyPeriods: 2,
+      initialDailyRate: 100,
+      dailyRate: 80,
+      hourlyRate: 5,
+    },
+    events: [{ ...events[0], to: "2026-09-15T11:00:00Z" }],
+  };
+
+  expect(populateInvoiceItems(preparation)[0].cost).toBe(290);
+});
+
 test("fixed-session group invoices multiply the session price", () => {
   const preparation = {
     mode: "group",

@@ -36,6 +36,9 @@ export const fallbackRates = [
     pricingMode: "hourly",
     sessionPrice: null,
     perSession: [],
+    initialDailyPeriods: 1,
+    initialDailyRate: 0,
+    dailyRate: 0,
   },
   {
     id: "external-per-session",
@@ -44,6 +47,9 @@ export const fallbackRates = [
     pricingMode: "perSession",
     sessionPrice: null,
     perSession: [{ count: 10, price: 150 }, { price: 13.5 }],
+    initialDailyPeriods: 1,
+    initialDailyRate: 0,
+    dailyRate: 0,
   },
 ];
 
@@ -69,6 +75,9 @@ export function rateSummary(rate) {
   }
   if (rate.pricingMode === "fixedSession") {
     return `£${formatMoney(rate.sessionPrice)} / session`;
+  }
+  if (rate.pricingMode === "multiDay") {
+    return `${rate.initialDailyPeriods} days at £${formatMoney(rate.initialDailyRate, true)}, £${formatMoney(rate.dailyRate, true)} thereafter, £${formatMoney(rate.hourlyRate)}/hour`;
   }
   return `£${formatMoney(rate.hourlyRate)} / hour`;
 }
@@ -103,7 +112,7 @@ export function Rates() {
 export const rateSchema = Yup.object({
   id: Yup.string().trim().required("Required"),
   description: Yup.string().trim().required("Required"),
-  pricingMode: Yup.string().oneOf(["hourly", "fixedSession", "perSession"]).required("Required"),
+  pricingMode: Yup.string().oneOf(["hourly", "fixedSession", "perSession", "multiDay"]).required("Required"),
   hourlyRate: Yup.number().min(0, "Must not be negative").when("pricingMode", {
     is: "hourly",
     then: (rule) => rule.required("Required"),
@@ -124,6 +133,18 @@ export const rateSchema = Yup.object({
     is: "fixedSession",
     then: (rule) => rule.required("Required"),
   }),
+  initialDailyPeriods: Yup.number().integer("Must be a whole number").min(1, "Must be at least 1").when("pricingMode", {
+    is: "multiDay",
+    then: (rule) => rule.required("Required"),
+  }),
+  initialDailyRate: Yup.number().min(0, "Must not be negative").when("pricingMode", {
+    is: "multiDay",
+    then: (rule) => rule.required("Required"),
+  }),
+  dailyRate: Yup.number().min(0, "Must not be negative").when("pricingMode", {
+    is: "multiDay",
+    then: (rule) => rule.required("Required"),
+  }),
 });
 
 export function rateFormValues(rate) {
@@ -138,6 +159,9 @@ export function rateFormValues(rate) {
     sessionCount: first?.count ?? "",
     sessionPrice: first?.price ?? "",
     extraSessionPrice: second?.price ?? "",
+    initialDailyPeriods: rate?.initialDailyPeriods ?? 1,
+    initialDailyRate: rate?.initialDailyRate ?? "",
+    dailyRate: rate?.dailyRate ?? "",
   };
 }
 
@@ -146,11 +170,16 @@ export function buildRateBody(values, editing) {
     ...(editing ? {} : { id: values.id.trim() }),
     description: values.description.trim(),
     pricingMode: values.pricingMode,
-    hourlyRate: values.pricingMode === "hourly" ? Number(values.hourlyRate) : 0,
+    hourlyRate: ["hourly", "multiDay"].includes(values.pricingMode) ? Number(values.hourlyRate) : 0,
     sessionPrice: values.pricingMode === "fixedSession" ? Number(values.fixedSessionPrice) : null,
     perSession: values.pricingMode === "perSession"
       ? [{ count: Number(values.sessionCount), price: Number(values.sessionPrice) }, { price: Number(values.extraSessionPrice) }]
       : [],
+    ...(values.pricingMode === "multiDay" ? {
+      initialDailyPeriods: Number(values.initialDailyPeriods),
+      initialDailyRate: Number(values.initialDailyRate),
+      dailyRate: Number(values.dailyRate),
+    } : {}),
   };
 }
 
@@ -217,6 +246,7 @@ export function RateEditor() {
                   <Radio value="hourly">Hourly rate</Radio>
                    <Radio value="fixedSession">Fixed price per session</Radio>
                    <Radio value="perSession">Progressive per-session pricing</Radio>
+                   <Radio value="multiDay">Multi-day duration pricing</Radio>
                 </Stack>
               </RadioGroup>
             </FormControl>
@@ -238,6 +268,12 @@ export function RateEditor() {
               onBlur={formik.handleBlur}
               fieldProps={{ type: "number", min: "0", step: "0.01" }}
             />}
+            {formik.values.pricingMode === "multiDay" && <Stack padding={4} borderWidth="1px" borderRadius="md">
+              <FormFieldAndLabel label="Initial 24-hour periods" name="initialDailyPeriods" value={formik.values.initialDailyPeriods} errValue={formik.touched.initialDailyPeriods && formik.errors.initialDailyPeriods} onChange={formik.handleChange} onBlur={formik.handleBlur} fieldProps={{ type: "number", min: "1", step: "1" }} />
+              <FormFieldAndLabel label="Initial daily rate" name="initialDailyRate" value={formik.values.initialDailyRate} errValue={formik.touched.initialDailyRate && formik.errors.initialDailyRate} onChange={formik.handleChange} onBlur={formik.handleBlur} fieldProps={{ type: "number", min: "0", step: "0.01" }} />
+              <FormFieldAndLabel label="Later daily rate" name="dailyRate" value={formik.values.dailyRate} errValue={formik.touched.dailyRate && formik.errors.dailyRate} onChange={formik.handleChange} onBlur={formik.handleBlur} fieldProps={{ type: "number", min: "0", step: "0.01" }} />
+              <FormFieldAndLabel label="Hourly rate for remaining hours" name="hourlyRate" value={formik.values.hourlyRate} errValue={formik.touched.hourlyRate && formik.errors.hourlyRate} onChange={formik.handleChange} onBlur={formik.handleBlur} fieldProps={{ type: "number", min: "0", step: "0.01" }} />
+            </Stack>}
             {formik.values.pricingMode === "perSession" && <Stack padding={4} borderWidth="1px" borderRadius="md">
               <Text fontWeight="bold">Up to the included session count</Text>
               <FormFieldAndLabel

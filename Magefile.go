@@ -45,7 +45,7 @@ func E2ETest() error {
 		"BOOKING_AUTH_E2E_TOKEN": token,
 		"BOOKING_ADMIN_TOKEN":    token,
 	}
-	if err := sh.RunWithV(env, "go", "test", "./internal/test"); err != nil {
+	if err := sh.RunWithV(env, "go", "test", "./internal/test", "-count", "1"); err != nil {
 		return err
 	}
 	return sh.RunWithV(env, "npm", "run", "e2e")

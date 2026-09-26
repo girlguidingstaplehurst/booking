@@ -89,6 +89,7 @@ func (e InvoiceStatus) Valid() bool {
 const (
 	FixedSession RatePricingMode = "fixedSession"
 	Hourly       RatePricingMode = "hourly"
+	MultiDay     RatePricingMode = "multiDay"
 	PerSession   RatePricingMode = "perSession"
 )
 
@@ -98,6 +99,8 @@ func (e RatePricingMode) Valid() bool {
 	case FixedSession:
 		return true
 	case Hourly:
+		return true
+	case MultiDay:
 		return true
 	case PerSession:
 		return true
@@ -196,12 +199,15 @@ type CreateKeyholderBody struct {
 
 // CreateRateBody defines model for CreateRateBody.
 type CreateRateBody struct {
-	Description  string            `json:"description"`
-	HourlyRate   float32           `json:"hourlyRate"`
-	Id           string            `json:"id"`
-	PerSession   PerSessionPricing `json:"perSession"`
-	PricingMode  RatePricingMode   `json:"pricingMode"`
-	SessionPrice *float32          `json:"sessionPrice"`
+	DailyRate           *float32          `json:"dailyRate,omitempty"`
+	Description         string            `json:"description"`
+	HourlyRate          float32           `json:"hourlyRate"`
+	Id                  string            `json:"id"`
+	InitialDailyPeriods *int              `json:"initialDailyPeriods,omitempty"`
+	InitialDailyRate    *float32          `json:"initialDailyRate,omitempty"`
+	PerSession          PerSessionPricing `json:"perSession"`
+	PricingMode         RatePricingMode   `json:"pricingMode"`
+	SessionPrice        *float32          `json:"sessionPrice"`
 }
 
 // DiscountTable defines model for DiscountTable.
@@ -377,13 +383,16 @@ type PerSessionTier struct {
 
 // Rate defines model for Rate.
 type Rate struct {
-	Description   string                  `json:"description"`
-	DiscountTable *map[string]interface{} `json:"discountTable,omitempty"`
-	HourlyRate    float32                 `json:"hourlyRate"`
-	Id            string                  `json:"id"`
-	PerSession    PerSessionPricing       `json:"perSession"`
-	PricingMode   RatePricingMode         `json:"pricingMode"`
-	SessionPrice  *float32                `json:"sessionPrice"`
+	DailyRate           *float32                `json:"dailyRate,omitempty"`
+	Description         string                  `json:"description"`
+	DiscountTable       *map[string]interface{} `json:"discountTable,omitempty"`
+	HourlyRate          float32                 `json:"hourlyRate"`
+	Id                  string                  `json:"id"`
+	InitialDailyPeriods *int                    `json:"initialDailyPeriods,omitempty"`
+	InitialDailyRate    *float32                `json:"initialDailyRate,omitempty"`
+	PerSession          PerSessionPricing       `json:"perSession"`
+	PricingMode         RatePricingMode         `json:"pricingMode"`
+	SessionPrice        *float32                `json:"sessionPrice"`
 }
 
 // RatePricingMode defines model for RatePricingMode.
@@ -444,11 +453,14 @@ type UpdateKeyholderBody struct {
 
 // UpdateRateBody defines model for UpdateRateBody.
 type UpdateRateBody struct {
-	Description  string            `json:"description"`
-	HourlyRate   float32           `json:"hourlyRate"`
-	PerSession   PerSessionPricing `json:"perSession"`
-	PricingMode  RatePricingMode   `json:"pricingMode"`
-	SessionPrice *float32          `json:"sessionPrice"`
+	DailyRate           *float32          `json:"dailyRate,omitempty"`
+	Description         string            `json:"description"`
+	HourlyRate          float32           `json:"hourlyRate"`
+	InitialDailyPeriods *int              `json:"initialDailyPeriods,omitempty"`
+	InitialDailyRate    *float32          `json:"initialDailyRate,omitempty"`
+	PerSession          PerSessionPricing `json:"perSession"`
+	PricingMode         RatePricingMode   `json:"pricingMode"`
+	SessionPrice        *float32          `json:"sessionPrice"`
 }
 
 // AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.

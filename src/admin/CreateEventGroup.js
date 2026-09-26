@@ -108,6 +108,7 @@ export function CreateEventGroup() {
           />
           <Text fontWeight="bold">Event Group Rate</Text>
           <RateSelect
+            eventGroup
             rateID={formik.values.rate}
             onChange={(event) =>
               formik.setFieldValue("rate", event.target.value)

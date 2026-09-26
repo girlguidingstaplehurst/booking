@@ -32,13 +32,15 @@ func (v *Verifier) Verify(ctx context.Context, token string, ip string) error {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attribute.String("recaptcha.token", token), attribute.String("recaptcha.ip", ip))
 
-	resp, err := v.cli.Verify(ctx, token, ip)
-	if err != nil {
-		return err
-	}
+	if v.armed {
+		resp, err := v.cli.Verify(ctx, token, ip)
+		if err != nil {
+			return err
+		}
 
-	if !resp.Success && v.armed {
-		return fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
+		if !resp.Success {
+			return fmt.Errorf("captcha verification failed: %q", resp.ErrorCodes)
+		}
 	}
 
 	return nil

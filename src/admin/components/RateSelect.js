@@ -69,6 +69,7 @@ export function RateSelect({
   preserveCurrentRate = false,
   currentName,
   error,
+  eventGroup = false,
 }) {
   const [rates, setRates] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -103,13 +104,14 @@ export function RateSelect({
   }, []);
 
   const currentRate = rates.find((rate) => rate.id === rateID);
+  const compatibleRates = eventGroup ? rates.filter((rate) => rate.pricingMode !== "multiDay") : rates;
   const visibleRates = hourlyOnly
-    ? rates.filter(
+    ? compatibleRates.filter(
         (rate) =>
           rate.pricingMode === "hourly" ||
           (preserveCurrentRate && rate.id === currentRate?.id),
       )
-    : rates;
+    : compatibleRates;
 
   const hasCurrentRate = visibleRates.some((rate) => rate.id === rateID);
 
@@ -125,7 +127,7 @@ export function RateSelect({
             key={item.id}
             disabled={hourlyOnly && item.id === currentRate?.id && !!item.perSession?.length}
           >
-            {item.description} - {item.pricingMode === "fixedSession" ? `£${item.sessionPrice}/session` : item.pricingMode === "perSession" ? "progressive per-session" : `£${item.hourlyRate}/hour`}
+            {item.description} - {item.pricingMode === "fixedSession" ? `£${item.sessionPrice}/session` : item.pricingMode === "perSession" ? "progressive per-session" : item.pricingMode === "multiDay" ? `${item.initialDailyPeriods} days at £${item.initialDailyRate}, then £${item.dailyRate}/day` : `£${item.hourlyRate}/hour`}
           </option>
         ))}
       </Select>
