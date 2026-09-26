@@ -66,6 +66,7 @@ func (d *testDatabase) GetEventGroup(context.Context, string) (AdminEventGroupDe
 	return AdminEventGroupDetails{}, nil
 }
 func (d *testDatabase) ListKeyholders(context.Context) (KeyholderList, error) { return nil, nil }
+func (d *testDatabase) ListContacts(context.Context) (AdminContactList, error) { return nil, nil }
 func (d *testDatabase) CreateKeyholder(context.Context, CreateKeyholderBody) (Keyholder, error) {
 	return Keyholder{}, nil
 }

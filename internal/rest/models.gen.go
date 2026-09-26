@@ -109,6 +109,15 @@ func (e RatePricingMode) Valid() bool {
 	}
 }
 
+// AdminContact defines model for AdminContact.
+type AdminContact struct {
+	Email openapi_types.Email `json:"email"`
+	Name  string              `json:"name"`
+}
+
+// AdminContactList defines model for AdminContactList.
+type AdminContactList = []AdminContact
+
 // AdminDuplicateEventGroup defines model for AdminDuplicateEventGroup.
 type AdminDuplicateEventGroup struct {
 	EventGroupId string             `json:"event_group_id"`

@@ -17,6 +17,7 @@ import { AdminPoster } from "../Poster";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
 import { KeyholderSelect } from "./components/KeyholderSelect";
+import { ContactAutocomplete } from "./components/ContactAutocomplete";
 
 const schema = Yup.object({
   name: Yup.string().required("Required"),
@@ -115,19 +116,15 @@ export function CreateEventGroup() {
             }
           />
           <Text fontWeight="bold">Contact</Text>
-          <FormFieldAndLabel
-            label="Name"
-            name="contactName"
-            value={formik.values.contactName}
-            errValue={formik.errors.contactName}
-            onChange={formik.handleChange}
-          />
-          <FormFieldAndLabel
-            label="Email"
-            name="email"
-            value={formik.values.email}
-            errValue={formik.errors.email}
-            onChange={formik.handleChange}
+          <ContactAutocomplete
+            name={formik.values.contactName}
+            email={formik.values.email}
+            nameError={formik.errors.contactName}
+            emailError={formik.errors.email}
+            onNameChange={(event) =>
+              formik.setFieldValue("contactName", event.target.value)
+            }
+            onEmailChange={formik.handleChange}
           />
           <KeyholderSelect
             label="Keyholder"

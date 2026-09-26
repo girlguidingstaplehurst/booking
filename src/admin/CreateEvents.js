@@ -21,6 +21,7 @@ import { AdminPoster } from "../Poster";
 import { RateSelect } from "./components/RateSelect";
 import PageHeader from "./components/PageHeader";
 import { KeyholderSelect } from "./components/KeyholderSelect";
+import { ContactAutocomplete } from "./components/ContactAutocomplete";
 
 const EventSchema = Yup.object().shape({
   eventName: Yup.string()
@@ -195,20 +196,13 @@ export function CreateEvents() {
           </Box>
 
           <Heading>Contact Info</Heading>
-          <FormFieldAndLabel
-            label="Name"
-            name="name"
-            value={formik.values.name}
-            errValue={formik.errors.name}
-            onChange={formik.handleChange}
-          />
-
-          <FormFieldAndLabel
-            label="Email"
-            name="email"
-            value={formik.values.email}
-            errValue={formik.errors.email}
-            onChange={formik.handleChange}
+          <ContactAutocomplete
+            name={formik.values.name}
+            email={formik.values.email}
+            nameError={formik.errors.name}
+            emailError={formik.errors.email}
+            onNameChange={formik.handleChange}
+            onEmailChange={formik.handleChange}
           />
 
           <Heading>Keyholders</Heading>

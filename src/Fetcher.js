@@ -27,3 +27,11 @@ export async function searchEventGroups(title) {
     [],
   );
 }
+
+export async function listContacts() {
+  const response = await AdminFetcher("/api/v1/admin/contacts", []);
+  if (response?.json) {
+    return await response.json();
+  }
+  return response || [];
+}

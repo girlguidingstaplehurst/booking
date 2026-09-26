@@ -42,6 +42,7 @@ type Database interface {
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
 	SearchEventGroups(ctx context.Context, title string) ([]AdminEventGroup, error)
 	GetEventGroup(ctx context.Context, id string) (AdminEventGroupDetails, error)
+	ListContacts(ctx context.Context) (AdminContactList, error)
 	ListKeyholders(ctx context.Context) (KeyholderList, error)
 	CreateKeyholder(ctx context.Context, input CreateKeyholderBody) (Keyholder, error)
 	UpdateKeyholder(ctx context.Context, id openapi_types.UUID, input UpdateKeyholderBody) (Keyholder, error)
@@ -434,6 +435,14 @@ func (s *Server) AdminListKeyholders(ctx context.Context, _ AdminListKeyholdersR
 		return AdminListKeyholders500JSONResponse{ErrorMessage: err.Error()}, nil
 	}
 	return AdminListKeyholders200JSONResponse(keyholders), nil
+}
+
+func (s *Server) AdminListContacts(ctx context.Context, _ AdminListContactsRequestObject) (AdminListContactsResponseObject, error) {
+	contacts, err := s.db.ListContacts(ctx)
+	if err != nil {
+		return AdminListContacts500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return AdminListContacts200JSONResponse(contacts), nil
 }
 
 func (s *Server) AdminCreateKeyholder(ctx context.Context, request AdminCreateKeyholderRequestObject) (AdminCreateKeyholderResponseObject, error) {

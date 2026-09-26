@@ -554,6 +554,23 @@ func (db *Database) ListKeyholders(ctx context.Context) (rest.KeyholderList, err
 	})
 }
 
+func (db *Database) ListContacts(ctx context.Context) (rest.AdminContactList, error) {
+	rows, err := db.pool.Query(ctx, `select name, email
+		from booking_contacts
+		order by name, email`)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.AdminContact, error) {
+		var contact rest.AdminContact
+		if err := row.Scan(&contact.Name, &contact.Email); err != nil {
+			return contact, err
+		}
+		return contact, nil
+	})
+}
+
 func (db *Database) CreateKeyholder(ctx context.Context, input rest.CreateKeyholderBody) (rest.Keyholder, error) {
 	var keyholder rest.Keyholder
 	err := db.pool.QueryRow(ctx, `insert into booking_keyholders (id, name, key_number, active)

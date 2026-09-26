@@ -255,6 +255,21 @@ func (mr *MockDatabaseMockRecorder) GetRates(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRates", reflect.TypeOf((*MockDatabase)(nil).GetRates), ctx)
 }
 
+// ListContacts mocks base method.
+func (m *MockDatabase) ListContacts(ctx context.Context) (rest.AdminContactList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListContacts", ctx)
+	ret0, _ := ret[0].(rest.AdminContactList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListContacts indicates an expected call of ListContacts.
+func (mr *MockDatabaseMockRecorder) ListContacts(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListContacts", reflect.TypeOf((*MockDatabase)(nil).ListContacts), ctx)
+}
+
 // ListEvents mocks base method.
 func (m *MockDatabase) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {
 	m.ctrl.T.Helper()
