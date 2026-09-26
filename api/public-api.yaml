@@ -1327,6 +1327,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InvoiceItem'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceEventSummary'
+        eventGroup:
+          $ref: '#/components/schemas/InvoiceEventGroupSummary'
     InvoiceItem:
       type: object
       required:
@@ -1339,8 +1345,42 @@ components:
           type: string
         cost:
           type: number
-        eventID:
+    InvoiceEventSummary:
+      type: object
+      required:
+        - id
+        - name
+        - from
+        - to
+      properties:
+        id:
           type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
+    InvoiceEventGroupSummary:
+      type: object
+      required:
+        - id
+        - name
+        - from
+        - to
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: datetime
+        to:
+          type: string
+          format: datetime
     RatesList:
       type: array
       items:

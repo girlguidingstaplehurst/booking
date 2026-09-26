@@ -19,6 +19,7 @@
 
 - Before archiving a change that modifies JavaScript code, run `npm run build` to update the production frontend files in `build/`.
 - When changing `api/public-api.yaml`, run `go generate ./...` before compiling or testing; generated files are expected to match the contract.
+- After archiving a completed change, create a Conventional Commit for the implementation and related artifacts (for example, `feat: add invoice review details`).
 - The service reads `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `SMTP_SERVER`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `GOOGLE_RECAPTCHA_SECRET`; set `CAPTCHA_ARMED=false` when local testing should bypass CAPTCHA.
 - Integration tests under `internal/test` use the generated client and require the configured service/database; they are not equivalent to the isolated package tests.
 - CI deploys only on pushes to `main`; it builds multi-architecture images with ko and updates the production Kubernetes and Azure image references automatically.

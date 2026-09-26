@@ -10,7 +10,14 @@ import {
   Spacer,
   Stack,
   StackDivider,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
   Text,
+  Tr,
 } from "@chakra-ui/react";
 import {
   useLoaderData,
@@ -22,6 +29,14 @@ import { useState } from "react";
 import RoundedButton from "../components/RoundedButton";
 import PageHeader from "./components/PageHeader";
 import { markInvoicePaid } from "./components/invoiceActions";
+
+const priceFormat = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+});
+
+const dateFormat = (from, to) =>
+  `${dayjs(from).format("ddd D MMM YYYY HH:mm")} - ${dayjs(to).format("HH:mm")}`;
 
 export async function manageInvoice(invoiceID) {
   return AdminFetcher("/api/v1/admin/invoices/by-id/" + invoiceID, {
@@ -41,6 +56,7 @@ export function ManageInvoice() {
   const [error, setError] = useState("");
 
   const isPaid = invoice.status === "paid";
+  const totalCost = (invoice.items || []).reduce((total, item) => total + item.cost, 0);
 
   return (
     <Container maxW="4xl">
@@ -58,6 +74,52 @@ export function ManageInvoice() {
                   <Text>{invoice.contact}</Text>
                 </Box>
               </Flex>
+              {invoice.eventGroup && (
+                <Flex>
+                  <Box>
+                    <Heading size="s">Event group</Heading>
+                    <Text>{invoice.eventGroup.name}</Text>
+                    <Text>{dateFormat(invoice.eventGroup.from, invoice.eventGroup.to)}</Text>
+                  </Box>
+                </Flex>
+              )}
+              {invoice.events?.length > 0 && (
+                <Box>
+                  <Heading size="s">Events</Heading>
+                  <Stack spacing={1}>
+                    {invoice.events.map((event) => (
+                      <Text key={event.id}>
+                        {event.name} ({dateFormat(event.from, event.to)})
+                      </Text>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+              <Box>
+                <Heading size="s">Invoiced items</Heading>
+                <TableContainer>
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th>Description</Th>
+                        <Th isNumeric>Cost</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {(invoice.items || []).map((item, index) => (
+                        <Tr key={item.id || index}>
+                          <Td>{item.description}</Td>
+                          <Td isNumeric>{priceFormat.format(item.cost)}</Td>
+                        </Tr>
+                      ))}
+                      <Tr>
+                        <Th>Total cost</Th>
+                        <Th isNumeric>{priceFormat.format(totalCost)}</Th>
+                      </Tr>
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              </Box>
               <Flex>
                 <Box>
                   <Heading size="s">Sent</Heading>

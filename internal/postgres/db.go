@@ -156,7 +156,6 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 				Id:          &id,
 				Description: item.Description,
 				Cost:        item.Cost,
-				EventID:     item.EventID,
 			}
 
 			_, err := tx.Exec(ctx, `insert into booking_invoice_items
@@ -505,6 +504,44 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 	})
 
 	invoice.Items = items
+
+	eventRows, err := db.pool.Query(ctx, `select be.id, be.event_name, to_char(be.event_start, $2), to_char(be.event_end, $2)
+		from booking_invoice_events bie
+		join booking_events be on be.id = bie.event_id
+		where bie.invoice_id = $1
+		order by be.from_date`, id, dbDateTimeFormat)
+	if err != nil {
+		return invoice, err
+	}
+	events, err := pgx.CollectRows(eventRows, func(row pgx.CollectableRow) (rest.InvoiceEventSummary, error) {
+		var event rest.InvoiceEventSummary
+		if err := row.Scan(&event.Id, &event.Name, &event.From, &event.To); err != nil {
+			return event, err
+		}
+		return event, nil
+	})
+	if err != nil {
+		return invoice, err
+	}
+	if len(events) > 0 {
+		invoice.Events = &events
+	}
+
+	var group rest.InvoiceEventGroupSummary
+	err = db.pool.QueryRow(ctx, `select beg.id, beg.event_name,
+		to_char(min(be.event_start), $2), to_char(max(be.event_end), $2)
+		from booking_invoices bi
+		join booking_event_groups beg on beg.id = bi.event_group_id
+		left join booking_events be on be.event_group_id = beg.id
+		where bi.id = $1
+		group by beg.id, beg.event_name`, id, dbDateTimeFormat).Scan(
+		&group.Id, &group.Name, &group.From, &group.To,
+	)
+	if err == nil {
+		invoice.EventGroup = &group
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return invoice, err
+	}
 
 	return invoice, nil
 }

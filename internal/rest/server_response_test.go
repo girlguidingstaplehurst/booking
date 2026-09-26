@@ -35,6 +35,32 @@ func TestAdminGetInvoicesForEventsGroupsIndividualEventsByContact(t *testing.T) 
 	}
 }
 
+func TestAdminGetInvoiceByIDIncludesInvoiceAssociation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	database := mock_rest.NewMockDatabase(ctrl)
+	server := rest.NewServer(database, nil, nil, nil, nil)
+	eventID := "event-1"
+	database.EXPECT().GetInvoiceByID(gomock.Any(), "invoice-1").Return(rest.Invoice{
+		Id:      "invoice-1",
+		Items:   []rest.InvoiceItem{{Description: "Hall hire", Cost: 120}},
+		Events:  &[]rest.InvoiceEventSummary{{Id: eventID, Name: "Summer event"}},
+	}, nil)
+
+	response, err := server.AdminGetInvoiceByID(context.Background(), rest.AdminGetInvoiceByIDRequestObject{
+		InvoiceID: "invoice-1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoice := rest.Invoice(response.(rest.AdminGetInvoiceByID200JSONResponse))
+	if invoice.Events == nil || len(*invoice.Events) != 1 || (*invoice.Events)[0].Id != eventID {
+		t.Fatalf("got invoice events %+v", invoice.Events)
+	}
+	if len(invoice.Items) != 1 || invoice.Items[0].Description != "Hall hire" {
+		t.Fatalf("got invoice items %+v", invoice.Items)
+	}
+}
+
 func TestAdminGetInvoicesForEventsIncludesGroupRate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	database := mock_rest.NewMockDatabase(ctrl)

@@ -280,13 +280,15 @@ type EventStatus string
 
 // Invoice defines model for Invoice.
 type Invoice struct {
-	Contact   openapi_types.Email `json:"contact"`
-	Id        string              `json:"id"`
-	Items     []InvoiceItem       `json:"items"`
-	Paid      *string             `json:"paid,omitempty"`
-	Reference string              `json:"reference"`
-	Sent      *string             `json:"sent,omitempty"`
-	Status    InvoiceStatus       `json:"status"`
+	Contact    openapi_types.Email       `json:"contact"`
+	EventGroup *InvoiceEventGroupSummary `json:"eventGroup,omitempty"`
+	Events     *[]InvoiceEventSummary    `json:"events,omitempty"`
+	Id         string                    `json:"id"`
+	Items      []InvoiceItem             `json:"items"`
+	Paid       *string                   `json:"paid,omitempty"`
+	Reference  string                    `json:"reference"`
+	Sent       *string                   `json:"sent,omitempty"`
+	Status     InvoiceStatus             `json:"status"`
 }
 
 // InvoiceEvent defines model for InvoiceEvent.
@@ -301,11 +303,26 @@ type InvoiceEvent struct {
 	To             string        `json:"to"`
 }
 
+// InvoiceEventGroupSummary defines model for InvoiceEventGroupSummary.
+type InvoiceEventGroupSummary struct {
+	From string `json:"from"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	To   string `json:"to"`
+}
+
+// InvoiceEventSummary defines model for InvoiceEventSummary.
+type InvoiceEventSummary struct {
+	From string `json:"from"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	To   string `json:"to"`
+}
+
 // InvoiceItem defines model for InvoiceItem.
 type InvoiceItem struct {
 	Cost        float32 `json:"cost"`
 	Description string  `json:"description"`
-	EventID     *string `json:"eventID,omitempty"`
 	Id          *string `json:"id,omitempty"`
 }
 
