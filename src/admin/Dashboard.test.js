@@ -14,13 +14,36 @@ import {
   getRemainingEventGroups,
   isEventActiveToday,
   normalizeDashboardData,
+  DASHBOARD_SECTION_COOKIE,
+  readDashboardSectionState,
 } from "./Dashboard";
 
 jest.mock("../Poster", () => ({
   AdminPoster: jest.fn(),
 }));
 
-function renderDashboard(data, loader = jest.fn().mockResolvedValue(data)) {
+const expandedSectionState = {
+  awaitingApproval: true,
+  outstandingInvoices: true,
+  eventsToBeInvoiced: true,
+  needingKeyholders: true,
+  remainingEventGroups: true,
+  bookedEvents: true,
+};
+
+function clearDashboardCookie() {
+  document.cookie = `${DASHBOARD_SECTION_COOKIE}=; max-age=0`;
+}
+
+function renderDashboard(
+  data,
+  loader = jest.fn().mockResolvedValue(data),
+  sectionState = expandedSectionState,
+) {
+  clearDashboardCookie();
+  document.cookie = `${DASHBOARD_SECTION_COOKIE}=${encodeURIComponent(
+    JSON.stringify(sectionState),
+  )}`;
   const router = createMemoryRouter([
     { path: "/", element: <Dashboard />, loader },
   ], { initialEntries: ["/"] });
@@ -154,9 +177,9 @@ describe("Dashboard invoice behavior", () => {
 
     await screen.findByRole("heading", { name: "Dashboard" });
 
-    const approvalSection = screen.getByRole("heading", { name: "Events awaiting approval" }).parentElement;
-    const invoiceSection = screen.getByRole("heading", { name: "Events to be invoiced" }).parentElement;
-    const keyholderSection = screen.getByRole("heading", { name: "Needing keyholders" }).parentElement;
+    const approvalSection = screen.getByRole("button", { name: /Events awaiting approval/ }).parentElement;
+    const invoiceSection = screen.getByRole("button", { name: /Events to be invoiced/ }).parentElement;
+    const keyholderSection = screen.getByRole("button", { name: /Needing keyholders/ }).parentElement;
 
     expect(within(approvalSection).getByText("Provisional Event")).toBeInTheDocument();
     expect(within(approvalSection).getByText("Awaiting Documents Event")).toBeInTheDocument();
@@ -199,11 +222,11 @@ describe("Dashboard invoice behavior", () => {
 
     await screen.findByRole("heading", { name: "Dashboard" });
 
-    const remainingSection = screen.getByRole("heading", {
-      name: "Event groups with remaining sessions",
+    const remainingSection = screen.getByRole("button", {
+      name: /Event groups with remaining sessions/,
     }).parentElement;
-    const invoiceSection = screen.getByRole("heading", {
-      name: "Events to be invoiced",
+    const invoiceSection = screen.getByRole("button", {
+      name: /Events to be invoiced/,
     }).parentElement;
 
     expect(within(remainingSection).getByText("Weekly Group")).toBeInTheDocument();
@@ -217,6 +240,84 @@ describe("Dashboard invoice behavior", () => {
       "href",
       "/admin/create-invoice?eventGroup=group-1",
     );
+  });
+});
+
+describe("Dashboard section controls", () => {
+  afterEach(() => {
+    clearDashboardCookie();
+  });
+
+  test("starts sections collapsed and displays total counts", async () => {
+    renderDashboard(outstandingData, undefined, {});
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    expect(section).toHaveAttribute("aria-expanded", "false");
+    expect(section.parentElement).not.toHaveTextContent("INV-001");
+    expect(section).toHaveTextContent("1");
+  });
+
+  test("toggles a section and persists its state", async () => {
+    renderDashboard(outstandingData, undefined, {});
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    fireEvent.click(section);
+
+    expect(section).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/INV-001/)).toBeInTheDocument();
+  });
+
+  test("restores partial preferences and defaults missing sections to collapsed", async () => {
+    renderDashboard(outstandingData, undefined, { outstandingInvoices: true });
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    expect(section).toHaveAttribute("aria-expanded", "true");
+    expect(section.parentElement).toHaveTextContent("INV-001");
+  });
+
+  test("falls back to collapsed sections for malformed preferences", async () => {
+    clearDashboardCookie();
+    document.cookie = `${DASHBOARD_SECTION_COOKIE}=not-json`;
+    renderDashboard(outstandingData, undefined, {});
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    expect(section).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("omits the red badge when a section has no red-flagged items", async () => {
+    const currentData = {
+      events: [{
+        id: "future-event",
+        name: "Future Event",
+        from: dayjs().add(1, "day").toISOString(),
+        to: dayjs().add(1, "day").add(1, "hour").toISOString(),
+        status: "approved",
+        invoices: [{ id: "invoice-1", reference: "INV-001", status: "raised" }],
+      }],
+      eventGroups: [],
+    };
+    renderDashboard(currentData, undefined, {});
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    expect(section).toHaveTextContent("1");
+    expect(section.querySelector('[data-testid="red-flag-count"]')).not.toBeInTheDocument();
+  });
+
+  test("shows a red badge for cancelled invoices", async () => {
+    renderDashboard({
+      events: [{
+        ...outstandingData.events[0],
+        from: dayjs().add(1, "day").toISOString(),
+        to: dayjs().add(1, "day").add(1, "hour").toISOString(),
+        invoices: [{ id: "invoice-1", reference: "INV-001", status: "cancelled" }],
+      }],
+      eventGroups: [],
+    }, undefined, {});
+
+    const section = await screen.findByRole("button", { name: /Outstanding invoices/ });
+    const redBadge = section.querySelector('[data-testid="red-flag-count"]');
+    expect(redBadge).toHaveTextContent("1");
+    expect(redBadge).toHaveAttribute("data-testid", "red-flag-count");
   });
 });
 

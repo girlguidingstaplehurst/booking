@@ -121,7 +121,49 @@ the group review action without displaying a direct `Create Invoice` action;
 event groups in the `Events to be invoiced` section SHALL retain direct group
 invoice creation. The Dashboard SHALL provide an Event Group Search widget at
 the bottom that searches historical and current group titles and links matching
-results to group review.
+results to group review. Each Dashboard section SHALL present a collapsible
+heading row, SHALL start collapsed when no saved section preference exists,
+SHALL display the total number of items in the section, and SHALL display a
+separate red-flag count only when one or more items use that section's existing
+red-flag visual urgency treatment. Red-flag count badges SHALL use a red
+background with white text. The Dashboard SHALL persist each section's
+expanded or collapsed state in a browser cookie and restore that state on
+reload.
+
+#### Scenario: Dashboard sections start collapsed without a saved preference
+
+- **WHEN** an authenticated administrator opens the Dashboard without a valid saved section-state preference
+- **THEN** every non-empty Dashboard section displays its heading row with its total item count
+- **AND** every section's cards are collapsed and hidden
+
+#### Scenario: Dashboard restores saved section states
+
+- **WHEN** an authenticated administrator reloads the Dashboard with a valid saved section-state preference
+- **THEN** each recognized section is expanded or collapsed according to its saved state
+- **AND** a section not present in the saved preference remains collapsed
+
+#### Scenario: Administrator toggles a Dashboard section
+
+- **WHEN** an administrator activates a section heading row
+- **THEN** the section cards toggle between visible and hidden
+- **AND** the new expanded or collapsed state is persisted for subsequent Dashboard loads
+
+#### Scenario: Dashboard displays section counts
+
+- **WHEN** a Dashboard section contains one or more event or event-group cards
+- **THEN** its heading row displays the total number of cards in that section
+- **AND** the total count remains visible whether the section is expanded or collapsed
+
+#### Scenario: Dashboard displays red-flag count only when applicable
+
+- **WHEN** a Dashboard section contains one or more cards using that section's existing red-flag visual urgency treatment
+- **THEN** its heading row displays the number of red-flagged cards in a red-background badge with white text
+- **AND** the red-flag count is not displayed when no cards in the section are red-flagged
+
+#### Scenario: Dashboard handles an invalid section-state preference
+
+- **WHEN** the Dashboard cannot parse or validate its saved section-state preference
+- **THEN** it treats the preference as absent and starts all sections collapsed.
 
 #### Scenario: Dashboard displays historical event-group search
 

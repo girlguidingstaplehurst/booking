@@ -18,6 +18,58 @@ import PageHeader from "./components/PageHeader";
 import React from "react";
 import { EventGroupSearch } from "./EventGroupSearch";
 
+export const DASHBOARD_SECTION_COOKIE = "admin-dashboard-sections";
+
+const sectionIDs = [
+  "awaitingApproval",
+  "outstandingInvoices",
+  "eventsToBeInvoiced",
+  "needingKeyholders",
+  "remainingEventGroups",
+  "bookedEvents",
+];
+
+function collapsedSectionState() {
+  return Object.fromEntries(sectionIDs.map((sectionID) => [sectionID, false]));
+}
+
+export function readDashboardSectionState(cookieValue = document.cookie) {
+  const match = cookieValue.match(
+    new RegExp(`(?:^|; )${DASHBOARD_SECTION_COOKIE}=([^;]*)`),
+  );
+  if (!match) return collapsedSectionState();
+
+  try {
+    const savedState = JSON.parse(decodeURIComponent(match[1]));
+    if (!savedState || typeof savedState !== "object" || Array.isArray(savedState)) {
+      return collapsedSectionState();
+    }
+
+    return sectionIDs.reduce(
+      (state, sectionID) => ({
+        ...state,
+        [sectionID]: savedState[sectionID] === true,
+      }),
+      collapsedSectionState(),
+    );
+  } catch (error) {
+    return collapsedSectionState();
+  }
+}
+
+export function writeDashboardSectionState(state) {
+  const knownState = sectionIDs.reduce(
+    (savedState, sectionID) => ({
+      ...savedState,
+      [sectionID]: state[sectionID] === true,
+    }),
+    {},
+  );
+  document.cookie = `${DASHBOARD_SECTION_COOKIE}=${encodeURIComponent(
+    JSON.stringify(knownState),
+  )}; path=/admin; max-age=31536000; samesite=lax`;
+}
+
 export async function populateDashboard() {
   return await AdminFetcher("/api/v1/admin/events", {
     events: [
@@ -145,10 +197,13 @@ export function Dashboard() {
 
   const sections = [
     {
+      id: "awaitingApproval",
       title: "Events awaiting approval",
       events: eventsList.events.filter((event) => event.status !== "approved"),
+      isRedFlagged: (event) => dayjs(event.to).isBefore(dayjs()),
     },
     {
+      id: "outstandingInvoices",
       title: "Outstanding invoices",
       events: eventsList.events.filter((event) =>
         event.invoices?.some((invoice) => invoice.status !== "paid"),
@@ -156,8 +211,12 @@ export function Dashboard() {
       eventGroups: (eventsList.eventGroups || []).filter((group) =>
         group.invoices?.some((invoice) => invoice.status !== "paid"),
       ),
+      isRedFlagged: (item) =>
+        item.invoices?.some((invoice) => invoice.status === "cancelled") ||
+        dayjs(item.to).isBefore(dayjs()),
     },
     {
+      id: "eventsToBeInvoiced",
       title: "Events to be invoiced",
       events: eventsList.events.filter(
         (event) =>
@@ -168,14 +227,17 @@ export function Dashboard() {
       eventGroups: (eventsList.eventGroups || []).filter(
         (group) => !group.invoices || group.invoices.length === 0,
       ),
+      isRedFlagged: () => false,
     },
     {
+      id: "needingKeyholders",
       title: "Needing keyholders",
       events: eventsList.events.filter(
         (event) =>
           event.status === "approved" &&
-          (!event.keyholderIn || !event.keyholderOut),
+        (!event.keyholderIn || !event.keyholderOut),
       ),
+      isRedFlagged: (event) => dayjs(event.to).isBefore(dayjs()),
     },
   ];
   const remainingEventGroups = getRemainingEventGroups(
@@ -183,6 +245,34 @@ export function Dashboard() {
     eventsList.eventGroups || [],
   );
   const bookedEvents = getBookedEvents(eventsList.events, sections);
+
+  sections.push({
+    id: "remainingEventGroups",
+    title: "Event groups with remaining sessions",
+    eventGroups: remainingEventGroups,
+    events: [],
+    isRedFlagged: (group) =>
+      group.sessions?.some((session) => dayjs(session.to).isBefore(dayjs())),
+  });
+  sections.push({
+    id: "bookedEvents",
+    title: "Booked events",
+    events: bookedEvents,
+    eventGroups: [],
+    isRedFlagged: (event) => dayjs(event.to).isBefore(dayjs()),
+  });
+
+  const [expandedSections, setExpandedSections] = React.useState(() =>
+    readDashboardSectionState(),
+  );
+
+  const toggleSection = (sectionID) => {
+    setExpandedSections((currentState) => {
+      const nextState = { ...currentState, [sectionID]: !currentState[sectionID] };
+      writeDashboardSectionState(nextState);
+      return nextState;
+    });
+  };
 
   const sortedEvents = (events) =>
     [...events].sort(
@@ -384,46 +474,59 @@ export function Dashboard() {
           </RoundedButton>
         </PageHeader>
         {paymentError && <Text color="red.500">{paymentError}</Text>}
-        {sections.map(
-          (section) =>
-            (section.events.length > 0 || section.eventGroups?.length > 0) && (
-              <Box key={section.title}>
-                <Heading size="md" marginBottom={4}>
-                  {section.title}
-                </Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  {sortedEvents(section.events).map((event) =>
-                    eventCard(event, section.title),
+        {sections.map((section) => {
+          const items = [...section.events, ...(section.eventGroups || [])];
+          if (items.length === 0) return null;
+          const expanded = expandedSections[section.id] === true;
+          const redFlagCount = items.filter(section.isRedFlagged).length;
+          const regionID = `dashboard-section-${section.id}`;
+
+          return (
+            <Box key={section.id}>
+              <Button
+                width="100%"
+                justifyContent="space-between"
+                variant="outline"
+                aria-expanded={expanded}
+                aria-controls={regionID}
+                onClick={() => toggleSection(section.id)}
+              >
+                <Flex alignItems="center" gap={3}>
+                  <Text aria-hidden="true">{expanded ? "v" : ">"}</Text>
+                  <Heading as="span" size="md">{section.title}</Heading>
+                </Flex>
+                <Flex gap={2}>
+                  {redFlagCount > 0 && (
+                    <Box
+                      data-testid="red-flag-count"
+                      backgroundColor="red.600"
+                      color="white"
+                      paddingX={2}
+                      borderRadius="md"
+                    >
+                      {redFlagCount}
+                    </Box>
                   )}
-                  {section.eventGroups?.map((group) =>
-                    eventGroupCard(group, section.title),
-                  )}
-                </SimpleGrid>
-              </Box>
-            ),
-        )}
-        {remainingEventGroups.length > 0 && (
-          <Box>
-            <Heading size="md" marginBottom={4}>
-              Event groups with remaining sessions
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              {remainingEventGroups.map((group) =>
-                eventGroupCard(group, "Event groups with remaining sessions"),
+                  <Box backgroundColor="gray.100" paddingX={2} borderRadius="md">
+                    {items.length}
+                  </Box>
+                </Flex>
+              </Button>
+              {expanded && (
+                <Box id={regionID} marginTop={4}>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    {sortedEvents(section.events).map((event) =>
+                      eventCard(event, section.title),
+                    )}
+                    {section.eventGroups?.map((group) =>
+                      eventGroupCard(group, section.title),
+                    )}
+                  </SimpleGrid>
+                </Box>
               )}
-            </SimpleGrid>
-          </Box>
-        )}
-        {bookedEvents.length > 0 && (
-          <Box>
-            <Heading size="md" marginBottom={4}>
-              Booked events
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              {bookedEvents.map((event) => eventCard(event, "Booked events"))}
-            </SimpleGrid>
-          </Box>
-        )}
+            </Box>
+          );
+        })}
         <EventGroupSearch />
       </Stack>
     </Container>
