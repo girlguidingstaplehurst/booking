@@ -254,15 +254,16 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 	})
 }
 
-func (db *Database) ListWhatsOn(ctx context.Context, from, to time.Time) ([]rest.PublicScheduleItem, error) {
+func (db *Database) ListWhatsOn(ctx context.Context, from, to time.Time, futureOnly bool) ([]rest.PublicScheduleItem, error) {
 	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $3), to_char(e.event_end, $3), e.event_name, e.status,
 		 e.event_group_id, g.event_name, g.visible
 		from booking_events e
 		left join booking_event_groups g on g.id = e.event_group_id
 		where e.visible = true
 		  and (g.id is null or g.visible = true)
-		  and e.event_start <= $2 and e.event_end >= $1
-		order by e.event_start, e.event_end, e.event_name`, from, to, dbDateTimeFormat)
+		  and ((($4 = true) and e.event_start > $1 and e.event_start <= $2)
+		    or (($4 = false) and e.event_start <= $2 and e.event_end >= $1))
+		order by e.event_start, e.event_end, e.event_name`, from, to, dbDateTimeFormat, futureOnly)
 	if err != nil {
 		return nil, err
 	}

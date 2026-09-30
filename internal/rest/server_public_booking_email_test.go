@@ -14,9 +14,13 @@ type testCaptcha struct{ err error }
 func (c testCaptcha) Verify(context.Context, string, string) error { return c.err }
 
 type testDatabase struct {
-	err     error
-	called  bool
-	request *AddEventJSONRequestBody
+	err               error
+	called            bool
+	request           *AddEventJSONRequestBody
+	whatsOnFrom       time.Time
+	whatsOnTo         time.Time
+	whatsOnFutureOnly bool
+	whatsOnCalled     bool
 }
 
 func (d *testDatabase) AddEvent(_ context.Context, event *AddEventJSONRequestBody) error {
@@ -53,7 +57,11 @@ func (d *testDatabase) UpdateRate(context.Context, string, UpdateRateBody) (Rate
 func (d *testDatabase) ListEvents(context.Context, time.Time, time.Time) ([]ListEvent, error) {
 	return nil, nil
 }
-func (d *testDatabase) ListWhatsOn(context.Context, time.Time, time.Time) ([]PublicScheduleItem, error) {
+func (d *testDatabase) ListWhatsOn(_ context.Context, from, to time.Time, futureOnly bool) ([]PublicScheduleItem, error) {
+	d.whatsOnCalled = true
+	d.whatsOnFrom = from
+	d.whatsOnTo = to
+	d.whatsOnFutureOnly = futureOnly
 	return nil, nil
 }
 func (d *testDatabase) ListEventsForContact(context.Context, string, time.Time, time.Time) ([]ListEvent, error) {
