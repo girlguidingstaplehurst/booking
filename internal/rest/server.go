@@ -39,6 +39,7 @@ type Database interface {
 	CreateRate(ctx context.Context, rate CreateRateBody) (Rate, error)
 	UpdateRate(ctx context.Context, id string, rate UpdateRateBody) (Rate, error)
 	ListEvents(ctx context.Context, from, to time.Time) ([]ListEvent, error)
+	ListWhatsOn(ctx context.Context, from, to time.Time) ([]PublicScheduleItem, error)
 	ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]ListEvent, error)
 	AdminListEvents(ctx context.Context, from, to time.Time) (AdminEventList, error)
 	GetInvoiceableEventsForContact(ctx context.Context, contact string) (AdminInvoiceableEvents, error)
@@ -233,6 +234,25 @@ func (s *Server) GetApiV1Events(ctx context.Context, request GetApiV1EventsReque
 	return GetApiV1Events200JSONResponse{
 		Events: events,
 	}, nil
+}
+
+func (s *Server) GetWhatsOn(ctx context.Context, request GetWhatsOnRequestObject) (GetWhatsOnResponseObject, error) {
+	from, to := request.Params.From, request.Params.To
+	if (from != nil && to == nil) || (from == nil && to != nil) {
+		return GetWhatsOn400JSONResponse{ErrorMessage: "if restricting by date, both from and to must be specified"}, nil
+	}
+	if from == nil && to == nil {
+		now := time.Now()
+		y, m, _ := now.Date()
+		loc := now.Location()
+		from = &openapi_types.Date{Time: time.Date(y, m, 1, 0, 0, 0, 0, loc)}
+		to = &openapi_types.Date{Time: from.Time.AddDate(0, 18, -1)}
+	}
+	items, err := s.db.ListWhatsOn(ctx, from.Time, to.Time)
+	if err != nil {
+		return GetWhatsOn500JSONResponse{ErrorMessage: err.Error()}, nil
+	}
+	return GetWhatsOn200JSONResponse{Items: items}, nil
 }
 
 func (s *Server) GetApiV1AdminEvents(ctx context.Context, request GetApiV1AdminEventsRequestObject) (GetApiV1AdminEventsResponseObject, error) {

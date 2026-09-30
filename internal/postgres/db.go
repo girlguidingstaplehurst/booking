@@ -254,6 +254,48 @@ func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.
 	})
 }
 
+func (db *Database) ListWhatsOn(ctx context.Context, from, to time.Time) ([]rest.PublicScheduleItem, error) {
+	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $3), to_char(e.event_end, $3), e.event_name, e.status,
+		 e.event_group_id, g.event_name, g.visible
+		from booking_events e
+		left join booking_event_groups g on g.id = e.event_group_id
+		where e.visible = true
+		  and (g.id is null or g.visible = true)
+		  and e.event_start <= $2 and e.event_end >= $1
+		order by e.event_start, e.event_end, e.event_name`, from, to, dbDateTimeFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]rest.PublicScheduleItem, 0)
+	itemIndexes := make(map[string]int)
+	for rows.Next() {
+		var event rest.ListEvent
+		var groupID, groupName *string
+		var groupVisible *bool
+		if err := rows.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Status, &groupID, &groupName, &groupVisible); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		event.Visible = true
+		itemID, itemName, itemType := event.Id, event.Name, rest.PublicScheduleItemTypeEvent
+		if groupID != nil {
+			itemID, itemName, itemType = *groupID, *groupName, rest.PublicScheduleItemTypeEventGroup
+		}
+		index, ok := itemIndexes[itemID]
+		if !ok {
+			index = len(items)
+			itemIndexes[itemID] = index
+			items = append(items, rest.PublicScheduleItem{Id: itemID, Name: itemName, Type: itemType, Events: []rest.ListEvent{}})
+		}
+		items[index].Events = append(items[index].Events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (db *Database) ListEventsForContact(ctx context.Context, contactID string, from, to time.Time) ([]rest.ListEvent, error) {
 	rows, err := db.pool.Query(ctx, `select id, to_char(event_start, $3), to_char(event_end, $3), event_name, visible, status 
 		from booking_events

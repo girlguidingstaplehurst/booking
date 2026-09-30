@@ -95,6 +95,24 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// Defines values for PublicScheduleItemType.
+const (
+	PublicScheduleItemTypeEvent      PublicScheduleItemType = "event"
+	PublicScheduleItemTypeEventGroup PublicScheduleItemType = "event_group"
+)
+
+// Valid indicates whether the value is a known member of the PublicScheduleItemType enum.
+func (e PublicScheduleItemType) Valid() bool {
+	switch e {
+	case PublicScheduleItemTypeEvent:
+		return true
+	case PublicScheduleItemTypeEventGroup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RatePricingMode.
 const (
 	FixedSession RatePricingMode = "fixedSession"
@@ -426,6 +444,17 @@ type PerSessionTier struct {
 	Price float32 `json:"price"`
 }
 
+// PublicScheduleItem defines model for PublicScheduleItem.
+type PublicScheduleItem struct {
+	Events []ListEvent            `json:"events"`
+	Id     string                 `json:"id"`
+	Name   string                 `json:"name"`
+	Type   PublicScheduleItemType `json:"type"`
+}
+
+// PublicScheduleItemType defines model for PublicScheduleItem.Type.
+type PublicScheduleItemType string
+
 // Rate defines model for Rate.
 type Rate struct {
 	DailyRate           *float32                `json:"dailyRate,omitempty"`
@@ -508,6 +537,11 @@ type UpdateRateBody struct {
 	SessionPrice        *float32          `json:"sessionPrice"`
 }
 
+// WhatsOnList defines model for WhatsOnList.
+type WhatsOnList struct {
+	Items []PublicScheduleItem `json:"items"`
+}
+
 // AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.
 type AdminSearchEventGroupsParams struct {
 	// Title Case-insensitive partial event-group title to search for
@@ -547,6 +581,15 @@ type GetApiV1EventsParams struct {
 	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
 
 	// To The date to obtain events to
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+}
+
+// GetWhatsOnParams defines parameters for GetWhatsOn.
+type GetWhatsOnParams struct {
+	// From The date to obtain public events from
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To The date to obtain public events to
 	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
 }
 
@@ -877,6 +920,9 @@ type ClientInterface interface {
 
 	// GetEventsICS performs a GET /api/v1/events.ics (the `GetEventsICS` operationId) request.
 	GetEventsICS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetWhatsOn performs a GET /api/v1/whats-on (the `GetWhatsOn` operationId) request.
+	GetWhatsOn(ctx context.Context, params *GetWhatsOnParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // AddEventWithBody Add an event
@@ -1494,6 +1540,19 @@ func (c *Client) GetApiV1Events(ctx context.Context, params *GetApiV1EventsParam
 // GetEventsICS performs a GET /api/v1/events.ics (the `GetEventsICS` operationId) request.
 func (c *Client) GetEventsICS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetEventsICSRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetWhatsOn performs a GET /api/v1/whats-on (the `GetWhatsOn` operationId) request.
+func (c *Client) GetWhatsOn(ctx context.Context, params *GetWhatsOnParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetWhatsOnRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2688,6 +2747,72 @@ func NewGetEventsICSRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetWhatsOnRequest constructs an http.Request for the GetWhatsOn method
+func NewGetWhatsOnRequest(server string, params *GetWhatsOnParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/whats-on")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -2986,6 +3111,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetEventsICSWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventsICSResponse, error)
+
+	// GetWhatsOnWithResponse performs a GET /api/v1/whats-on (the `GetWhatsOn` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetWhatsOnWithResponse(ctx context.Context, params *GetWhatsOnParams, reqEditors ...RequestEditorFn) (*GetWhatsOnResponse, error)
 }
 
 type AddEventResponse struct {
@@ -4507,6 +4637,61 @@ func (r GetEventsICSResponse) ContentType() string {
 	return ""
 }
 
+type GetWhatsOnResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *WhatsOnList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetWhatsOnResponse) GetJSON200() *WhatsOnList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetWhatsOnResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetWhatsOnResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r GetWhatsOnResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetWhatsOnResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetWhatsOnResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetWhatsOnResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // AddEventWithBodyWithResponse Add an event
 //
 // Add a new event to the calendar.
@@ -5006,6 +5191,17 @@ func (c *ClientWithResponses) GetEventsICSWithResponse(ctx context.Context, reqE
 		return nil, err
 	}
 	return ParseGetEventsICSResponse(rsp)
+}
+
+// GetWhatsOnWithResponse performs a GET /api/v1/whats-on (the `GetWhatsOn` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetWhatsOnWithResponse(ctx context.Context, params *GetWhatsOnParams, reqEditors ...RequestEditorFn) (*GetWhatsOnResponse, error) {
+	rsp, err := c.GetWhatsOn(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetWhatsOnResponse(rsp)
 }
 
 // ParseAddEventResponse parses an HTTP response from a AddEventWithResponse call
@@ -6124,6 +6320,46 @@ func ParseGetEventsICSResponse(rsp *http.Response) (*GetEventsICSResponse, error
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetWhatsOnResponse parses an HTTP response from a GetWhatsOnWithResponse call
+func ParseGetWhatsOnResponse(rsp *http.Response) (*GetWhatsOnResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetWhatsOnResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WhatsOnList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

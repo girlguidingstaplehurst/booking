@@ -68,7 +68,7 @@ const router = createBrowserRouter(
         <Route
           path="whats-on"
           element={<WhatsOn />}
-          loader={async () => await fetch("/api/v1/events")}
+          loader={async () => await fetch("/api/v1/whats-on")}
         />
         <Route path="location" element={<Location />} />
         <Route

@@ -330,6 +330,21 @@ func (mr *MockDatabaseMockRecorder) ListKeyholders(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKeyholders", reflect.TypeOf((*MockDatabase)(nil).ListKeyholders), ctx)
 }
 
+// ListWhatsOn mocks base method.
+func (m *MockDatabase) ListWhatsOn(ctx context.Context, from, to time.Time) ([]rest.PublicScheduleItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListWhatsOn", ctx, from, to)
+	ret0, _ := ret[0].([]rest.PublicScheduleItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListWhatsOn indicates an expected call of ListWhatsOn.
+func (mr *MockDatabaseMockRecorder) ListWhatsOn(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWhatsOn", reflect.TypeOf((*MockDatabase)(nil).ListWhatsOn), ctx, from, to)
+}
+
 // MarkInvoicePaid mocks base method.
 func (m *MockDatabase) MarkInvoicePaid(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()

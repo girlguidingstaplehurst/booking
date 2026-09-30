@@ -53,6 +53,9 @@ func (d *testDatabase) UpdateRate(context.Context, string, UpdateRateBody) (Rate
 func (d *testDatabase) ListEvents(context.Context, time.Time, time.Time) ([]ListEvent, error) {
 	return nil, nil
 }
+func (d *testDatabase) ListWhatsOn(context.Context, time.Time, time.Time) ([]PublicScheduleItem, error) {
+	return nil, nil
+}
 func (d *testDatabase) ListEventsForContact(context.Context, string, time.Time, time.Time) ([]ListEvent, error) {
 	return nil, nil
 }

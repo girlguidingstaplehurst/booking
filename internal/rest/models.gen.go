@@ -85,6 +85,24 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// Defines values for PublicScheduleItemType.
+const (
+	PublicScheduleItemTypeEvent      PublicScheduleItemType = "event"
+	PublicScheduleItemTypeEventGroup PublicScheduleItemType = "event_group"
+)
+
+// Valid indicates whether the value is a known member of the PublicScheduleItemType enum.
+func (e PublicScheduleItemType) Valid() bool {
+	switch e {
+	case PublicScheduleItemTypeEvent:
+		return true
+	case PublicScheduleItemTypeEventGroup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RatePricingMode.
 const (
 	FixedSession RatePricingMode = "fixedSession"
@@ -416,6 +434,17 @@ type PerSessionTier struct {
 	Price float32 `json:"price"`
 }
 
+// PublicScheduleItem defines model for PublicScheduleItem.
+type PublicScheduleItem struct {
+	Events []ListEvent            `json:"events"`
+	Id     string                 `json:"id"`
+	Name   string                 `json:"name"`
+	Type   PublicScheduleItemType `json:"type"`
+}
+
+// PublicScheduleItemType defines model for PublicScheduleItem.Type.
+type PublicScheduleItemType string
+
 // Rate defines model for Rate.
 type Rate struct {
 	DailyRate           *float32                `json:"dailyRate,omitempty"`
@@ -498,6 +527,11 @@ type UpdateRateBody struct {
 	SessionPrice        *float32          `json:"sessionPrice"`
 }
 
+// WhatsOnList defines model for WhatsOnList.
+type WhatsOnList struct {
+	Items []PublicScheduleItem `json:"items"`
+}
+
 // AdminSearchEventGroupsParams defines parameters for AdminSearchEventGroups.
 type AdminSearchEventGroupsParams struct {
 	// Title Case-insensitive partial event-group title to search for
@@ -537,6 +571,15 @@ type GetApiV1EventsParams struct {
 	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
 
 	// To The date to obtain events to
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+}
+
+// GetWhatsOnParams defines parameters for GetWhatsOn.
+type GetWhatsOnParams struct {
+	// From The date to obtain public events from
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To The date to obtain public events to
 	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
 }
 
