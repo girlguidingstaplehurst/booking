@@ -57,10 +57,12 @@ func TestIntegration_CreateEventGroupPersistsInstances(t *testing.T) {
 	require.Equal(t, http.StatusOK, response.StatusCode(), string(response.Body))
 
 	rows, err := db.Query(ctx, `
-		select event_group_id, keyholder_in_id, keyholder_out_id
-		from booking_events
-		where event_name = $1
-		order by event_start`, groupName)
+		select e.event_group_id, e.keyholder_in_id, e.keyholder_out_id,
+		       e.created_at is not null, g.created_at is not null, e.created_at = g.created_at
+		from booking_events e
+		join booking_event_groups g on g.id = e.event_group_id
+		where e.event_name = $1
+		order by e.event_start`, groupName)
 	require.NoError(t, err)
 	t.Cleanup(rows.Close)
 
@@ -68,14 +70,51 @@ func TestIntegration_CreateEventGroupPersistsInstances(t *testing.T) {
 	for rows.Next() {
 		var groupID *string
 		var keyholderIn, keyholderOut uuid.UUID
-		require.NoError(t, rows.Scan(&groupID, &keyholderIn, &keyholderOut))
+		var eventHasTimestamp, groupHasTimestamp, timestampsMatch bool
+		require.NoError(t, rows.Scan(&groupID, &keyholderIn, &keyholderOut, &eventHasTimestamp, &groupHasTimestamp, &timestampsMatch))
 		require.NotNil(t, groupID)
 		require.Equal(t, keyholderID, keyholderIn)
 		require.Equal(t, keyholderID, keyholderOut)
+		require.True(t, eventHasTimestamp)
+		require.True(t, groupHasTimestamp)
+		require.True(t, timestampsMatch, "group and session creation times should share the transaction timestamp")
 		persisted++
 	}
 	require.NoError(t, rows.Err())
 	require.Equal(t, 2, persisted)
+
+	adminEvents, err := client.GetApiV1AdminEventsWithResponse(ctx, nil, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, adminEvents.StatusCode(), string(adminEvents.Body))
+	require.NotNil(t, adminEvents.JSON200)
+	var listedGroup *AdminEventGroup
+	for index := range adminEvents.JSON200.EventGroups {
+		if adminEvents.JSON200.EventGroups[index].Name == body.Name {
+			listedGroup = &adminEvents.JSON200.EventGroups[index]
+			break
+		}
+	}
+	require.NotNil(t, listedGroup, "created group should appear in authenticated admin data")
+	require.NotNil(t, listedGroup.CreatedAt, "admin group data should include the creation time")
+	_, err = time.Parse(time.RFC3339Nano, *listedGroup.CreatedAt)
+	require.NoError(t, err)
+
+	var groupID string
+	require.NoError(t, db.QueryRow(ctx, `select id from booking_event_groups where event_name = $1`, body.Name).Scan(&groupID))
+	_, err = db.Exec(ctx, `update booking_event_groups set created_at = null where id = $1`, groupID)
+	require.NoError(t, err)
+	adminEvents, err = client.GetApiV1AdminEventsWithResponse(ctx, nil, auth)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, adminEvents.StatusCode(), string(adminEvents.Body))
+	listedGroup = nil
+	for index := range adminEvents.JSON200.EventGroups {
+		if adminEvents.JSON200.EventGroups[index].Name == body.Name {
+			listedGroup = &adminEvents.JSON200.EventGroups[index]
+			break
+		}
+	}
+	require.NotNil(t, listedGroup)
+	require.Nil(t, listedGroup.CreatedAt, "unknown historical group creation time should serialize as null")
 }
 
 func TestIntegration_CreateEventGroupAllowsNonOverlappingNearbyInstance(t *testing.T) {
@@ -163,6 +202,9 @@ func TestIntegration_SearchAndDuplicateEventGroup(t *testing.T) {
 	require.Equal(t, http.StatusOK, search.StatusCode(), string(search.Body))
 	require.NotNil(t, search.JSON200)
 	require.Len(t, *search.JSON200, 1)
+	require.NotNil(t, (*search.JSON200)[0].CreatedAt, "group search data should include the creation time")
+	_, err = time.Parse(time.RFC3339Nano, *(*search.JSON200)[0].CreatedAt)
+	require.NoError(t, err)
 
 	duplicate, err := client.AdminDuplicateEventGroupWithResponse(ctx, AdminDuplicateEventGroup{
 		EventGroupId: (*search.JSON200)[0].Id,
@@ -176,10 +218,33 @@ func TestIntegration_SearchAndDuplicateEventGroup(t *testing.T) {
 	var groups int
 	require.NoError(t, db.QueryRow(ctx, `select count(*) from booking_event_groups where event_name = $1`, sourceName).Scan(&groups))
 	require.Equal(t, 2, groups)
+	var sourceCreatedAt, duplicateCreatedAt time.Time
+	groupRows, err := db.Query(ctx, `select created_at from booking_event_groups where event_name = $1 order by created_at`, sourceName)
+	require.NoError(t, err)
+	var groupCreatedAts []time.Time
+	for groupRows.Next() {
+		var createdAt time.Time
+		require.NoError(t, groupRows.Scan(&createdAt))
+		groupCreatedAts = append(groupCreatedAts, createdAt)
+	}
+	require.NoError(t, groupRows.Err())
+	groupRows.Close()
+	require.Len(t, groupCreatedAts, 2)
+	sourceCreatedAt, duplicateCreatedAt = groupCreatedAts[0], groupCreatedAts[1]
+	require.True(t, duplicateCreatedAt.After(sourceCreatedAt), "duplicate group should receive a fresh creation timestamp")
+
+	var duplicateSessions int
+	require.NoError(t, db.QueryRow(ctx, `
+		select count(*) from booking_events e
+		join booking_event_groups g on g.id = e.event_group_id
+		where g.event_name = $1 and g.created_at = $2 and e.created_at = g.created_at`, sourceName, duplicateCreatedAt).Scan(&duplicateSessions))
+	require.Equal(t, 1, duplicateSessions, "duplicated session should receive the duplicate group's fresh timestamp")
+
 	var sourceEvents, duplicateEvents int
 	require.NoError(t, db.QueryRow(ctx, `select count(*) from booking_events where event_name = $1`, sourceName).Scan(&sourceEvents))
 	require.Equal(t, 2, sourceEvents)
-	_ = duplicateEvents
+	require.NoError(t, db.QueryRow(ctx, `select count(*) from booking_events e join booking_event_groups g on g.id = e.event_group_id where g.event_name = $1 and g.created_at = $2`, sourceName, duplicateCreatedAt).Scan(&duplicateEvents))
+	require.Equal(t, 1, duplicateEvents)
 }
 
 func TestIntegration_DuplicateEventGroupRejectsOverlapWithoutPartialDestination(t *testing.T) {

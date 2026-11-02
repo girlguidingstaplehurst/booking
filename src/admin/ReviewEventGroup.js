@@ -53,6 +53,9 @@ export function ReviewEventGroup() {
     .filter((event) => event.eventGroupID === group.id)
     .filter((event) => isEventOnOrAfterToday(event))
     .sort((a, b) => dayjs(a.from).valueOf() - dayjs(b.from).valueOf());
+  const createdAtSummary = group.createdAt
+    ? dayjs(group.createdAt).format("ddd D MMM YYYY [at] HH:mm")
+    : "Unknown";
 
   return (
     <Container maxW="4xl">
@@ -64,6 +67,11 @@ export function ReviewEventGroup() {
               <Heading size="m">{group.name}</Heading>
               <Text color="brand.300">
                 {dayjs(group.from).format("ddd MMM D")} - {dayjs(group.to).format("ddd MMM D")}
+              </Text>
+              <Text>
+                Created: {group.createdAt ? (
+                  <Text as="time" dateTime={group.createdAt} display="inline">{createdAtSummary}</Text>
+                ) : createdAtSummary}
               </Text>
             </Box>
             <Box>

@@ -213,3 +213,22 @@ describe("ReviewEvent keyholders", () => {
     expect(AdminPoster).not.toHaveBeenCalled();
   });
 });
+
+describe("ReviewEvent creation time", () => {
+  test("shows the recorded creation time", () => {
+    renderReviewEvent({ createdAt: "2026-11-02T12:00:00Z" });
+
+    expect(screen.getByRole("heading", { name: "Created" })).toBeInTheDocument();
+    expect(screen.getByText("Mon 2 Nov 2026 at 12:00")).toHaveAttribute(
+      "datetime",
+      "2026-11-02T12:00:00Z",
+    );
+  });
+
+  test("shows Unknown when the creation time is unavailable", () => {
+    renderReviewEvent({ createdAt: null });
+
+    expect(screen.getByRole("heading", { name: "Created" })).toBeInTheDocument();
+    expect(screen.getByText("Unknown")).toBeInTheDocument();
+  });
+});

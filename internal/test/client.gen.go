@@ -156,8 +156,9 @@ type AdminDuplicateEventGroup struct {
 
 // AdminEventGroup defines model for AdminEventGroup.
 type AdminEventGroup struct {
-	From string `json:"from"`
-	Id   string `json:"id"`
+	CreatedAt *string `json:"createdAt"`
+	From      string  `json:"from"`
+	Id        string  `json:"id"`
 
 	// InvoiceableSessionCount Number of sessions that can still be included in a new hourly group invoice.
 	InvoiceableSessionCount int           `json:"invoiceableSessionCount"`
@@ -283,6 +284,7 @@ type ErrorResponse struct {
 type Event struct {
 	Assignee     *openapi_types.Email `json:"assignee,omitempty"`
 	Contact      string               `json:"contact"`
+	CreatedAt    *string              `json:"createdAt"`
 	Details      string               `json:"details"`
 	Email        openapi_types.Email  `json:"email"`
 	EventGroupID *string              `json:"eventGroupID,omitempty"`

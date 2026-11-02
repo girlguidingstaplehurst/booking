@@ -163,6 +163,9 @@ export function ReviewEvent() {
   const [noteError, setNoteError] = React.useState("");
   const [savingNote, setSavingNote] = React.useState(false);
   const eventDateSummary = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
+  const createdAtSummary = event.createdAt
+    ? dayjs(event.createdAt).format("ddd D MMM YYYY [at] HH:mm")
+    : "Unknown";
   const notes = Array.isArray(event.notes)
     ? [...event.notes].sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
     : [];
@@ -292,6 +295,14 @@ export function ReviewEvent() {
                 </Box>
                 <Spacer />
               </Flex>
+              <Box>
+                <Heading size="s">Created</Heading>
+                {event.createdAt ? (
+                  <Text as="time" dateTime={event.createdAt}>{createdAtSummary}</Text>
+                ) : (
+                  <Text>{createdAtSummary}</Text>
+                )}
+              </Box>
               <Box>
                 <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
                   <Box>

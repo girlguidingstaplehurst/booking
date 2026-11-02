@@ -13,6 +13,7 @@ import (
 	"github.com/girlguidingstaplehurst/booking/internal/rest"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/thanhpk/randstr"
@@ -326,7 +327,7 @@ func (db *Database) ListEventsForContact(ctx context.Context, contactID string, 
 
 func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (rest.AdminEventList, error) {
 	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $3), to_char(e.event_end, $3), e.event_name, e.visible, e.status, contact.name, contact.email,
-		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.event_group_id,
+		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.event_group_id, e.created_at,
 		coalesce(json_agg(json_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::json)
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email 
@@ -348,8 +349,13 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 		var invoiceJSON []byte
 		var keyholderInID, keyholderOutID *openapi_types.UUID
 		var keyholderInName, keyholderOutName *string
-		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.EventGroupID, &invoiceJSON); err != nil {
+		var createdAt pgtype.Timestamptz
+		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.EventGroupID, &createdAt, &invoiceJSON); err != nil {
 			return event, err
+		}
+		if createdAt.Valid {
+			formattedCreatedAt := createdAt.Time.UTC().Format(time.RFC3339Nano)
+			event.CreatedAt = &formattedCreatedAt
 		}
 		if keyholderInID != nil {
 			event.KeyholderIn = &rest.KeyholderAssignment{Id: *keyholderInID, Name: *keyholderInName}
@@ -369,7 +375,7 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 		return rest.AdminEventList{}, err
 	}
 
-	groupRows, err := db.pool.Query(ctx, `select g.id, g.event_name,
+	groupRows, err := db.pool.Query(ctx, `select g.id, g.event_name, g.created_at,
 		to_char(min(e.event_start), $3), to_char(max(e.event_end), $3),
 		coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb),
 		case when exists (select 1 from booking_invoices legacy where legacy.event_group_id = g.id and not exists (select 1 from booking_invoice_events bie where bie.invoice_id = legacy.id)) then 0
@@ -388,8 +394,13 @@ func (db *Database) AdminListEvents(ctx context.Context, from, to time.Time) (re
 	eventGroups, err := pgx.CollectRows(groupRows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
 		var group rest.AdminEventGroup
 		var invoiceJSON []byte
-		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
+		var createdAt pgtype.Timestamptz
+		if err := row.Scan(&group.Id, &group.Name, &createdAt, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
 			return group, err
+		}
+		if createdAt.Valid {
+			formattedCreatedAt := createdAt.Time.UTC().Format(time.RFC3339Nano)
+			group.CreatedAt = &formattedCreatedAt
 		}
 		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {
 			return group, err
@@ -415,7 +426,7 @@ func (db *Database) GetInvoiceableEventsForContact(ctx context.Context, contact 
 	}
 
 	rows, err := db.pool.Query(ctx, `select e.id, to_char(e.event_start, $2), to_char(e.event_end, $2), e.event_name,
-		e.details, e.visible, e.status, e.rate_id, c.name, c.email
+		e.details, e.visible, e.status, e.rate_id, c.name, c.email, e.created_at
 		from booking_events e
 		join booking_contacts c on c.email = e.email
 		where e.email = $1
@@ -429,9 +440,14 @@ func (db *Database) GetInvoiceableEventsForContact(ctx context.Context, contact 
 
 	result.Events, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.Event, error) {
 		var event rest.Event
+		var createdAt pgtype.Timestamptz
 		if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Details, &event.Visible,
-			&event.Status, &event.RateID, &event.Contact, &event.Email); err != nil {
+			&event.Status, &event.RateID, &event.Contact, &event.Email, &createdAt); err != nil {
 			return event, err
+		}
+		if createdAt.Valid {
+			formattedCreatedAt := createdAt.Time.UTC().Format(time.RFC3339Nano)
+			event.CreatedAt = &formattedCreatedAt
 		}
 		event.Invoices = &[]rest.InvoiceRef{}
 		return event, nil
@@ -445,7 +461,7 @@ func (db *Database) GetInvoiceableEventsForContact(ctx context.Context, contact 
 
 func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error) {
 	row := db.pool.QueryRow(ctx, `select e.id, to_char(e.event_start, $2), to_char(e.event_end, $2), e.event_name, e.visible, e.status, contact.name, contact.email,
-		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.rate_id, e.details
+		 e.assignee, kin.id, kin.name, kout.id, kout.name, e.rate_id, e.details, e.created_at
 		from booking_events e
 		JOIN booking_contacts contact ON e.email = contact.email
 		left join booking_keyholders kin on kin.id = e.keyholder_in_id
@@ -455,8 +471,13 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 	var event rest.Event
 	var keyholderInID, keyholderOutID *openapi_types.UUID
 	var keyholderInName, keyholderOutName *string
-	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.RateID, &event.Details); err != nil {
+	var createdAt pgtype.Timestamptz
+	if err := row.Scan(&event.Id, &event.From, &event.To, &event.Name, &event.Visible, &event.Status, &event.Contact, &event.Email, &event.Assignee, &keyholderInID, &keyholderInName, &keyholderOutID, &keyholderOutName, &event.RateID, &event.Details, &createdAt); err != nil {
 		return event, err
+	}
+	if createdAt.Valid {
+		formattedCreatedAt := createdAt.Time.UTC().Format(time.RFC3339Nano)
+		event.CreatedAt = &formattedCreatedAt
 	}
 	if keyholderInID != nil {
 		event.KeyholderIn = &rest.KeyholderAssignment{Id: *keyholderInID, Name: *keyholderInName}
@@ -1114,7 +1135,7 @@ func (db *Database) AddEventGroup(ctx context.Context, request rest.AdminAddEven
 
 func (db *Database) SearchEventGroups(ctx context.Context, title string) ([]rest.AdminEventGroup, error) {
 	rows, err := db.pool.Query(ctx, `
-		select g.id, g.event_name,
+		select g.id, g.event_name, g.created_at,
 		       to_char(min(e.event_start), $2),
 		       to_char(max(e.event_end), $2),
 		       coalesce(jsonb_agg(distinct jsonb_build_object('id', bi.id, 'reference', bi.reference, 'status', bi.status, 'sent', bi.sent, 'paid', bi.paid)) filter (where bi.id is not null), '[]'::jsonb),
@@ -1135,8 +1156,13 @@ func (db *Database) SearchEventGroups(ctx context.Context, title string) ([]rest
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.AdminEventGroup, error) {
 		var group rest.AdminEventGroup
 		var invoiceJSON []byte
-		if err := row.Scan(&group.Id, &group.Name, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
+		var createdAt pgtype.Timestamptz
+		if err := row.Scan(&group.Id, &group.Name, &createdAt, &group.From, &group.To, &invoiceJSON, &group.InvoiceableSessionCount); err != nil {
 			return group, err
+		}
+		if createdAt.Valid {
+			formattedCreatedAt := createdAt.Time.UTC().Format(time.RFC3339Nano)
+			group.CreatedAt = &formattedCreatedAt
 		}
 		if err := json.Unmarshal(invoiceJSON, &group.Invoices); err != nil {
 			return group, err

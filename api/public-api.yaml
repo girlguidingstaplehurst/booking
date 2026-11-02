@@ -1257,6 +1257,7 @@ components:
         - name
         - from
         - to
+        - createdAt
         - invoiceableSessionCount
       properties:
         id:
@@ -1269,6 +1270,10 @@ components:
         to:
           type: string
           format: datetime
+        createdAt:
+          type: string
+          format: datetime
+          nullable: true
         invoices:
           type: array
           items:
@@ -1285,6 +1290,7 @@ components:
         - details
         - from
         - to
+        - createdAt
         - status
         - visible
         - contact
@@ -1303,6 +1309,10 @@ components:
         to:
           type: string
           format: datetime
+        createdAt:
+          type: string
+          format: datetime
+          nullable: true
         status:
           $ref: '#/components/schemas/EventStatus'
         visible:

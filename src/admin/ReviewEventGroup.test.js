@@ -31,6 +31,7 @@ describe("ReviewEventGroup", () => {
         name: "Summer Sessions",
         from: today.toISOString(),
         to: today.add(7, "day").toISOString(),
+        createdAt: "2026-11-02T12:00:00Z",
         invoices: [{ id: "invoice-1", reference: "INV-001", status: "raised" }],
       }],
       events: [
@@ -50,6 +51,10 @@ describe("ReviewEventGroup", () => {
     });
 
     expect(screen.getByRole("heading", { name: 'Review "Summer Sessions"' })).toBeInTheDocument();
+    expect(screen.getByText("Mon 2 Nov 2026 at 12:00")).toHaveAttribute(
+      "datetime",
+      "2026-11-02T12:00:00Z",
+    );
     expect(screen.getByText("INV-001 - raised")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create New Invoice" })).toHaveAttribute(
       "href",
@@ -66,5 +71,21 @@ describe("ReviewEventGroup", () => {
     renderGroup({ events: [], eventGroups: [] }, "missing-group");
 
     expect(screen.getByText("Event group not found.")).toBeInTheDocument();
+  });
+
+  test("shows Unknown when the group's creation time is unavailable", () => {
+    const today = dayjs().startOf("day");
+    renderGroup({
+      eventGroups: [{
+        id: "group-1",
+        name: "Historical Sessions",
+        from: today.toISOString(),
+        to: today.add(7, "day").toISOString(),
+        invoices: [],
+      }],
+      events: [],
+    });
+
+    expect(screen.getByText("Created: Unknown")).toBeInTheDocument();
   });
 });

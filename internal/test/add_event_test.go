@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -115,4 +116,20 @@ func TestIntegration_CreateEvent(t *testing.T) {
 			}
 		})
 	}
+
+	db, err := pgx.Connect(ctx, "postgresql://postgres:password@localhost:5432/postgres?sslmode=disable")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close(ctx) })
+	var created bool
+	require.NoError(t, db.QueryRow(ctx, `select created_at is not null from booking_events where event_name = $1`, eventName).Scan(&created))
+	assert.True(t, created, "public booking should receive a database-assigned creation timestamp")
+
+	publicEvents, err := cli.GetApiV1EventsWithResponse(ctx, nil)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, publicEvents.StatusCode(), string(publicEvents.Body))
+	assert.NotContains(t, string(publicEvents.Body), "createdAt", "public booking availability must not expose creation timestamps")
+	whatsOn, err := cli.GetWhatsOnWithResponse(ctx, nil)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, whatsOn.StatusCode(), string(whatsOn.Body))
+	assert.NotContains(t, string(whatsOn.Body), "createdAt", "public schedule must not expose creation timestamps")
 }
