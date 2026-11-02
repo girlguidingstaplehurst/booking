@@ -23,6 +23,11 @@ const preparation = {
   ],
 };
 
+const zeroCostPreparation = {
+  ...preparation,
+  events: preparation.events.map((event) => ({ ...event, rate: 0 })),
+};
+
 const hourlyGroupPreparation = {
   mode: "group",
   contact: "contact@example.org",
@@ -36,11 +41,11 @@ const hourlyGroupPreparation = {
   rate: { pricingMode: "hourly", hourlyRate: 20, perSession: [] },
 };
 
-function renderCard() {
+function renderCard(cardPreparation = preparation) {
   const router = createMemoryRouter([
     {
       path: "/admin/create-invoice",
-      element: <EditableInvoiceCard preparation={preparation} />,
+      element: <EditableInvoiceCard preparation={cardPreparation} />,
     },
     { path: "/admin", element: <div>Dashboard</div> },
   ], { initialEntries: ["/admin/create-invoice"] });
@@ -55,11 +60,11 @@ function renderCard() {
   };
 }
 
-function renderGroupCard() {
+function renderGroupCard(cardPreparation = hourlyGroupPreparation) {
   const router = createMemoryRouter([
     {
       path: "/admin/create-invoice",
-      element: <EditableInvoiceCard preparation={hourlyGroupPreparation} />,
+      element: <EditableInvoiceCard preparation={cardPreparation} />,
     },
     { path: "/admin", element: <div>Dashboard</div> },
   ], { initialEntries: ["/admin/create-invoice"] });
@@ -81,7 +86,39 @@ test("shows event and contact context with deposit disabled", () => {
   expect(screen.getByText("Contact Person")).toBeInTheDocument();
   expect(screen.getByRole("checkbox")).not.toBeChecked();
   expect(screen.queryByDisplayValue("Refundable Cleaning and Damage deposit")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Send Invoice" })).toHaveStyle({ width: "100%" });
+  expect(screen.getByRole("button", { name: "Send Invoice" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Create & Mark Paid (No Email)" })).not.toBeInTheDocument();
+});
+
+test("shows both send and distinct no-email actions for a zero-total individual invoice", () => {
+  renderCard(zeroCostPreparation);
+
+  expect(screen.getByRole("button", { name: "Send Invoice" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" })).toBeInTheDocument();
+});
+
+test("updates no-email action availability as the live total changes", async () => {
+  renderCard(zeroCostPreparation);
+
+  expect(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" })).toBeInTheDocument();
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox"));
+  });
+  expect(screen.queryByRole("button", { name: "Create & Mark Paid (No Email)" })).not.toBeInTheDocument();
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("checkbox"));
+  });
+  expect(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" })).toBeInTheDocument();
+});
+
+test("shows the no-email action when an edited line reaches zero", () => {
+  renderCard();
+
+  fireEvent.change(screen.getByDisplayValue("£40.00"), { target: { value: "£0.00" } });
+
+  expect(screen.getByText("£0.00")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" })).toBeInTheDocument();
 });
 
 test("adds one deposit line when enabled", async () => {
@@ -135,6 +172,64 @@ test("stays on the form after a failed send", async () => {
   });
 });
 
+test("creates and marks a zero-total individual invoice paid without email", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  const { router } = renderCard(zeroCostPreparation);
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  await waitFor(() => expect(router.state.location.pathname).toBe("/admin"));
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/v1/admin/invoices/zero-cost",
+    expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ Authorization: "Bearer token" }),
+    }),
+  );
+  expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toMatchObject({
+    contact: "contact@example.org",
+    events: ["event-1"],
+    items: [expect.objectContaining({ cost: 0 })],
+  });
+});
+
+test("stays on invoice preparation when zero-cost invoice creation fails", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+  const { router } = renderCard(zeroCostPreparation);
+
+  fireEvent.click(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" }));
+
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  expect(router.state.location.pathname).toBe("/admin/create-invoice");
+});
+
+test("stays on invoice preparation when zero-cost invoice creation has no response", async () => {
+  global.fetch = jest.fn(() => Promise.reject(new Error("network unavailable")));
+  const { router } = renderCard(zeroCostPreparation);
+
+  fireEvent.click(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" }));
+
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Create & Mark Paid (No Email)" })).not.toBeDisabled());
+  expect(router.state.location.pathname).toBe("/admin/create-invoice");
+});
+
+test("sending a free invoice still uses the email invoice operation", async () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  const { router } = renderCard(zeroCostPreparation);
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Send Invoice" }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  await waitFor(() => expect(router.state.location.pathname).toBe("/admin"));
+  expect(global.fetch.mock.calls[0][0]).toBe("/api/v1/admin/send-invoice");
+});
+
 test("hourly group invoices can select a subset of sessions", async () => {
   global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
   renderGroupCard();
@@ -159,4 +254,16 @@ test("hourly group invoices cannot be submitted with no selected sessions", () =
   const sessionCheckboxes = screen.getAllByRole("checkbox");
   fireEvent.click(sessionCheckboxes[0]);
   expect(screen.getByRole("button", { name: "Send Invoice" })).toBeDisabled();
+});
+
+test("does not offer zero-cost paid creation for a zero-total event-group invoice", () => {
+  const zeroCostGroupPreparation = {
+    ...hourlyGroupPreparation,
+    events: hourlyGroupPreparation.events.map((event) => ({ ...event, rate: 0 })),
+    rate: { pricingMode: "hourly", hourlyRate: 0, perSession: [] },
+  };
+  renderGroupCard(zeroCostGroupPreparation);
+
+  expect(screen.getByRole("button", { name: "Send Invoice" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Create & Mark Paid (No Email)" })).not.toBeInTheDocument();
 });

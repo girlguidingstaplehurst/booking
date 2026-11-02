@@ -639,6 +639,9 @@ type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
 
+// AdminCreateZeroCostInvoiceJSONRequestBody defines body for AdminCreateZeroCostInvoice for application/json ContentType.
+type AdminCreateZeroCostInvoiceJSONRequestBody = SendInvoiceBody
+
 // AdminCreateKeyholderJSONRequestBody defines body for AdminCreateKeyholder for application/json ContentType.
 type AdminCreateKeyholderJSONRequestBody = CreateKeyholderBody
 
@@ -890,6 +893,14 @@ type ClientInterface interface {
 
 	// AdminGetInvoicesForEvents performs a GET /api/v1/admin/invoices/for-events (the `AdminGetInvoicesForEvents` operationId) request.
 	AdminGetInvoicesForEvents(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateZeroCostInvoiceWithBody performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request,
+	// with any type of body and a specified content type.
+	AdminCreateZeroCostInvoiceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateZeroCostInvoice performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request.
+	// Takes a body of the `application/json` content type.
+	AdminCreateZeroCostInvoice(ctx context.Context, body AdminCreateZeroCostInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminListKeyholders List keyholders
 	//
@@ -1404,6 +1415,34 @@ func (c *Client) AdminMarkInvoicePaid(ctx context.Context, invoiceID string, req
 // AdminGetInvoicesForEvents performs a GET /api/v1/admin/invoices/for-events (the `AdminGetInvoicesForEvents` operationId) request.
 func (c *Client) AdminGetInvoicesForEvents(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminGetInvoicesForEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateZeroCostInvoiceWithBody performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) AdminCreateZeroCostInvoiceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateZeroCostInvoiceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateZeroCostInvoice performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) AdminCreateZeroCostInvoice(ctx context.Context, body AdminCreateZeroCostInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateZeroCostInvoiceRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2503,6 +2542,46 @@ func NewAdminGetInvoicesForEventsRequest(server string, params *AdminGetInvoices
 	return req, nil
 }
 
+// NewAdminCreateZeroCostInvoiceRequest calls the generic AdminCreateZeroCostInvoice builder with application/json body
+func NewAdminCreateZeroCostInvoiceRequest(server string, body AdminCreateZeroCostInvoiceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminCreateZeroCostInvoiceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAdminCreateZeroCostInvoiceRequestWithBody constructs an http.Request for the AdminCreateZeroCostInvoice method, with any body, and a specified content type
+func NewAdminCreateZeroCostInvoiceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/invoices/zero-cost")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAdminListKeyholdersRequest constructs an http.Request for the AdminListKeyholders method
 func NewAdminListKeyholdersRequest(server string) (*http.Request, error) {
 	var err error
@@ -3162,6 +3241,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	AdminGetInvoicesForEventsWithResponse(ctx context.Context, params *AdminGetInvoicesForEventsParams, reqEditors ...RequestEditorFn) (*AdminGetInvoicesForEventsResponse, error)
+
+	// AdminCreateZeroCostInvoiceWithBodyWithResponse performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AdminCreateZeroCostInvoiceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateZeroCostInvoiceResponse, error)
+
+	// AdminCreateZeroCostInvoiceWithResponse performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	AdminCreateZeroCostInvoiceWithResponse(ctx context.Context, body AdminCreateZeroCostInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateZeroCostInvoiceResponse, error)
 
 	// AdminListKeyholdersWithResponse List keyholders
 	//
@@ -4335,6 +4424,54 @@ func (r AdminGetInvoicesForEventsResponse) ContentType() string {
 	return ""
 }
 
+type AdminCreateZeroCostInvoiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AdminCreateZeroCostInvoiceResponse) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminCreateZeroCostInvoiceResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminCreateZeroCostInvoiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminCreateZeroCostInvoiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminCreateZeroCostInvoiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminCreateZeroCostInvoiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AdminListKeyholdersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5253,6 +5390,28 @@ func (c *ClientWithResponses) AdminGetInvoicesForEventsWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseAdminGetInvoicesForEventsResponse(rsp)
+}
+
+// AdminCreateZeroCostInvoiceWithBodyWithResponse performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminCreateZeroCostInvoiceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateZeroCostInvoiceResponse, error) {
+	rsp, err := c.AdminCreateZeroCostInvoiceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateZeroCostInvoiceResponse(rsp)
+}
+
+// AdminCreateZeroCostInvoiceWithResponse performs a POST /api/v1/admin/invoices/zero-cost (the `AdminCreateZeroCostInvoice` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdminCreateZeroCostInvoiceWithResponse(ctx context.Context, body AdminCreateZeroCostInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateZeroCostInvoiceResponse, error) {
+	rsp, err := c.AdminCreateZeroCostInvoice(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateZeroCostInvoiceResponse(rsp)
 }
 
 // AdminListKeyholdersWithResponse List keyholders
@@ -6236,6 +6395,42 @@ func ParseAdminGetInvoicesForEventsResponse(rsp *http.Response) (*AdminGetInvoic
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminCreateZeroCostInvoiceResponse parses an HTTP response from a AdminCreateZeroCostInvoiceWithResponse call
+func ParseAdminCreateZeroCostInvoiceResponse(rsp *http.Response) (*AdminCreateZeroCostInvoiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminCreateZeroCostInvoiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

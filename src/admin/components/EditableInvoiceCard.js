@@ -28,7 +28,7 @@ import { useFormik } from "formik";
 import { NumericFormat } from "react-number-format";
 import useAuth from "../useAuth";
 import RoundedButton from "../../components/RoundedButton";
-import { populateInvoiceItems } from "./invoiceCalculations";
+import { populateInvoiceItems, totalInvoiceCost } from "./invoiceCalculations";
 
 const priceFormat = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -47,20 +47,13 @@ export function EditableInvoiceCard({ preparation }) {
   const selectedEvents = (events) =>
     preparation.events.filter((event) => events.includes(event.id));
 
-  const formik = useFormik({
-    initialValues: {
-      contact: preparation.contact,
-      items: populateInvoiceItems(preparation),
-      ...(preparation.eventGroup ? { eventGroup: preparation.eventGroup } : {}),
-       events: preparation.events.map((event) => event.id),
-      cleaningDeposit: false,
-    }, // validationSchema: EventSchema,
-    onSubmit: async (values) => {
-      setSubmitting(true);
-      const invoice = { ...values };
-      delete invoice.cleaningDeposit;
+  const submitInvoice = async (values, path) => {
+    setSubmitting(true);
+    const invoice = { ...values };
+    delete invoice.cleaningDeposit;
 
-      const resp = await fetch("/api/v1/admin/send-invoice", {
+    try {
+      const resp = await fetch(path, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -69,12 +62,26 @@ export function EditableInvoiceCard({ preparation }) {
         body: JSON.stringify(invoice),
       });
 
-      setSubmitting(false);
       if (resp?.ok) {
         navigate("/admin");
       }
       return resp;
-    },
+    } catch {
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formik = useFormik({
+    initialValues: {
+      contact: preparation.contact,
+      items: populateInvoiceItems(preparation),
+      ...(preparation.eventGroup ? { eventGroup: preparation.eventGroup } : {}),
+       events: preparation.events.map((event) => event.id),
+      cleaningDeposit: false,
+    }, // validationSchema: EventSchema,
+    onSubmit: (values) => submitInvoice(values, "/api/v1/admin/send-invoice"),
   });
 
   const updateSelectedEvents = (events) => {
@@ -86,10 +93,7 @@ export function EditableInvoiceCard({ preparation }) {
     });
   };
 
-  const totalCost = formik.values.items.reduce(
-    (acc, item) => acc + item.cost,
-    0,
-  );
+  const totalCost = totalInvoiceCost(formik.values.items);
 
   return (
     <form onSubmit={formik.handleSubmit}>
@@ -223,16 +227,33 @@ export function EditableInvoiceCard({ preparation }) {
           )}
         </CardBody>
         <CardFooter>
-          <ButtonGroup width="100%">
+          <ButtonGroup
+            width="100%"
+            gap={2}
+            flexWrap="wrap"
+            flexDirection={{ base: "column", sm: "row" }}
+          >
             <RoundedButton
               colorScheme="green"
-              width="100%"
+              flex="1"
               isLoading={submitting}
-              isDisabled={isGroup && formik.values.events.length === 0}
+              isDisabled={submitting || (isGroup && formik.values.events.length === 0)}
               type="submit"
             >
               Send Invoice
             </RoundedButton>
+            {isIndividual && formik.values.events.length > 0 && totalCost === 0 && (
+              <RoundedButton
+                colorScheme="purple"
+                flex="1"
+                isLoading={submitting}
+                isDisabled={submitting}
+                onClick={() => submitInvoice(formik.values, "/api/v1/admin/invoices/zero-cost")}
+                type="button"
+              >
+                Create &amp; Mark Paid (No Email)
+              </RoundedButton>
+            )}
           </ButtonGroup>
         </CardFooter>
       </Card>

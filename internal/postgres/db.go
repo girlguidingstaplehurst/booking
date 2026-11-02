@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/shopspring/decimal"
 	"github.com/thanhpk/randstr"
 )
 
@@ -228,6 +229,78 @@ func (db *Database) AddInvoice(ctx context.Context, invoice *rest.SendInvoiceBod
 	})
 
 	return inv, err
+}
+
+func zeroCostInvoiceItems(invoice *rest.SendInvoiceBody) ([]decimal.Decimal, error) {
+	if invoice == nil || invoice.EventGroup != nil || invoice.Events == nil || len(*invoice.Events) == 0 {
+		return nil, consts.ErrInvalidZeroCostInvoice
+	}
+
+	seenEvents := make(map[string]struct{}, len(*invoice.Events))
+	for _, eventID := range *invoice.Events {
+		if strings.TrimSpace(eventID) == "" {
+			return nil, consts.ErrInvalidZeroCostInvoice
+		}
+		if _, exists := seenEvents[eventID]; exists {
+			return nil, consts.ErrInvalidZeroCostInvoice
+		}
+		seenEvents[eventID] = struct{}{}
+	}
+
+	items := make([]decimal.Decimal, len(invoice.Items))
+	total := decimal.Zero
+	for index, item := range invoice.Items {
+		cost := decimal.NewFromFloat32(item.Cost).Round(2)
+		items[index] = cost
+		total = total.Add(cost)
+	}
+	if !total.IsZero() {
+		return nil, consts.ErrInvalidZeroCostInvoice
+	}
+	return items, nil
+}
+
+func (db *Database) AddZeroCostInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) error {
+	items, err := zeroCostInvoiceItems(invoice)
+	if err != nil {
+		return err
+	}
+
+	id := uuid.New().String()
+	reference := randstr.String(6, consts.ReferenceLetters)
+	paidAt := time.Now()
+	return pgx.BeginFunc(ctx, db.pool, func(tx pgx.Tx) error {
+		for _, eventID := range *invoice.Events {
+			var individual bool
+			if err := tx.QueryRow(ctx, `select event_group_id is null from booking_events where id = $1`, eventID).Scan(&individual); err != nil {
+				return err
+			}
+			if !individual {
+				return consts.ErrInvalidZeroCostInvoice
+			}
+		}
+
+		if _, err := tx.Exec(ctx, `insert into booking_invoices (id, reference, contact, paid, status)
+			values ($1, $2, $3, $4, 'paid')`, id, reference, invoice.Contact, paidAt); err != nil {
+			return errors.Join(err, errors.New("failed to insert paid zero-cost invoice"))
+		}
+
+		for _, eventID := range *invoice.Events {
+			if _, err := tx.Exec(ctx, `insert into booking_invoice_events (invoice_id, event_id) values ($1, $2)`, id, eventID); err != nil {
+				return errors.Join(err, errors.New("failed to associate paid zero-cost invoice with event"))
+			}
+		}
+
+		for index, item := range invoice.Items {
+			itemID := uuid.New().String()
+			if _, err := tx.Exec(ctx, `insert into booking_invoice_items (id, invoice_id, description, cost)
+				values ($1, $2, $3, $4::numeric::money)`, itemID, id, item.Description, items[index].StringFixed(2)); err != nil {
+				return errors.Join(err, errors.New("failed to insert paid zero-cost invoice item"))
+			}
+		}
+
+		return nil
+	})
 }
 
 func (db *Database) ListEvents(ctx context.Context, from, to time.Time) ([]rest.ListEvent, error) {

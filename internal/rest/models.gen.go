@@ -629,6 +629,9 @@ type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 // AdminEventSetRateJSONRequestBody defines body for AdminEventSetRate for application/json ContentType.
 type AdminEventSetRateJSONRequestBody = SetRateBody
 
+// AdminCreateZeroCostInvoiceJSONRequestBody defines body for AdminCreateZeroCostInvoice for application/json ContentType.
+type AdminCreateZeroCostInvoiceJSONRequestBody = SendInvoiceBody
+
 // AdminCreateKeyholderJSONRequestBody defines body for AdminCreateKeyholder for application/json ContentType.
 type AdminCreateKeyholderJSONRequestBody = CreateKeyholderBody
 

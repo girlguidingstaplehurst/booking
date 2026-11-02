@@ -1,4 +1,8 @@
-import { populateInvoiceItems } from "./invoiceCalculations";
+import {
+  invoiceCostInPence,
+  populateInvoiceItems,
+  totalInvoiceCost,
+} from "./invoiceCalculations";
 
 const events = [
   {
@@ -18,6 +22,15 @@ const events = [
     discountTable: {},
   },
 ];
+
+test("invoice totals round each line to pennies before summing", () => {
+  expect(invoiceCostInPence(1.005)).toBe(101);
+  expect(invoiceCostInPence(-1.005)).toBe(-101);
+  expect(invoiceCostInPence(0.004)).toBe(0);
+  expect(totalInvoiceCost([{ cost: 1.005 }, { cost: -1.005 }])).toBe(0);
+  expect(totalInvoiceCost([{ cost: 1.005 }, { cost: 0.004 }])).toBe(1.01);
+  expect(totalInvoiceCost([])).toBe(0);
+});
 
 test("individual invoices calculate event hire and one optional deposit", () => {
   const preparation = { mode: "individual", events };

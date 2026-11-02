@@ -42,7 +42,8 @@ func (d *testDatabase) DuplicateEventGroup(context.Context, AdminDuplicateEventG
 func (d *testDatabase) AddInvoice(context.Context, *SendInvoiceBody) (*Invoice, error) {
 	return nil, nil
 }
-func (d *testDatabase) GetEvent(context.Context, string) (Event, error) { return Event{}, nil }
+func (d *testDatabase) AddZeroCostInvoice(context.Context, *SendInvoiceBody) error { return nil }
+func (d *testDatabase) GetEvent(context.Context, string) (Event, error)            { return Event{}, nil }
 func (d *testDatabase) GetInvoiceEvents(context.Context, ...string) ([]DBInvoiceEvent, error) {
 	return nil, nil
 }

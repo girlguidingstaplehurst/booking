@@ -116,6 +116,20 @@ func (mr *MockDatabaseMockRecorder) AddInvoice(ctx, invoice any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddInvoice", reflect.TypeOf((*MockDatabase)(nil).AddInvoice), ctx, invoice)
 }
 
+// AddZeroCostInvoice mocks base method.
+func (m *MockDatabase) AddZeroCostInvoice(ctx context.Context, invoice *rest.SendInvoiceBody) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddZeroCostInvoice", ctx, invoice)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddZeroCostInvoice indicates an expected call of AddZeroCostInvoice.
+func (mr *MockDatabaseMockRecorder) AddZeroCostInvoice(ctx, invoice any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddZeroCostInvoice", reflect.TypeOf((*MockDatabase)(nil).AddZeroCostInvoice), ctx, invoice)
+}
+
 // AdminListEvents mocks base method.
 func (m *MockDatabase) AdminListEvents(ctx context.Context, from, to time.Time) (rest.AdminEventList, error) {
 	m.ctrl.T.Helper()

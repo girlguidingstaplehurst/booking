@@ -5,6 +5,21 @@ dayjs.extend(duration);
 
 export const CLEANING_DEPOSIT = 100;
 
+export function invoiceCostInPence(cost) {
+  const amount = Number(cost);
+  if (!Number.isFinite(amount) || amount === 0) {
+    return 0;
+  }
+
+  const scaled = Math.abs(amount) * 100;
+  const rounded = Math.round(scaled + Number.EPSILON * Math.max(1, scaled));
+  return Math.sign(amount) * rounded;
+}
+
+export function totalInvoiceCost(items = []) {
+  return items.reduce((total, item) => total + invoiceCostInPence(item.cost), 0) / 100;
+}
+
 export function discountForDuration(hours, discountTable = {}) {
   return Object.entries(discountTable).reduce((discount, [threshold, value]) => {
     const amount = typeof value === "object" ? value.value : value;

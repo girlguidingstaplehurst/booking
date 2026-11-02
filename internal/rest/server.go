@@ -32,6 +32,7 @@ type Database interface {
 	DuplicateEventGroup(ctx context.Context, event AdminDuplicateEventGroupRequestObject) error
 	AddEventNote(ctx context.Context, eventID, content, authorEmail string) (EventNote, error)
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
+	AddZeroCostInvoice(ctx context.Context, invoice *SendInvoiceBody) error
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids ...string) ([]DBInvoiceEvent, error)
 	GetInvoiceEventsForGroup(ctx context.Context, groupID string) ([]DBInvoiceEvent, error)
@@ -371,6 +372,18 @@ func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceR
 	}
 
 	return AdminSendInvoice200Response{}, nil
+}
+
+func (s *Server) AdminCreateZeroCostInvoice(ctx context.Context, request AdminCreateZeroCostInvoiceRequestObject) (AdminCreateZeroCostInvoiceResponseObject, error) {
+	err := s.db.AddZeroCostInvoice(ctx, request.Body)
+	switch {
+	case errors.Is(err, consts.ErrInvalidZeroCostInvoice):
+		return AdminCreateZeroCostInvoice400JSONResponse{ErrorMessage: err.Error()}, nil
+	case err != nil:
+		return AdminCreateZeroCostInvoice500JSONResponse{ErrorMessage: err.Error()}, nil
+	default:
+		return AdminCreateZeroCostInvoice200Response{}, nil
+	}
 }
 
 type DBInvoiceEvent struct {
