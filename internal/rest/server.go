@@ -30,6 +30,7 @@ type Database interface {
 	AddEvents(ctx context.Context, event AdminAddEventsRequestObject) error
 	AddEventGroup(ctx context.Context, event AdminAddEventGroupRequestObject) error
 	DuplicateEventGroup(ctx context.Context, event AdminDuplicateEventGroupRequestObject) error
+	AddEventNote(ctx context.Context, eventID, content, authorEmail string) (EventNote, error)
 	AddInvoice(ctx context.Context, invoice *SendInvoiceBody) (*Invoice, error)
 	GetEvent(ctx context.Context, id string) (Event, error)
 	GetInvoiceEvents(ctx context.Context, ids ...string) ([]DBInvoiceEvent, error)
@@ -302,6 +303,29 @@ func (s *Server) GetApiV1AdminEventsEventID(ctx context.Context, request GetApiV
 		}, nil
 	}
 	return GetApiV1AdminEventsEventID200JSONResponse(event), nil
+}
+
+func (s *Server) AdminCreateEventNote(ctx context.Context, request AdminCreateEventNoteRequestObject) (AdminCreateEventNoteResponseObject, error) {
+	if request.Body == nil {
+		return AdminCreateEventNote422JSONResponse{ErrorMessage: consts.ErrInvalidEventNoteContent.Error()}, nil
+	}
+
+	authorEmail, ok := UserEmailFromContext(ctx)
+	if !ok || strings.TrimSpace(authorEmail) == "" {
+		return AdminCreateEventNote401JSONResponse{ErrorMessage: "unauthorized"}, nil
+	}
+
+	note, err := s.db.AddEventNote(ctx, request.EventID, request.Body.Content, authorEmail)
+	switch {
+	case errors.Is(err, consts.ErrInvalidEventNoteContent):
+		return AdminCreateEventNote422JSONResponse{ErrorMessage: err.Error()}, nil
+	case errors.Is(err, pgx.ErrNoRows):
+		return AdminCreateEventNote404JSONResponse{ErrorMessage: "event not found"}, nil
+	case err != nil:
+		return AdminCreateEventNote500JSONResponse{ErrorMessage: err.Error()}, nil
+	default:
+		return AdminCreateEventNote201JSONResponse(note), nil
+	}
 }
 
 func (s *Server) AdminSendInvoice(ctx context.Context, request AdminSendInvoiceRequestObject) (AdminSendInvoiceResponseObject, error) {

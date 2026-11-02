@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { useLoaderData, useRevalidator } from "react-router-dom";
-import { AdminPutter } from "../Poster";
+import { AdminPoster, AdminPutter } from "../Poster";
 import { ReviewEvent } from "./ReviewEvent";
 
 jest.mock("react-router-dom", () => ({
@@ -65,6 +65,7 @@ function renderReviewEvent(overrides = {}) {
 describe("ReviewEvent keyholders", () => {
   beforeEach(() => {
     AdminPutter.mockResolvedValue({ ok: true });
+    AdminPoster.mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -150,5 +151,65 @@ describe("ReviewEvent keyholders", () => {
 
     expect(await screen.findByText("a booking exists for these dates")).toBeInTheDocument();
     expect(useRevalidator().revalidate).not.toHaveBeenCalled();
+  });
+
+  test("adds an event note and refreshes the review data", async () => {
+    const revalidate = jest.fn();
+    useLoaderData.mockReturnValue(event);
+    useRevalidator.mockReturnValue({ revalidate });
+    render(
+      <ChakraProvider>
+        <ReviewEvent />
+      </ChakraProvider>,
+    );
+
+    const content = "Call the organiser\nThen approve";
+    fireEvent.change(screen.getByLabelText("Add a note"), { target: { value: content } });
+    fireEvent.click(screen.getByRole("button", { name: "Add Note" }));
+
+    await waitFor(() => expect(AdminPoster).toHaveBeenCalledWith(
+      "/api/v1/admin/events/event-1/notes",
+      { content },
+    ));
+    expect(revalidate).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByLabelText("Add a note")).toHaveValue(""));
+  });
+
+  test("renders notes newest first with author, time, and escaped multiline text", () => {
+    const unsafeText = "<img src=x onerror=alert(1)>\nKeep this as text";
+    renderReviewEvent({
+      notes: [
+        {
+          id: "older",
+          content: "Oldest note",
+          authorEmail: "older-admin@example.org",
+          createdAt: "2026-11-01T12:00:00Z",
+        },
+        {
+          id: "newer",
+          content: unsafeText,
+          authorEmail: "newer-admin@example.org",
+          createdAt: "2026-11-02T12:00:00Z",
+        },
+      ],
+    });
+
+    const unsafeNote = screen.getByText((_, element) => element?.textContent === unsafeText);
+    const oldestNote = screen.getByText("Oldest note");
+    expect(unsafeNote.compareDocumentPosition(oldestNote) & 4).toBeTruthy();
+    expect(unsafeNote).toHaveStyle({ whiteSpace: "pre-wrap" });
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("newer-admin@example.org")).toBeInTheDocument();
+    expect(screen.getByText("older-admin@example.org")).toBeInTheDocument();
+    expect(screen.getByText(/2 Nov 2026/)).toBeInTheDocument();
+  });
+
+  test("prevents submitting a whitespace-only note", () => {
+    renderReviewEvent();
+
+    fireEvent.change(screen.getByLabelText("Add a note"), { target: { value: " \n\t " } });
+
+    expect(screen.getByRole("button", { name: "Add Note" })).toBeDisabled();
+    expect(AdminPoster).not.toHaveBeenCalled();
   });
 });

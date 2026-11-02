@@ -72,6 +72,21 @@ func (mr *MockDatabaseMockRecorder) AddEventGroup(ctx, event any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEventGroup", reflect.TypeOf((*MockDatabase)(nil).AddEventGroup), ctx, event)
 }
 
+// AddEventNote mocks base method.
+func (m *MockDatabase) AddEventNote(ctx context.Context, eventID, content, authorEmail string) (rest.EventNote, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddEventNote", ctx, eventID, content, authorEmail)
+	ret0, _ := ret[0].(rest.EventNote)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddEventNote indicates an expected call of AddEventNote.
+func (mr *MockDatabaseMockRecorder) AddEventNote(ctx, eventID, content, authorEmail any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEventNote", reflect.TypeOf((*MockDatabase)(nil).AddEventNote), ctx, eventID, content, authorEmail)
+}
+
 // AddEvents mocks base method.
 func (m *MockDatabase) AddEvents(ctx context.Context, event rest.AdminAddEventsRequestObject) error {
 	m.ctrl.T.Helper()

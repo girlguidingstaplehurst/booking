@@ -14,6 +14,7 @@ import {
   Spacer,
   Stack,
   StackDivider,
+  Textarea,
   Text,
 } from "@chakra-ui/react";
 import { Link as ReactRouterLink, useLoaderData, useRevalidator } from "react-router-dom";
@@ -158,7 +159,13 @@ export function ReviewEvent() {
   });
   const [dateError, setDateError] = React.useState("");
   const [savingDates, setSavingDates] = React.useState(false);
+  const [noteContent, setNoteContent] = React.useState("");
+  const [noteError, setNoteError] = React.useState("");
+  const [savingNote, setSavingNote] = React.useState(false);
   const eventDateSummary = `${dayjs(event.from).format("ddd D MMMM YYYY [at] HH:mm")} to ${dayjs(event.to).format("ddd D MMMM YYYY [at] HH:mm")}`;
+  const notes = Array.isArray(event.notes)
+    ? [...event.notes].sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
+    : [];
   const visibility = event.visible ? (
     <Flex>
       <Box>
@@ -224,6 +231,37 @@ export function ReviewEvent() {
         }
       }
       setDateError(message);
+    }
+  };
+
+  const saveNote = async (submitEvent) => {
+    submitEvent.preventDefault();
+    setNoteError("");
+    if (!noteContent.trim()) {
+      setNoteError("Please enter a note.");
+      return;
+    }
+
+    setSavingNote(true);
+    try {
+      const response = await AdminPoster(`/api/v1/admin/events/${event.id}/notes`, { content: noteContent });
+      if (response?.ok) {
+        setNoteContent("");
+        revalidator.revalidate();
+      } else {
+        let message = "Unable to add note.";
+        if (response) {
+          try {
+            const error = await response.json();
+            message = error.error_message || message;
+          } catch (error) {
+            // Keep the generic message when the server does not return JSON.
+          }
+        }
+        setNoteError(message);
+      }
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -301,6 +339,44 @@ export function ReviewEvent() {
               <Box>
                 <Heading size="s">Event Details</Heading>
                 <Text>{event.details}</Text>
+              </Box>
+              <Box>
+                <Heading size="s" marginBottom={2}>Notes</Heading>
+                <form onSubmit={saveNote}>
+                  <FormLabel htmlFor="event-note-content">Add a note</FormLabel>
+                  <Textarea
+                    id="event-note-content"
+                    value={noteContent}
+                    onChange={(change) => setNoteContent(change.target.value)}
+                    isDisabled={savingNote}
+                  />
+                  <Text color="red" role="alert">{noteError}</Text>
+                  <RoundedButton
+                    type="submit"
+                    isLoading={savingNote}
+                    isDisabled={!noteContent.trim()}
+                    marginTop={2}
+                  >
+                    Add Note
+                  </RoundedButton>
+                </form>
+                {notes.length === 0 ? (
+                  <Text marginTop={4}>No notes yet.</Text>
+                ) : (
+                  <Stack spacing={3} marginTop={4}>
+                    {notes.map((note) => (
+                      <Box key={note.id} borderWidth="1px" borderRadius="md" padding={3}>
+                        <Flex justifyContent="space-between" gap={4} flexWrap="wrap">
+                          <Text fontWeight="semibold">{note.authorEmail}</Text>
+                          <Text as="time" dateTime={note.createdAt}>
+                            {dayjs(note.createdAt).format("ddd D MMM YYYY [at] HH:mm")}
+                          </Text>
+                        </Flex>
+                        <Text whiteSpace="pre-wrap" marginTop={2}>{note.content}</Text>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </Box>
               <Flex>
                 <Box>

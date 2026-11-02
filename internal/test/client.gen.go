@@ -237,6 +237,12 @@ type Contact struct {
 	Name         string              `json:"name"`
 }
 
+// CreateEventNoteBody defines model for CreateEventNoteBody.
+type CreateEventNoteBody struct {
+	// Content Plain-text note content. Author and submission time are assigned by the server.
+	Content string `json:"content"`
+}
+
 // CreateKeyholderBody defines model for CreateKeyholderBody.
 type CreateKeyholderBody struct {
 	KeyNumber int    `json:"keyNumber"`
@@ -286,10 +292,13 @@ type Event struct {
 	KeyholderIn  *KeyholderAssignment `json:"keyholderIn,omitempty"`
 	KeyholderOut *KeyholderAssignment `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
-	RateID       string               `json:"rateID"`
-	Status       EventStatus          `json:"status"`
-	To           string               `json:"to"`
-	Visible      bool                 `json:"visible"`
+
+	// Notes Notes for the individual event, returned by the admin event detail operation.
+	Notes   *[]EventNote `json:"notes,omitempty"`
+	RateID  string       `json:"rateID"`
+	Status  EventStatus  `json:"status"`
+	To      string       `json:"to"`
+	Visible bool         `json:"visible"`
 }
 
 // EventDetails defines model for EventDetails.
@@ -310,6 +319,14 @@ type EventInstance struct {
 // EventList defines model for EventList.
 type EventList struct {
 	Events []ListEvent `json:"events"`
+}
+
+// EventNote defines model for EventNote.
+type EventNote struct {
+	AuthorEmail openapi_types.Email `json:"authorEmail"`
+	Content     string              `json:"content"`
+	CreatedAt   string              `json:"createdAt"`
+	Id          string              `json:"id"`
 }
 
 // EventStatus defines model for EventStatus.
@@ -611,6 +628,9 @@ type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody
 // AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
 type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
 
+// AdminCreateEventNoteJSONRequestBody defines body for AdminCreateEventNote for application/json ContentType.
+type AdminCreateEventNoteJSONRequestBody = CreateEventNoteBody
+
 // AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
 type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody
 
@@ -824,6 +844,20 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
 	AdminSetEventKeyholders(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateEventNoteWithBody Add a note to an event
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+	AdminCreateEventNoteWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdminCreateEventNote Add a note to an event
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+	AdminCreateEventNote(ctx context.Context, eventID string, body AdminCreateEventNoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AdminEventRequestDocumentsWithBody performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 	// with any type of body and a specified content type.
@@ -1224,6 +1258,40 @@ func (c *Client) AdminSetEventKeyholdersWithBody(ctx context.Context, eventID st
 // Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
 func (c *Client) AdminSetEventKeyholders(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAdminSetEventKeyholdersRequest(c.Server, eventID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateEventNoteWithBody Add a note to an event
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+func (c *Client) AdminCreateEventNoteWithBody(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateEventNoteRequestWithBody(c.Server, eventID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdminCreateEventNote Add a note to an event
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+func (c *Client) AdminCreateEventNote(ctx context.Context, eventID string, body AdminCreateEventNoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdminCreateEventNoteRequest(c.Server, eventID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2099,6 +2167,53 @@ func NewAdminSetEventKeyholdersRequestWithBody(server string, eventID string, co
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdminCreateEventNoteRequest calls the generic AdminCreateEventNote builder with application/json body
+func NewAdminCreateEventNoteRequest(server string, eventID string, body AdminCreateEventNoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdminCreateEventNoteRequestWithBody(server, eventID, "application/json", bodyReader)
+}
+
+// NewAdminCreateEventNoteRequestWithBody constructs an http.Request for the AdminCreateEventNote method, with any body, and a specified content type
+func NewAdminCreateEventNoteRequestWithBody(server string, eventID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "eventID", eventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/events/%s/notes", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -2990,6 +3105,20 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/admin/events/{eventID}/keyholders (the `AdminSetEventKeyholders` operationId).
 	AdminSetEventKeyholdersWithResponse(ctx context.Context, eventID string, body AdminSetEventKeyholdersJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminSetEventKeyholdersResponse, error)
 
+	// AdminCreateEventNoteWithBodyWithResponse Add a note to an event
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+	AdminCreateEventNoteWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateEventNoteResponse, error)
+
+	// AdminCreateEventNoteWithResponse Add a note to an event
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+	AdminCreateEventNoteWithResponse(ctx context.Context, eventID string, body AdminCreateEventNoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateEventNoteResponse, error)
+
 	// AdminEventRequestDocumentsWithBodyWithResponse performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -3820,6 +3949,75 @@ func (r AdminSetEventKeyholdersResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AdminSetEventKeyholdersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AdminCreateEventNoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *EventNote
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ErrorResponse
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *ErrorResponse
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r AdminCreateEventNoteResponse) GetJSON201() *EventNote {
+	return r.JSON201
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r AdminCreateEventNoteResponse) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdminCreateEventNoteResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r AdminCreateEventNoteResponse) GetJSON422() *ErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdminCreateEventNoteResponse) GetJSON500() *ErrorResponse {
+	return r.JSON500
+}
+
+// GetBody returns the raw response body bytes
+func (r AdminCreateEventNoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdminCreateEventNoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdminCreateEventNoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdminCreateEventNoteResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -4939,6 +5137,32 @@ func (c *ClientWithResponses) AdminSetEventKeyholdersWithResponse(ctx context.Co
 	return ParseAdminSetEventKeyholdersResponse(rsp)
 }
 
+// AdminCreateEventNoteWithBodyWithResponse Add a note to an event
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+func (c *ClientWithResponses) AdminCreateEventNoteWithBodyWithResponse(ctx context.Context, eventID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdminCreateEventNoteResponse, error) {
+	rsp, err := c.AdminCreateEventNoteWithBody(ctx, eventID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateEventNoteResponse(rsp)
+}
+
+// AdminCreateEventNoteWithResponse Add a note to an event
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/admin/events/{eventID}/notes (the `AdminCreateEventNote` operationId).
+func (c *ClientWithResponses) AdminCreateEventNoteWithResponse(ctx context.Context, eventID string, body AdminCreateEventNoteJSONRequestBody, reqEditors ...RequestEditorFn) (*AdminCreateEventNoteResponse, error) {
+	rsp, err := c.AdminCreateEventNote(ctx, eventID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdminCreateEventNoteResponse(rsp)
+}
+
 // AdminEventRequestDocumentsWithBodyWithResponse performs a POST /api/v1/admin/events/{eventID}/request-documents (the `AdminEventRequestDocuments` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -5714,6 +5938,60 @@ func ParseAdminSetEventKeyholdersResponse(rsp *http.Response) (*AdminSetEventKey
 	switch {
 	case rsp.StatusCode == 200:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAdminCreateEventNoteResponse parses an HTTP response from a AdminCreateEventNoteWithResponse call
+func ParseAdminCreateEventNoteResponse(rsp *http.Response) (*AdminCreateEventNoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdminCreateEventNoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest EventNote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse

@@ -227,6 +227,12 @@ type Contact struct {
 	Name         string              `json:"name"`
 }
 
+// CreateEventNoteBody defines model for CreateEventNoteBody.
+type CreateEventNoteBody struct {
+	// Content Plain-text note content. Author and submission time are assigned by the server.
+	Content string `json:"content"`
+}
+
 // CreateKeyholderBody defines model for CreateKeyholderBody.
 type CreateKeyholderBody struct {
 	KeyNumber int    `json:"keyNumber"`
@@ -276,10 +282,13 @@ type Event struct {
 	KeyholderIn  *KeyholderAssignment `json:"keyholderIn,omitempty"`
 	KeyholderOut *KeyholderAssignment `json:"keyholderOut,omitempty"`
 	Name         string               `json:"name"`
-	RateID       string               `json:"rateID"`
-	Status       EventStatus          `json:"status"`
-	To           string               `json:"to"`
-	Visible      bool                 `json:"visible"`
+
+	// Notes Notes for the individual event, returned by the admin event detail operation.
+	Notes   *[]EventNote `json:"notes,omitempty"`
+	RateID  string       `json:"rateID"`
+	Status  EventStatus  `json:"status"`
+	To      string       `json:"to"`
+	Visible bool         `json:"visible"`
 }
 
 // EventDetails defines model for EventDetails.
@@ -300,6 +309,14 @@ type EventInstance struct {
 // EventList defines model for EventList.
 type EventList struct {
 	Events []ListEvent `json:"events"`
+}
+
+// EventNote defines model for EventNote.
+type EventNote struct {
+	AuthorEmail openapi_types.Email `json:"authorEmail"`
+	Content     string              `json:"content"`
+	CreatedAt   string              `json:"createdAt"`
+	Id          string              `json:"id"`
 }
 
 // EventStatus defines model for EventStatus.
@@ -600,6 +617,9 @@ type AdminUpdateEventDatesJSONRequestBody = UpdateEventDatesBody
 
 // AdminSetEventKeyholdersJSONRequestBody defines body for AdminSetEventKeyholders for application/json ContentType.
 type AdminSetEventKeyholdersJSONRequestBody = SetEventKeyholdersBody
+
+// AdminCreateEventNoteJSONRequestBody defines body for AdminCreateEventNote for application/json ContentType.
+type AdminCreateEventNoteJSONRequestBody = CreateEventNoteBody
 
 // AdminEventRequestDocumentsJSONRequestBody defines body for AdminEventRequestDocuments for application/json ContentType.
 type AdminEventRequestDocumentsJSONRequestBody = RequestDocumentsBody

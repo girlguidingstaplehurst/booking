@@ -43,6 +43,31 @@ func TestParseEventDates(t *testing.T) {
 	}
 }
 
+func TestValidateEventNoteContent(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		wantErr bool
+	}{
+		{name: "plain text", content: "Call the organiser before approving"},
+		{name: "multiline text", content: "First line\nSecond line"},
+		{name: "empty", content: "", wantErr: true},
+		{name: "whitespace only", content: " \n\t ", wantErr: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateEventNoteContent(test.content)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("validateEventNoteContent() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr && !errors.Is(err, consts.ErrInvalidEventNoteContent) {
+				t.Fatalf("validateEventNoteContent() error = %v, want invalid note content", err)
+			}
+		})
+	}
+}
+
 func TestNearbyBookingBoundary(t *testing.T) {
 	existingStart := time.Date(2026, time.September, 13, 10, 0, 0, 0, time.UTC)
 	existingEnd := existingStart.Add(time.Hour)

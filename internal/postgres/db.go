@@ -483,7 +483,57 @@ func (db *Database) GetEvent(ctx context.Context, id string) (rest.Event, error)
 
 	event.Invoices = &invoiceRefs
 
+	notes, err := db.GetEventNotes(ctx, id)
+	if err != nil {
+		return event, err
+	}
+	event.Notes = &notes
+
 	return event, nil
+}
+
+func (db *Database) AddEventNote(ctx context.Context, eventID, content, authorEmail string) (rest.EventNote, error) {
+	if err := validateEventNoteContent(content); err != nil {
+		return rest.EventNote{}, err
+	}
+
+	note := rest.EventNote{Id: uuid.NewString(), Content: content, AuthorEmail: openapi_types.Email(authorEmail)}
+	var createdAt time.Time
+	err := db.pool.QueryRow(ctx, `insert into booking_event_notes (id, event_id, content, author_email)
+		select $1, $2, $3, $4
+		where exists (select 1 from booking_events where id = $2)
+		returning created_at`, note.Id, eventID, content, authorEmail).Scan(&createdAt)
+	if err != nil {
+		return rest.EventNote{}, err
+	}
+	note.CreatedAt = createdAt.UTC().Format(time.RFC3339Nano)
+	return note, nil
+}
+
+func (db *Database) GetEventNotes(ctx context.Context, eventID string) ([]rest.EventNote, error) {
+	rows, err := db.pool.Query(ctx, `select id, content, author_email, created_at
+		from booking_event_notes
+		where event_id = $1
+		order by created_at desc, id desc`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (rest.EventNote, error) {
+		var note rest.EventNote
+		var createdAt time.Time
+		if err := row.Scan(&note.Id, &note.Content, &note.AuthorEmail, &createdAt); err != nil {
+			return note, err
+		}
+		note.CreatedAt = createdAt.UTC().Format(time.RFC3339Nano)
+		return note, nil
+	})
+}
+
+func validateEventNoteContent(content string) error {
+	if strings.TrimSpace(content) == "" {
+		return consts.ErrInvalidEventNoteContent
+	}
+	return nil
 }
 
 func (db *Database) MarkInvoiceSent(ctx context.Context, id string) error {

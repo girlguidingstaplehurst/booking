@@ -33,6 +33,9 @@ func (d *testDatabase) AddEvents(context.Context, AdminAddEventsRequestObject) e
 func (d *testDatabase) AddEventGroup(context.Context, AdminAddEventGroupRequestObject) error {
 	return nil
 }
+func (d *testDatabase) AddEventNote(context.Context, string, string, string) (EventNote, error) {
+	return EventNote{}, nil
+}
 func (d *testDatabase) DuplicateEventGroup(context.Context, AdminDuplicateEventGroupRequestObject) error {
 	return nil
 }
