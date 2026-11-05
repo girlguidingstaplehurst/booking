@@ -1,4 +1,4 @@
-import { Box, Heading, Input, SimpleGrid, Spinner, Text } from "@chakra-ui/react";
+import { Box, ButtonGroup, Heading, Input, SimpleGrid, Spinner, Text } from "@chakra-ui/react";
 import React from "react";
 import { searchEventGroups } from "../Fetcher";
 import { Link as ReactRouterLink } from "react-router-dom";
@@ -59,9 +59,19 @@ export function EventGroupSearch() {
               <Text color="brand.300" marginTop={2}>
                 {`${dayjs(group.from).format("h:mm A")} - ${dayjs(group.to).format("h:mm A")}`}
               </Text>
-              <RoundedButton as={ReactRouterLink} to={`/admin/review-group/${group.id}`} marginTop={4}>
-                Review
-              </RoundedButton>
+              <ButtonGroup marginTop={4}>
+                {group.invoiceableSessionCount > 0 && (
+                  <RoundedButton
+                    as={ReactRouterLink}
+                    to={`/admin/create-invoice?eventGroup=${group.id}`}
+                  >
+                    Create Invoice
+                  </RoundedButton>
+                )}
+                <RoundedButton as={ReactRouterLink} to={`/admin/review-group/${group.id}`}>
+                  Review
+                </RoundedButton>
+              </ButtonGroup>
             </Box>
           </Box>
         ))}

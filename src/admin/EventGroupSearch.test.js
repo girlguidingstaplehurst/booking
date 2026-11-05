@@ -11,7 +11,13 @@ describe("EventGroupSearch", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     searchEventGroups.mockResolvedValue({
-      json: async () => [{ id: "group-1", name: "Summer Sessions", from: "2026-01-01T10:00:00Z", to: "2026-01-02T10:00:00Z" }],
+      json: async () => [{
+        id: "group-1",
+        name: "Summer Sessions",
+        from: "2026-01-01T10:00:00Z",
+        to: "2026-01-02T10:00:00Z",
+        invoiceableSessionCount: 1,
+      }],
     });
   });
 
@@ -29,5 +35,33 @@ describe("EventGroupSearch", () => {
     expect(searchEventGroups).toHaveBeenCalledWith("sum");
     expect(await screen.findByText("Summer Sessions")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute("href", "/admin/review-group/group-1");
+    expect(screen.getByRole("link", { name: "Create Invoice" })).toHaveAttribute(
+      "href",
+      "/admin/create-invoice?eventGroup=group-1",
+    );
+  });
+
+  test("keeps Review but hides invoice creation when no sessions are invoiceable", async () => {
+    searchEventGroups.mockResolvedValue({
+      json: async () => [{
+        id: "group-1",
+        name: "Summer Sessions",
+        from: "2026-01-01T10:00:00Z",
+        to: "2026-01-02T10:00:00Z",
+        invoiceableSessionCount: 0,
+      }],
+    });
+
+    render(<MemoryRouter><EventGroupSearch /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Event Group Search"), { target: { value: "sum" } });
+    act(() => jest.advanceTimersByTime(300));
+    await act(async () => {});
+
+    expect(await screen.findByText("Summer Sessions")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute(
+      "href",
+      "/admin/review-group/group-1",
+    );
+    expect(screen.queryByRole("link", { name: "Create Invoice" })).not.toBeInTheDocument();
   });
 });
