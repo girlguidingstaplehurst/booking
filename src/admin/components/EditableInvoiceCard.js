@@ -29,6 +29,7 @@ import { NumericFormat } from "react-number-format";
 import useAuth from "../useAuth";
 import RoundedButton from "../../components/RoundedButton";
 import { populateInvoiceItems, totalInvoiceCost } from "./invoiceCalculations";
+import dayjs from "dayjs";
 
 const priceFormat = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -205,6 +206,9 @@ export function EditableInvoiceCard({ preparation }) {
                   )}
                 >
                   {event.name}
+                  <Text as="span" marginLeft={2}>
+                    {dayjs(event.from).format("ddd D MMM YYYY h:mm A")} - {dayjs(event.to).format("h:mm A")}
+                  </Text>
                 </Checkbox>
               ))}
               <Text>{formik.values.events.length} session{formik.values.events.length === 1 ? "" : "s"} selected</Text>

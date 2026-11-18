@@ -6,7 +6,7 @@ Provide administrators with a clear, accurate invoice-preparation workflow for i
 
 ### Requirement: Invoice preparation distinguishes individual and group modes
 
-The system SHALL provide invoice preparation data that identifies whether the invoice covers individual events or an event group and includes the contact display name, contact email, event or group name, and all source event identifiers. Administrators SHALL be able to reach individual invoice preparation with multiple selected events from the contact-focused invoicing workflow. For hourly-billed event groups, the preparation SHALL include only sessions that have no invoice association. For progressive per-session event groups, the preparation SHALL include the complete group and SHALL remain an all-or-nothing invoice workflow.
+The system SHALL provide invoice preparation data that identifies whether the invoice covers individual events or an event group and includes the contact display name, contact email, event or group name, and all source event identifiers. Administrators SHALL be able to reach individual invoice preparation with multiple selected events from the contact-focused invoicing workflow. For hourly-billed event groups, the preparation SHALL include only sessions that have no invoice association, and each selectable session SHALL be identifiable by its event name and date/time. For progressive per-session event groups, the preparation SHALL include the complete group and SHALL remain an all-or-nothing invoice workflow.
 
 #### Scenario: Prepare an individual invoice for multiple events
 
@@ -19,6 +19,7 @@ The system SHALL provide invoice preparation data that identifies whether the in
 - **WHEN** an administrator requests an invoice for an hourly-billed event group
 - **THEN** the system returns one group invoice preparation card containing the group name, contact display name, contact email, and every group session without an invoice association
 - **AND** the preparation identifies the group’s hourly rate
+- **AND** each selectable session is displayed with its event name and date/time
 
 #### Scenario: Prepare an event-group invoice
 

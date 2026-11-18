@@ -3,6 +3,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { act } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { EditableInvoiceCard } from "./EditableInvoiceCard";
+import dayjs from "dayjs";
 
 jest.mock("../useAuth", () => () => ({ token: "token" }));
 
@@ -35,8 +36,20 @@ const hourlyGroupPreparation = {
   name: "Weekend Group",
   eventGroup: "group-1",
   events: [
-    { ...preparation.events[0], id: "session-1", name: "Weekend Group" },
-    { ...preparation.events[0], id: "session-2", name: "Weekend Group" },
+    {
+      ...preparation.events[0],
+      id: "session-1",
+      name: "Weekend Group",
+      from: "2026-09-12T09:00:00Z",
+      to: "2026-09-12T11:00:00Z",
+    },
+    {
+      ...preparation.events[0],
+      id: "session-2",
+      name: "Weekend Group",
+      from: "2026-09-13T09:00:00Z",
+      to: "2026-09-13T11:00:00Z",
+    },
   ],
   rate: { pricingMode: "hourly", hourlyRate: 20, perSession: [] },
 };
@@ -230,12 +243,19 @@ test("sending a free invoice still uses the email invoice operation", async () =
   expect(global.fetch.mock.calls[0][0]).toBe("/api/v1/admin/send-invoice");
 });
 
-test("hourly group invoices can select a subset of sessions", async () => {
+test("hourly group session choices show their dates and can be selected", async () => {
   global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
   renderGroupCard();
 
   const sessionCheckboxes = screen.getAllByRole("checkbox");
   expect(sessionCheckboxes).toHaveLength(3);
+  expect(sessionCheckboxes[1].closest("label")).toHaveTextContent("Weekend Group");
+  expect(sessionCheckboxes[1].closest("label")).toHaveTextContent(
+    `${dayjs(hourlyGroupPreparation.events[0].from).format("ddd D MMM YYYY h:mm A")} - ${dayjs(hourlyGroupPreparation.events[0].to).format("h:mm A")}`,
+  );
+  expect(sessionCheckboxes[2].closest("label")).toHaveTextContent(
+    `${dayjs(hourlyGroupPreparation.events[1].from).format("ddd D MMM YYYY h:mm A")} - ${dayjs(hourlyGroupPreparation.events[1].to).format("h:mm A")}`,
+  );
   fireEvent.click(sessionCheckboxes[1]);
   expect(sessionCheckboxes[1]).not.toBeChecked();
   expect(screen.getByText("1 session selected")).toBeInTheDocument();
