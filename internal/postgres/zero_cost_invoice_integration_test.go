@@ -28,23 +28,33 @@ func TestAddZeroCostInvoicePersistsPaidInvoiceAtomically(t *testing.T) {
 	t.Cleanup(pool.Close)
 	db := NewDatabase(pool)
 
-	eventID := uuid.NewString()
-	contact := "zero-invoice-" + eventID + "@example.org"
+	laterEventID := uuid.NewString()
+	earlierEventID := uuid.NewString()
+	contact := "zero-invoice-" + laterEventID + "@example.org"
 	if _, err := pool.Exec(ctx, `insert into booking_contacts (email, name) values ($1, $2)`, contact, "Zero Invoice Contact"); err != nil {
 		t.Fatalf("insert test contact: %v", err)
 	}
-	if _, err := pool.Exec(ctx, `insert into booking_events (id, event_start, event_end, event_name, visible, email, status, rate_id, details)
-		values ($1, $2, $3, $4, true, $5, 'approved', 'default', '')`, eventID, time.Now().Add(time.Hour), time.Now().Add(2*time.Hour), "Free Event", contact); err != nil {
-		_, _ = pool.Exec(ctx, `delete from booking_contacts where email = $1`, contact)
-		t.Fatalf("insert test event: %v", err)
-	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(ctx, `delete from booking_invoices where contact = $1`, contact)
-		_, _ = pool.Exec(ctx, `delete from booking_events where id = $1`, eventID)
+		_, _ = pool.Exec(ctx, `delete from booking_events where id in ($1, $2)`, laterEventID, earlierEventID)
 		_, _ = pool.Exec(ctx, `delete from booking_contacts where email = $1`, contact)
 	})
 
-	events := []string{eventID}
+	now := time.Now()
+	for _, event := range []struct {
+		id   string
+		name string
+		from time.Time
+	}{
+		{id: laterEventID, name: "Later Free Event", from: now.Add(2 * time.Hour)},
+		{id: earlierEventID, name: "Earlier Free Event", from: now.Add(time.Hour)},
+	} {
+		if _, err := pool.Exec(ctx, `insert into booking_events (id, event_start, event_end, event_name, visible, email, status, rate_id, details)
+			values ($1, $2, $3, $4, true, $5, 'approved', 'default', '')`, event.id, event.from, event.from.Add(time.Hour), event.name, contact); err != nil {
+			t.Fatalf("insert test event: %v", err)
+		}
+	}
+	events := []string{laterEventID, earlierEventID}
 	validInvoice := &rest.SendInvoiceBody{
 		Contact: openapi_types.Email(contact),
 		Events:  &events,
@@ -56,7 +66,7 @@ func TestAddZeroCostInvoicePersistsPaidInvoiceAtomically(t *testing.T) {
 
 	var invoiceID string
 	if err := pool.QueryRow(ctx, `select bi.id from booking_invoices bi
-		join booking_invoice_events bie on bie.invoice_id = bi.id where bie.event_id = $1`, eventID).Scan(&invoiceID); err != nil {
+		join booking_invoice_events bie on bie.invoice_id = bi.id where bie.event_id = $1`, laterEventID).Scan(&invoiceID); err != nil {
 		t.Fatalf("find created invoice: %v", err)
 	}
 	invoice, err := db.GetInvoiceByID(ctx, invoiceID)
@@ -66,8 +76,8 @@ func TestAddZeroCostInvoicePersistsPaidInvoiceAtomically(t *testing.T) {
 	if invoice.Status != "paid" || invoice.Paid == nil || invoice.Sent != nil {
 		t.Fatalf("invoice payment fields = status %q, paid %v, sent %v; want paid, timestamp, and no sent timestamp", invoice.Status, invoice.Paid, invoice.Sent)
 	}
-	if invoice.Events == nil || len(*invoice.Events) != 1 || (*invoice.Events)[0].Id != eventID {
-		t.Fatalf("invoice events = %v, want the selected individual event %q", invoice.Events, eventID)
+	if invoice.Events == nil || len(*invoice.Events) != 2 || (*invoice.Events)[0].Id != earlierEventID || (*invoice.Events)[1].Id != laterEventID {
+		t.Fatalf("invoice events = %v, want events ordered by start time: %q, %q", invoice.Events, earlierEventID, laterEventID)
 	}
 	if len(invoice.Items) != 1 || invoice.Items[0].Description != "Free event hire" || invoice.Items[0].Cost != 0 {
 		t.Fatalf("invoice items = %+v, want the submitted zero-cost line", invoice.Items)

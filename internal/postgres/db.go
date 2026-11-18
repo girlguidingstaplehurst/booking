@@ -797,7 +797,7 @@ func (db *Database) GetInvoiceByID(ctx context.Context, id string) (rest.Invoice
 		from booking_invoice_events bie
 		join booking_events be on be.id = bie.event_id
 		where bie.invoice_id = $1
-		order by be.from_date`, id, dbDateTimeFormat)
+		order by be.event_start`, id, dbDateTimeFormat)
 	if err != nil {
 		return invoice, err
 	}
